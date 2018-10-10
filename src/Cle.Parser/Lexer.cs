@@ -132,14 +132,21 @@ namespace Cle.Parser
             else
             {
                 // Else, read until whitespace or end of file
-                // Tokens consisting of symbols may only be one character long at the moment
                 _currentTokenLengthBytes = 0;
                 while (TryReadByte(out var currentByte))
                 {
-                    if (IsWhitespace(currentByte) || (IsSymbol(currentByte) && _currentTokenLengthBytes > 0))
+                    var isSymbol = IsSymbol(currentByte);
+
+                    // Read until whitespace or a symbol ends the current token
+                    if (IsWhitespace(currentByte) || isSymbol && _currentTokenLengthBytes > 0)
                         break;
 
                     _currentTokenLengthBytes++;
+
+                    // If this token is a symbol, break after reading one character
+                    // TODO: Support longer symbols (such as <= or &&)
+                    if (isSymbol)
+                        break;
                 }
             }
         }
