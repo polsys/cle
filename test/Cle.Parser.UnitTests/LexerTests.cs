@@ -76,7 +76,7 @@ namespace Cle.Parser.UnitTests
         [Test]
         public void GetTokenType_classifies_tokens_correctly()
         {
-            var source = StringToMemory("namespace NS; \"literal\"(){name}");
+            var source = StringToMemory("namespace NS; \"literal\"(){name 123}");
             var lexer = new Lexer(source);
 
             Assert.That(lexer.GetTokenType(), Is.EqualTo(TokenType.Namespace));
@@ -87,6 +87,7 @@ namespace Cle.Parser.UnitTests
             Assert.That(lexer.GetTokenType(), Is.EqualTo(TokenType.CloseParen));
             Assert.That(lexer.GetTokenType(), Is.EqualTo(TokenType.OpenBrace));
             Assert.That(lexer.GetTokenType(), Is.EqualTo(TokenType.Identifier));
+            Assert.That(lexer.GetTokenType(), Is.EqualTo(TokenType.Number));
             Assert.That(lexer.GetTokenType(), Is.EqualTo(TokenType.CloseBrace));
             Assert.That(lexer.GetTokenType(), Is.EqualTo(TokenType.EndOfFile));
         }

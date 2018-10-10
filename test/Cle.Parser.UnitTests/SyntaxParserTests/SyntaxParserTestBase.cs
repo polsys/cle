@@ -15,5 +15,14 @@ namespace Cle.Parser.UnitTests.SyntaxParserTests
 
             return SyntaxParser.Parse(sourceBytes.AsMemory(), diagnostics);
         }
+
+        [NotNull]
+        public SyntaxParser GetParserInstance([NotNull] string source, out TestingDiagnosticSink diagnostics)
+        {
+            var sourceBytes = Encoding.UTF8.GetBytes(source);
+            diagnostics = new TestingDiagnosticSink();
+
+            return new SyntaxParser(sourceBytes.AsMemory(), diagnostics);
+        }
     }
 }

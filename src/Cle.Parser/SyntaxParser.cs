@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Immutable;
 using System.Diagnostics;
-using System.IO;
+using System.Globalization;
 using System.Text;
 using Cle.Common;
 using Cle.Parser.SyntaxTree;
@@ -17,7 +17,11 @@ namespace Cle.Parser
         [NotNull] private readonly Lexer _lexer;
         [NotNull] private readonly IDiagnosticSink _diagnosticSink;
         
-        private SyntaxParser(Memory<byte> source, [NotNull] IDiagnosticSink diagnosticSink)
+        /// <summary>
+        /// Internal for testing only.
+        /// Use <see cref="Parse"/> instead.
+        /// </summary>
+        internal SyntaxParser(Memory<byte> source, [NotNull] IDiagnosticSink diagnosticSink)
         {
             _lexer = new Lexer(source);
             _diagnosticSink = diagnosticSink;
@@ -117,19 +121,19 @@ namespace Cle.Parser
                         return null;
                     }
 
-                    // Body
-                    // TODO: Actually parse a block
-                    if (!ExpectToken(TokenType.OpenBrace, DiagnosticCode.ExpectedMethodBody))
+                    // Method body
+                    if (_lexer.PeekTokenType() != TokenType.OpenBrace)
                     {
+                        _diagnosticSink.Add(DiagnosticCode.ExpectedMethodBody, _lexer.Position, ReadTokenIntoString());
                         return null;
                     }
-                    if (!ExpectToken(TokenType.CloseBrace, DiagnosticCode.ExpectedClosingBrace))
+                    if (!TryParseBlock(out var methodBody) || methodBody == null)
                     {
                         return null;
                     }
 
                     // Add the parsed function to the syntax tree
-                    functionListBuilder.Add(new FunctionSyntax(functionName, typeName, visibility, itemPosition));
+                    functionListBuilder.Add(new FunctionSyntax(functionName, typeName, visibility, methodBody, itemPosition));
                 }
                 else
                 {
@@ -140,7 +144,7 @@ namespace Cle.Parser
 
             return new SourceFileSyntax(namespaceName, functionListBuilder.ToImmutable());
         }
-
+        
         private bool TryParseNamespaceDeclaration([NotNull] out string namespaceName)
         {
             namespaceName = string.Empty;
@@ -170,6 +174,124 @@ namespace Cle.Parser
             }
 
             return true;
+        }
+        
+        private bool TryParseBlock([CanBeNull] out BlockSyntax block)
+        {
+            block = null;
+
+            // Eat the opening brace
+            var startPosition = _lexer.Position;
+            Debug.Assert(_lexer.PeekTokenType() == TokenType.OpenBrace);
+            _lexer.GetToken();
+
+            // Parse statements until a closing brace is found
+            var statementList = ImmutableList<StatementSyntax>.Empty.ToBuilder();
+
+            while (_lexer.PeekTokenType() != TokenType.CloseBrace)
+            {
+                switch (_lexer.PeekTokenType())
+                {
+                    case TokenType.OpenBrace:
+                        if (TryParseBlock(out var innerBlockSyntax))
+                        {
+                            statementList.Add(innerBlockSyntax);
+                            break;
+                        }
+                        else
+                        {
+                            return false;
+                        }
+                    case TokenType.Return:
+                        if (TryParseReturnStatement(out var returnStatement))
+                        {
+                            statementList.Add(returnStatement);
+                            break;
+                        }
+                        else
+                        {
+                            return false;
+                        }
+                    case TokenType.EndOfFile:
+                        _diagnosticSink.Add(DiagnosticCode.ExpectedClosingBrace, _lexer.Position, ReadTokenIntoString());
+                        return false;
+                    default:
+                        // TODO: Think about error recovery
+                        _diagnosticSink.Add(DiagnosticCode.ExpectedStatement, _lexer.Position, ReadTokenIntoString());
+                        return false;
+                }
+            }
+
+            // Eat the closing brace
+            if (!ExpectToken(TokenType.CloseBrace, DiagnosticCode.ExpectedClosingBrace))
+            {
+                return false;
+            }
+
+            block = new BlockSyntax(statementList.ToImmutable(), startPosition);
+            return true;
+        }
+
+        private bool TryParseReturnStatement([CanBeNull] out ReturnStatementSyntax returnStatement)
+        {
+            returnStatement = null;
+
+            // Eat the 'return' keyword
+            var startPosition = _lexer.Position;
+            Debug.Assert(_lexer.PeekTokenType() == TokenType.Return);
+            _lexer.GetToken();
+
+            // There are two kinds of returns: void return and value return.
+            // In case of the former, the keyword is immediately followed by a semicolon.
+            // In case of the latter, parse the expression.
+            ExpressionSyntax expression = null;
+            if (_lexer.PeekTokenType() != TokenType.Semicolon)
+            {
+                if (!TryParseExpression(out expression))
+                {
+                    return false;
+                }
+            }
+
+            // Eat the semicolon
+            if (!ExpectToken(TokenType.Semicolon, DiagnosticCode.ExpectedSemicolon))
+            {
+                return false;
+            }
+
+            returnStatement = new ReturnStatementSyntax(expression, startPosition);
+            return true;
+        }
+
+        /// <summary>
+        /// Internal for testing only.
+        /// This function handles error logging on its own.
+        /// </summary>
+        internal bool TryParseExpression([CanBeNull] out ExpressionSyntax expressionSyntax)
+        {
+            expressionSyntax = null;
+
+            // TODO: Expressions
+            if (_lexer.PeekTokenType() == TokenType.Number)
+            {
+                var numberToken = ReadTokenIntoString();
+                if (ulong.TryParse(numberToken, NumberStyles.None, CultureInfo.InvariantCulture,
+                    out var number))
+                {
+                    expressionSyntax = new IntegerLiteralSyntax(number, _lexer.LastPosition);
+                    return true;
+                }
+                else
+                {
+                    _diagnosticSink.Add(DiagnosticCode.InvalidNumericLiteral, _lexer.LastPosition, numberToken);
+                    return false;
+                }
+            }
+            else
+            {
+                _diagnosticSink.Add(DiagnosticCode.ExpectedExpression, _lexer.Position, ReadTokenIntoString());
+                return false;
+            }
         }
 
         /// <summary>

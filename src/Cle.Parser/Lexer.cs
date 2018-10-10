@@ -204,10 +204,15 @@ namespace Cle.Parser
             if (token.IsEmpty)
                 return TokenType.EndOfFile;
 
+            // Early out for string literals
             if (token[0] == (byte)'"')
                 return TokenType.StringLiteral;
 
-            // TODO: Numbers
+            // Early out for numbers, as identifiers may not begin with digits
+            // If the token is not a valid number, the parser will do the complaining
+            if (token[0] >= (byte)'0' && token[0] <= (byte)'9')
+                return TokenType.Number;
+
             // TODO: Early out for tokens beginning with _
 
             // Special tokens are collected in a list of (token bytes, token type) tuples
@@ -237,6 +242,7 @@ namespace Cle.Parser
                 (Encoding.UTF8.GetBytes("namespace"), TokenType.Namespace),
                 (Encoding.UTF8.GetBytes("private"), TokenType.Private),
                 (Encoding.UTF8.GetBytes("public"), TokenType.Public),
+                (Encoding.UTF8.GetBytes("return"), TokenType.Return)
             };
         }
     }

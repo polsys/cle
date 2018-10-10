@@ -49,6 +49,12 @@ namespace Cle.Frontend
                     return $"Expected ')', read '{diagnostic.Actual}'.";
                 case DiagnosticCode.ExpectedClosingBrace:
                     return $"Expected '}}', read '{diagnostic.Actual}'.";
+                case DiagnosticCode.ExpectedStatement:
+                    return $"Expected statement, read '{diagnostic.Actual}'.";
+                case DiagnosticCode.ExpectedExpression:
+                    return $"Expected expression, read '{diagnostic.Actual}'.";
+                case DiagnosticCode.InvalidNumericLiteral:
+                    return $"'{diagnostic.Actual}' is not a valid numeric literal.";
 
                 // Parse warnings
                 case DiagnosticCode.ParseWarningStart:

@@ -11,12 +11,14 @@
         Unknown,
         Identifier,
         StringLiteral,
+        Number,
 
         // Keywords
         Internal,
         Namespace,
         Private,
         Public,
+        Return,
 
         // Symbols
         Semicolon,

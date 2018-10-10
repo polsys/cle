@@ -28,6 +28,10 @@
         ExpectedClosingParen,
         ExpectedClosingBrace,
 
+        ExpectedStatement,
+        ExpectedExpression,
+        InvalidNumericLiteral,
+
         ParseWarningStart = 1500,
 
         SemanticErrorStart = 2000,

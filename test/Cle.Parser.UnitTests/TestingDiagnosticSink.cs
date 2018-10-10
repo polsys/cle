@@ -37,7 +37,8 @@ namespace Cle.Parser.UnitTests
         public DiagnosticAssertResult AssertDiagnosticAt(DiagnosticCode code, TextPosition position)
         {
             var diagnostic = Diagnostics.SingleOrDefault(x => x.Code == code && x.Position == position);
-            Assert.That(diagnostic, Is.Not.Null);
+            Assert.That(diagnostic, Is.Not.Null, $"The diagnostic {code} did not exist at " +
+                                                 $"({position.Line},{position.ByteInLine})");
 
             return new DiagnosticAssertResult(diagnostic);
         }
@@ -50,7 +51,7 @@ namespace Cle.Parser.UnitTests
         {
             var diagnostic = Diagnostics.SingleOrDefault(x =>
                 x.Code == code && x.Position.Line == line && x.Position.ByteInLine == offset);
-            Assert.That(diagnostic, Is.Not.Null);
+            Assert.That(diagnostic, Is.Not.Null, $"The diagnostic {code} did not exist at ({line},{offset})");
 
             return new DiagnosticAssertResult(diagnostic);
         }

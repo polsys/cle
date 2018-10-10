@@ -24,6 +24,11 @@ private void Function()
             Assert.That(function.Visibility, Is.EqualTo(Visibility.Private));
             Assert.That(function.Name, Is.EqualTo("Function"));
             Assert.That(function.ReturnTypeName, Is.EqualTo("void"));
+
+            Assert.That(function.Block, Is.Not.Null);
+            Assert.That(function.Block.Position.Line, Is.EqualTo(4));
+            Assert.That(function.Block.Position.ByteInLine, Is.EqualTo(0));
+            Assert.That(function.Block.Statements, Is.Empty);
         }
 
         [Test]
@@ -97,6 +102,86 @@ internal int32 Integer()
             Assert.That(second.ReturnTypeName, Is.EqualTo("bool"));
             Assert.That(second.Position.Line, Is.EqualTo(7));
             Assert.That(second.Position.ByteInLine, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void Global_int32_function_with_const_return_is_parsed_correctly()
+        {
+            const string source = @"namespace Test;
+
+internal int32 OneHundred()
+{
+    return 100;
+}";
+            var syntaxTree = ParseSource(source, out var diagnostics);
+
+            Assert.That(diagnostics.Diagnostics, Is.Empty);
+            Assert.That(syntaxTree, Is.Not.Null);
+            Assert.That(syntaxTree.Functions, Has.Exactly(1).Items);
+
+            var function = syntaxTree.Functions[0];
+            Assert.That(function.Block, Is.Not.Null);
+            Assert.That(function.Block.Statements, Has.Exactly(1).Items);
+
+            var returnStatement = (ReturnStatementSyntax)function.Block.Statements[0];
+            Assert.That(returnStatement.Position.Line, Is.EqualTo(5));
+            Assert.That(returnStatement.Position.ByteInLine, Is.EqualTo(4));
+            Assert.That(returnStatement.ResultExpression, Is.Not.Null);
+            Assert.That(returnStatement.ResultExpression, Is.InstanceOf<IntegerLiteralSyntax>());
+            Assert.That(((IntegerLiteralSyntax)returnStatement.ResultExpression).Value, Is.EqualTo(100));
+        }
+
+        [Test]
+        public void Global_void_function_with_return_is_parsed_correctly()
+        {
+            const string source = @"namespace Test;
+
+internal void DoNothing()
+{
+    return;
+}";
+            var syntaxTree = ParseSource(source, out var diagnostics);
+
+            Assert.That(diagnostics.Diagnostics, Is.Empty);
+            Assert.That(syntaxTree, Is.Not.Null);
+            Assert.That(syntaxTree.Functions, Has.Exactly(1).Items);
+
+            var function = syntaxTree.Functions[0];
+            Assert.That(function.Block, Is.Not.Null);
+            Assert.That(function.Block.Statements, Has.Exactly(1).Items);
+
+            var returnStatement = (ReturnStatementSyntax)function.Block.Statements[0];
+            Assert.That(returnStatement.Position.Line, Is.EqualTo(5));
+            Assert.That(returnStatement.Position.ByteInLine, Is.EqualTo(4));
+            Assert.That(returnStatement.ResultExpression, Is.Null);
+        }
+
+        [Test]
+        public void Global_void_function_with_nested_blocks_is_parsed_correctly()
+        {
+            const string source = @"namespace Test;
+
+internal void DoNothing()
+{
+    {
+        {}
+        return;
+    }
+}";
+            var syntaxTree = ParseSource(source, out var diagnostics);
+
+            Assert.That(diagnostics.Diagnostics, Is.Empty);
+            Assert.That(syntaxTree, Is.Not.Null);
+            Assert.That(syntaxTree.Functions, Has.Exactly(1).Items);
+
+            var function = syntaxTree.Functions[0];
+            Assert.That(function.Block, Is.Not.Null);
+            Assert.That(function.Block.Statements, Has.Exactly(1).Items);
+
+            var innerBlock = (BlockSyntax)function.Block.Statements[0];
+            Assert.That(innerBlock.Statements, Has.Exactly(2).Items);
+            Assert.That(innerBlock.Statements[0], Is.InstanceOf<BlockSyntax>());
+            Assert.That(innerBlock.Statements[1], Is.InstanceOf<ReturnStatementSyntax>());
         }
 
         [Test]
@@ -217,6 +302,82 @@ public int32 Fun() {";
             var syntaxTree = ParseSource(source, out var diagnostics);
             
             diagnostics.AssertDiagnosticAt(DiagnosticCode.ExpectedClosingBrace, 3, 20).WithActual("");
+            Assert.That(syntaxTree, Is.Null);
+        }
+        
+        [Test]
+        public void Statement_expected_in_block()
+        {
+            const string source = @"namespace Test;
+
+internal void Fail()
+{
+    42
+}";
+            var syntaxTree = ParseSource(source, out var diagnostics);
+
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.ExpectedStatement, 5, 4).WithActual("42");
+            Assert.That(syntaxTree, Is.Null);
+        }
+        
+        [Test]
+        public void Statement_expected_in_nested_block()
+        {
+            const string source = @"namespace Test;
+
+internal void Fail()
+{
+    {42}
+}";
+            var syntaxTree = ParseSource(source, out var diagnostics);
+
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.ExpectedStatement, 5, 5).WithActual("42");
+            Assert.That(syntaxTree, Is.Null);
+        }
+        
+        [Test]
+        public void Void_return_without_semicolon_fails()
+        {
+            const string source = @"namespace Test;
+
+internal void DoNothing()
+{
+    return
+}";
+            var syntaxTree = ParseSource(source, out var diagnostics);
+
+            // Actually this fails because an expression could not be parsed
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.ExpectedExpression, 6, 0).WithActual("}");
+            Assert.That(syntaxTree, Is.Null);
+        }
+        
+        [Test]
+        public void Int32_return_without_semicolon_fails()
+        {
+            const string source = @"namespace Test;
+
+internal void DoNothing()
+{
+    return 100
+}";
+            var syntaxTree = ParseSource(source, out var diagnostics);
+
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.ExpectedSemicolon, 6, 0).WithActual("}");
+            Assert.That(syntaxTree, Is.Null);
+        }
+        
+        [Test]
+        public void Int32_return_without_expression_fails()
+        {
+            const string source = @"namespace Test;
+
+internal void DoNothing()
+{
+    return {100}
+}";
+            var syntaxTree = ParseSource(source, out var diagnostics);
+
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.ExpectedExpression, 5, 11).WithActual("{");
             Assert.That(syntaxTree, Is.Null);
         }
     }

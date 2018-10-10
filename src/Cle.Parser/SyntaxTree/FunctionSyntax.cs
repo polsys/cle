@@ -6,7 +6,7 @@ namespace Cle.Parser.SyntaxTree
     /// <summary>
     /// Syntax tree node for a function (either global or within class) definition.
     /// </summary>
-    public class FunctionSyntax : SyntaxNode
+    public sealed class FunctionSyntax : SyntaxNode
     {
         /// <summary>
         /// Gets the simple name of this function.
@@ -27,16 +27,24 @@ namespace Cle.Parser.SyntaxTree
         [NotNull]
         public string ReturnTypeName { get; }
 
+        /// <summary>
+        /// Gets the code block of this function.
+        /// </summary>
+        [NotNull]
+        public BlockSyntax Block { get; }
+
         public FunctionSyntax(
             [NotNull] string name,
             [NotNull] string returnType,
             Visibility visibility,
+            [NotNull] BlockSyntax block,
             TextPosition position)
             : base(position)
         {
             Name = name;
             ReturnTypeName = returnType;
             Visibility = visibility;
+            Block = block;
         }
     }
 }
