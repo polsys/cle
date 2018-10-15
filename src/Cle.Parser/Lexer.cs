@@ -194,7 +194,10 @@ namespace Cle.Parser
 
         private static bool IsSymbol(byte character)
         {
-            return character == (byte)';' ||
+            // TODO: Refactor this to be more easily maintainable and performant
+            return character == (byte)'+' || character == (byte)'-' ||
+                   character == (byte)'*' || character == (byte)'/' || 
+                   character == (byte)';' ||
                    character == (byte)'(' || character == (byte)')' ||
                    character == (byte)'{' || character == (byte)'}';
         }
@@ -233,6 +236,10 @@ namespace Cle.Parser
             // For example, Roslyn uses switch-based matching for symbols and a map for keywords.
             return new List<(byte[], TokenType)>
             {
+                (new[] { (byte)'+' }, TokenType.Plus),
+                (new[] { (byte)'-' }, TokenType.Minus),
+                (new[] { (byte)'*' }, TokenType.Asterisk),
+                (new[] { (byte)'/' }, TokenType.ForwardSlash),
                 (new[] { (byte)';' }, TokenType.Semicolon),
                 (new[] { (byte)'(' }, TokenType.OpenParen),
                 (new[] { (byte)')' }, TokenType.CloseParen),

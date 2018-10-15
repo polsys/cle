@@ -127,12 +127,13 @@ namespace Cle.Parser
                         _diagnosticSink.Add(DiagnosticCode.ExpectedMethodBody, _lexer.Position, ReadTokenIntoString());
                         return null;
                     }
-                    if (!TryParseBlock(out var methodBody) || methodBody == null)
+                    if (!TryParseBlock(out var methodBody))
                     {
                         return null;
                     }
 
                     // Add the parsed function to the syntax tree
+                    Debug.Assert(methodBody != null);
                     functionListBuilder.Add(new FunctionSyntax(functionName, typeName, visibility, methodBody, itemPosition));
                 }
                 else
@@ -269,16 +270,178 @@ namespace Cle.Parser
         /// </summary>
         internal bool TryParseExpression([CanBeNull] out ExpressionSyntax expressionSyntax)
         {
+            // TODO: Relative operators
+            return TryParseArithmeticExpression(out expressionSyntax);
+        }
+        
+        private bool TryParseArithmeticExpression([CanBeNull] out ExpressionSyntax expressionSyntax)
+        {
+            // Arithmetic expression := Arithmetic expression [+-] Term
             expressionSyntax = null;
 
-            // TODO: Expressions
+            // Read the initial term
+            if (!TryParseTerm(out var currentSyntax))
+            {
+                return false;
+            }
+            Debug.Assert(currentSyntax != null);
+
+            // Recurse left
+            while (true)
+            {
+                switch (_lexer.PeekTokenType())
+                {
+                    case TokenType.Plus:
+                    {
+                        if (!ParseOperation(BinaryOperation.Plus))
+                            return false;
+                        break;
+                    }
+                    case TokenType.Minus:
+                    {
+                        if (!ParseOperation(BinaryOperation.Minus))
+                            return false;
+                        break;
+                    }
+                    default:
+                        expressionSyntax = currentSyntax;
+                        return true;
+                }
+            }
+
+            // Local helper method for sharing code between the '+' and '-' paths
+            bool ParseOperation(BinaryOperation operation)
+            {
+                // Eat the '+'/'-' token
+                var operatorPosition = _lexer.Position;
+                _lexer.GetToken();
+
+                // Read the right operand
+                if (!TryParseTerm(out var right))
+                {
+                    return false;
+                }
+                Debug.Assert(right != null);
+
+                // Update the result
+                currentSyntax = new BinaryExpressionSyntax(operation, currentSyntax, right, operatorPosition);
+                return true;
+            }
+        }
+
+        private bool TryParseTerm([CanBeNull] out ExpressionSyntax expressionSyntax)
+        {
+            // Term := Term [+-] Factor
+            expressionSyntax = null;
+
+            // Read the initial term
+            if (!TryParseFactor(out var currentSyntax))
+            {
+                return false;
+            }
+            Debug.Assert(currentSyntax != null);
+
+            // Recurse left
+            while (true)
+            {
+                switch (_lexer.PeekTokenType())
+                {
+                    case TokenType.Asterisk:
+                    {
+                        if (!ParseOperation(BinaryOperation.Times))
+                            return false;
+                        break;
+                    }
+                    case TokenType.ForwardSlash:
+                    {
+                        if (!ParseOperation(BinaryOperation.Divide))
+                            return false;
+                        break;
+                    }
+                    default:
+                        expressionSyntax = currentSyntax;
+                        return true;
+                }
+            }
+
+            // Local helper method for sharing code between the '*' and '/' paths
+            bool ParseOperation(BinaryOperation operation)
+            {
+                // Eat the '*'/'/' token
+                var operatorPosition = _lexer.Position;
+                _lexer.GetToken();
+
+                // Read the right operand
+                if (!TryParseFactor(out var right))
+                {
+                    return false;
+                }
+                Debug.Assert(right != null);
+
+                // Update the result
+                currentSyntax = new BinaryExpressionSyntax(operation, currentSyntax, right, operatorPosition);
+                return true;
+            }
+        }
+
+        private bool TryParseFactor([CanBeNull] out ExpressionSyntax expressionSyntax)
+        {
+            // Factor := Number | ( Expression ) | -Factor
+            
+            expressionSyntax = null;
+
+            switch (_lexer.PeekTokenType())
+            {
+                case TokenType.Minus:
+                    // Eat the minus
+                    var minusPosition = _lexer.Position;
+                    _lexer.GetToken();
+
+                    // Recurse to the inner factor
+                    if (TryParseFactor(out var innerFactor))
+                    {
+                        Debug.Assert(innerFactor != null);
+                        expressionSyntax = new UnaryExpressionSyntax(UnaryOperation.Minus, innerFactor, minusPosition);
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                case TokenType.OpenParen:
+                    // Eat the '('
+                    _lexer.GetToken();
+
+                    // Parse the expression.
+                    // The inner expression is returned as is, with no enclosing 'parens' node.
+                    // The modified precedence/associativity is already reflected in the syntax tree.
+                    if (!TryParseExpression(out expressionSyntax))
+                    {
+                        return false;
+                    }
+
+                    // Eat the ')'
+                    if (!ExpectToken(TokenType.CloseParen, DiagnosticCode.ExpectedClosingParen))
+                    {
+                        return false;
+                    }
+                    return true;
+                default:
+                    return TryParseNumber(out expressionSyntax);
+            }
+        }
+
+        private bool TryParseNumber([CanBeNull] out ExpressionSyntax literalSyntax)
+        {
+            literalSyntax = null;
+
             if (_lexer.PeekTokenType() == TokenType.Number)
             {
                 var numberToken = ReadTokenIntoString();
                 if (ulong.TryParse(numberToken, NumberStyles.None, CultureInfo.InvariantCulture,
                     out var number))
                 {
-                    expressionSyntax = new IntegerLiteralSyntax(number, _lexer.LastPosition);
+                    literalSyntax = new IntegerLiteralSyntax(number, _lexer.LastPosition);
                     return true;
                 }
                 else

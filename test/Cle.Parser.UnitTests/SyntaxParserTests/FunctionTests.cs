@@ -132,6 +132,34 @@ internal int32 OneHundred()
         }
 
         [Test]
+        public void Global_int32_function_with_expression_return_is_parsed_correctly()
+        {
+            const string source = @"namespace Test;
+
+internal int32 OneHundred()
+{
+    return 2*50;
+}";
+            var syntaxTree = ParseSource(source, out var diagnostics);
+
+            Assert.That(diagnostics.Diagnostics, Is.Empty);
+            Assert.That(syntaxTree, Is.Not.Null);
+            Assert.That(syntaxTree.Functions, Has.Exactly(1).Items);
+
+            var function = syntaxTree.Functions[0];
+            Assert.That(function.Block, Is.Not.Null);
+            Assert.That(function.Block.Statements, Has.Exactly(1).Items);
+
+            var returnStatement = (ReturnStatementSyntax)function.Block.Statements[0];
+            Assert.That(returnStatement.Position.Line, Is.EqualTo(5));
+            Assert.That(returnStatement.Position.ByteInLine, Is.EqualTo(4));
+            Assert.That(returnStatement.ResultExpression, Is.Not.Null);
+            Assert.That(returnStatement.ResultExpression, Is.InstanceOf<BinaryExpressionSyntax>());
+            Assert.That(((BinaryExpressionSyntax)returnStatement.ResultExpression).Operation,
+                Is.EqualTo(BinaryOperation.Times));
+        }
+
+        [Test]
         public void Global_void_function_with_return_is_parsed_correctly()
         {
             const string source = @"namespace Test;

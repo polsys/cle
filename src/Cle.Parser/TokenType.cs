@@ -21,6 +21,10 @@
         Return,
 
         // Symbols
+        Plus,
+        Minus,
+        Asterisk,
+        ForwardSlash,
         Semicolon,
         OpenParen,
         CloseParen,
