@@ -386,7 +386,7 @@ namespace Cle.Parser
 
         private bool TryParseFactor([CanBeNull] out ExpressionSyntax expressionSyntax)
         {
-            // Factor := Number | ( Expression ) | -Factor
+            // Factor := Number | Boolean literal | ( Expression ) | -Factor
             
             expressionSyntax = null;
 
@@ -425,6 +425,18 @@ namespace Cle.Parser
                     {
                         return false;
                     }
+                    return true;
+                case TokenType.False:
+                    // Eat the token
+                    _lexer.GetToken();
+
+                    expressionSyntax = new BooleanLiteralSyntax(false, _lexer.LastPosition);
+                    return true;
+                case TokenType.True:
+                    // Eat the token
+                    _lexer.GetToken();
+
+                    expressionSyntax = new BooleanLiteralSyntax(true, _lexer.LastPosition);
                     return true;
                 default:
                     return TryParseNumber(out expressionSyntax);

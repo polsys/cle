@@ -38,6 +38,21 @@ namespace Cle.Parser.UnitTests.SyntaxParserTests
             diagnostics.AssertDiagnosticAt(DiagnosticCode.InvalidNumericLiteral, 1, 0);
         }
 
+        [TestCase("true", true)]
+        [TestCase("false", false)]
+        public void Valid_Boolean_literals(string source, bool expected)
+        {
+            var parser = GetParserInstance(source, out var diagnostics);
+
+            var returnValue = parser.TryParseExpression(out var expression);
+
+            Assert.That(diagnostics.Diagnostics, Is.Empty);
+            Assert.That(returnValue, Is.True);
+            Assert.That(expression, Is.Not.Null);
+            Assert.That(expression, Is.InstanceOf<BooleanLiteralSyntax>());
+            Assert.That(((BooleanLiteralSyntax)expression).Value, Is.EqualTo(expected));
+        }
+
         [Test]
         public void Unary_minus_is_parsed_correctly()
         {

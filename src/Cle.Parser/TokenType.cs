@@ -14,11 +14,13 @@
         Number,
 
         // Keywords
+        False,
         Internal,
         Namespace,
         Private,
         Public,
         Return,
+        True,
 
         // Symbols
         Plus,

@@ -245,11 +245,13 @@ namespace Cle.Parser
                 (new[] { (byte)')' }, TokenType.CloseParen),
                 (new[] { (byte)'{' }, TokenType.OpenBrace),
                 (new[] { (byte)'}' }, TokenType.CloseBrace),
+                (Encoding.UTF8.GetBytes("false"), TokenType.False),
                 (Encoding.UTF8.GetBytes("internal"), TokenType.Internal),
                 (Encoding.UTF8.GetBytes("namespace"), TokenType.Namespace),
                 (Encoding.UTF8.GetBytes("private"), TokenType.Private),
                 (Encoding.UTF8.GetBytes("public"), TokenType.Public),
-                (Encoding.UTF8.GetBytes("return"), TokenType.Return)
+                (Encoding.UTF8.GetBytes("return"), TokenType.Return),
+                (Encoding.UTF8.GetBytes("true"), TokenType.True)
             };
         }
     }
