@@ -17,7 +17,7 @@ namespace Cle.Parser
         private int _currentRow = 1;
         private int _currentByteInRow;
 
-        private static readonly List<(byte[], TokenType)> s_specialTokens = InitializeSpecialTokens();
+        private static readonly List<(byte[], TokenType)> s_keywords = InitializeKeywords();
 
         public Lexer(Memory<byte> source)
         {
@@ -194,7 +194,7 @@ namespace Cle.Parser
 
         private static bool IsSymbol(byte character)
         {
-            // TODO: Refactor this to be more easily maintainable and performant
+            // TODO: Re-measure the performance of this when all the symbols are defined
             return character == (byte)'+' || character == (byte)'-' ||
                    character == (byte)'*' || character == (byte)'/' || 
                    character == (byte)';' ||
@@ -218,8 +218,34 @@ namespace Cle.Parser
 
             // TODO: Early out for tokens beginning with _
 
-            // Special tokens are collected in a list of (token bytes, token type) tuples
-            foreach (var (bytes, tokenType) in s_specialTokens)
+            // Test for one-character symbols
+            if (token.Length == 1)
+            {
+                switch (token[0])
+                {
+                    case (byte)'+':
+                        return TokenType.Plus;
+                    case (byte)'-':
+                        return TokenType.Minus;
+                    case (byte)'*':
+                        return TokenType.Asterisk;
+                    case (byte)'/':
+                        return TokenType.ForwardSlash;
+                    case (byte)';':
+                        return TokenType.Semicolon;
+                    case (byte)'(':
+                        return TokenType.OpenParen;
+                    case (byte)')':
+                        return TokenType.CloseParen;
+                    case (byte)'{':
+                        return TokenType.OpenBrace;
+                    case (byte)'}':
+                        return TokenType.CloseBrace;
+                }
+            }
+
+            // Keywords are collected in a list of (keyword bytes, token type) tuples
+            foreach (var (bytes, tokenType) in s_keywords)
             {
                 if (token.SequenceEqual(bytes.AsSpan()))
                     return tokenType;
@@ -229,22 +255,11 @@ namespace Cle.Parser
             return TokenType.Identifier;
         }
 
-        private static List<(byte[], TokenType)> InitializeSpecialTokens()
+        private static List<(byte[], TokenType)> InitializeKeywords()
         {
-            // As the list is traversed in order, the most common tokens should be put first.
-            // TODO: If this is too expensive, a better solution should be investigated.
-            // For example, Roslyn uses switch-based matching for symbols and a map for keywords.
+            // TODO: As the list is traversed in order, the most common tokens could be put first.
             return new List<(byte[], TokenType)>
             {
-                (new[] { (byte)'+' }, TokenType.Plus),
-                (new[] { (byte)'-' }, TokenType.Minus),
-                (new[] { (byte)'*' }, TokenType.Asterisk),
-                (new[] { (byte)'/' }, TokenType.ForwardSlash),
-                (new[] { (byte)';' }, TokenType.Semicolon),
-                (new[] { (byte)'(' }, TokenType.OpenParen),
-                (new[] { (byte)')' }, TokenType.CloseParen),
-                (new[] { (byte)'{' }, TokenType.OpenBrace),
-                (new[] { (byte)'}' }, TokenType.CloseBrace),
                 (Encoding.UTF8.GetBytes("false"), TokenType.False),
                 (Encoding.UTF8.GetBytes("internal"), TokenType.Internal),
                 (Encoding.UTF8.GetBytes("namespace"), TokenType.Namespace),
