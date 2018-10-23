@@ -260,7 +260,9 @@ namespace Cle.Parser
             // TODO: As the list is traversed in order, the most common tokens could be put first.
             return new List<(byte[], TokenType)>
             {
+                (Encoding.UTF8.GetBytes("else"), TokenType.Else),
                 (Encoding.UTF8.GetBytes("false"), TokenType.False),
+                (Encoding.UTF8.GetBytes("if"), TokenType.If),
                 (Encoding.UTF8.GetBytes("internal"), TokenType.Internal),
                 (Encoding.UTF8.GetBytes("namespace"), TokenType.Namespace),
                 (Encoding.UTF8.GetBytes("private"), TokenType.Private),

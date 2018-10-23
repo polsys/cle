@@ -55,6 +55,14 @@ namespace Cle.Frontend
                     return $"Expected expression, read '{diagnostic.Actual}'.";
                 case DiagnosticCode.InvalidNumericLiteral:
                     return $"'{diagnostic.Actual}' is not a valid numeric literal.";
+                case DiagnosticCode.ExpectedCondition:
+                    return $"Expected condition surrounded by parentheses, read '{diagnostic.Actual}'.";
+                case DiagnosticCode.ExpectedBlock:
+                    return $"Expected block, read '{diagnostic.Actual}'.";
+                case DiagnosticCode.ExpectedBlockOrElseIf:
+                    return $"Expected block or 'else if', read '{diagnostic.Actual}'.";
+                case DiagnosticCode.ElseWithoutIf:
+                    return "Else statement without corresponding if statement.";
 
                 // Parse warnings
                 case DiagnosticCode.ParseWarningStart:

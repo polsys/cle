@@ -14,7 +14,9 @@
         Number,
 
         // Keywords
+        Else,
         False,
+        If,
         Internal,
         Namespace,
         Private,

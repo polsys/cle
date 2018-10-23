@@ -37,6 +37,22 @@ public bool IsTrue()
 {
     return true;
 }
+
+public bool IfStatements()
+{
+    if (2 * 21)
+    {
+        return true;
+    }
+    else if (2 * 21 + 1)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
 ";
     }
 }

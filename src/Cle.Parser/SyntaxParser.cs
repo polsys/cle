@@ -193,6 +193,19 @@ namespace Cle.Parser
             {
                 switch (_lexer.PeekTokenType())
                 {
+                    case TokenType.Else:
+                        _diagnosticSink.Add(DiagnosticCode.ElseWithoutIf, _lexer.Position);
+                        return false;
+                    case TokenType.If:
+                        if (TryParseIf(out var ifSyntax))
+                        {
+                            statementList.Add(ifSyntax);
+                            break;
+                        }
+                        else
+                        {
+                            return false;
+                        }
                     case TokenType.OpenBrace:
                         if (TryParseBlock(out var innerBlockSyntax))
                         {
@@ -224,13 +237,85 @@ namespace Cle.Parser
             }
 
             // Eat the closing brace
-            if (!ExpectToken(TokenType.CloseBrace, DiagnosticCode.ExpectedClosingBrace))
-            {
-                return false;
-            }
+            Debug.Assert(_lexer.PeekTokenType() == TokenType.CloseBrace);
+            _lexer.GetToken();
 
             block = new BlockSyntax(statementList.ToImmutable(), startPosition);
             return true;
+        }
+
+        private bool TryParseIf([CanBeNull] out IfStatementSyntax ifStatement)
+        {
+            ifStatement = null;
+
+            // Eat the 'if' keyword
+            var startPosition = _lexer.Position;
+            Debug.Assert(_lexer.PeekTokenType() == TokenType.If);
+            _lexer.GetToken();
+
+            // Read the condition
+            // TODO: Refactor this out when implementing other conditionals (like while)
+            if (!ExpectToken(TokenType.OpenParen, DiagnosticCode.ExpectedCondition) ||
+                !TryParseExpression(out var condition) ||
+                !ExpectToken(TokenType.CloseParen, DiagnosticCode.ExpectedClosingParen))
+            {
+                return false;
+            }
+            Debug.Assert(condition != null);
+
+            // Read the block - single statements are not allowed
+            if (_lexer.PeekTokenType() != TokenType.OpenBrace)
+            {
+                _diagnosticSink.Add(DiagnosticCode.ExpectedBlock, _lexer.Position, ReadTokenIntoString());
+                return false;
+            }
+            if (!TryParseBlock(out var thenBlock))
+            {
+                return false;
+            }
+            Debug.Assert(thenBlock != null);
+
+            // If there is no else statement, early out
+            // Else, read the 'else' keyword
+            if (_lexer.PeekTokenType() != TokenType.Else)
+            {
+                ifStatement = new IfStatementSyntax(condition, thenBlock, null, startPosition);
+                return true;
+            }
+            _lexer.GetToken();
+
+            // There are two cases:
+            //   - plain unconditional else with a block (again, no single statements)
+            //   - 'else if' where we wrap the 'if' part in a block of its own
+            if (_lexer.PeekTokenType() == TokenType.OpenBrace)
+            {
+                if (!TryParseBlock(out var elseBlock))
+                {
+                    return false;
+                }
+                Debug.Assert(elseBlock != null);
+
+                ifStatement = new IfStatementSyntax(condition, thenBlock, elseBlock, startPosition);
+                return true;
+            }
+            else if (_lexer.PeekTokenType() == TokenType.If)
+            {
+                var elseIfPosition = _lexer.Position;
+                if (!TryParseIf(out var elseIf))
+                {
+                    return false;
+                }
+                Debug.Assert(elseIf != null);
+
+                var elseBlock = new BlockSyntax(ImmutableList<StatementSyntax>.Empty.Add(elseIf), elseIfPosition);
+                ifStatement = new IfStatementSyntax(condition, thenBlock, elseBlock, startPosition);
+                return true;
+            }
+            else
+            {
+                _diagnosticSink.Add(DiagnosticCode.ExpectedBlockOrElseIf, _lexer.Position, ReadTokenIntoString());
+                return false;
+            }
         }
 
         private bool TryParseReturnStatement([CanBeNull] out ReturnStatementSyntax returnStatement)

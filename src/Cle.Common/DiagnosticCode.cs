@@ -31,6 +31,10 @@
         ExpectedStatement,
         ExpectedExpression,
         InvalidNumericLiteral,
+        ExpectedCondition,
+        ExpectedBlock,
+        ExpectedBlockOrElseIf,
+        ElseWithoutIf,
 
         ParseWarningStart = 1500,
 
