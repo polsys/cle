@@ -9,10 +9,8 @@ namespace Cle.Parser.UnitTests.SyntaxParserTests
         public void Namespace_is_correctly_read()
         {
             const string source = "namespace NamespaceName;";
-            var syntaxTree = ParseSource(source, out var diagnostics);
+            var syntaxTree = ParseSourceWithoutDiagnostics(source);
 
-            Assert.That(diagnostics.Diagnostics, Is.Empty);
-            Assert.That(syntaxTree, Is.Not.Null);
             Assert.That(syntaxTree.Namespace, Is.EqualTo("NamespaceName"));
         }
 
@@ -20,10 +18,8 @@ namespace Cle.Parser.UnitTests.SyntaxParserTests
         public void Namespace_multipart_is_correctly_read()
         {
             const string source = "namespace Namespace::Name::_Part3;";
-            var syntaxTree = ParseSource(source, out var diagnostics);
+            var syntaxTree = ParseSourceWithoutDiagnostics(source);
 
-            Assert.That(diagnostics.Diagnostics, Is.Empty);
-            Assert.That(syntaxTree, Is.Not.Null);
             Assert.That(syntaxTree.Namespace, Is.EqualTo("Namespace::Name::_Part3"));
         }
         

@@ -14,10 +14,7 @@ namespace Cle.Parser.UnitTests.SyntaxParserTests
 private void Function()
 {
 }";
-            var syntaxTree = ParseSource(source, out var diagnostics);
-
-            Assert.That(diagnostics.Diagnostics, Is.Empty);
-            Assert.That(syntaxTree, Is.Not.Null);
+            var syntaxTree = ParseSourceWithoutDiagnostics(source);
             Assert.That(syntaxTree.Functions, Has.Exactly(1).Items);
 
             var function = syntaxTree.Functions[0];
@@ -39,10 +36,7 @@ private void Function()
 public int32 Function2()
 {
 }";
-            var syntaxTree = ParseSource(source, out var diagnostics);
-
-            Assert.That(diagnostics.Diagnostics, Is.Empty);
-            Assert.That(syntaxTree, Is.Not.Null);
+            var syntaxTree = ParseSourceWithoutDiagnostics(source);
             Assert.That(syntaxTree.Functions, Has.Exactly(1).Items);
 
             var function = syntaxTree.Functions[0];
@@ -59,10 +53,7 @@ public int32 Function2()
 internal Other::Namespace::Type _fun()
 {
 }";
-            var syntaxTree = ParseSource(source, out var diagnostics);
-
-            Assert.That(diagnostics.Diagnostics, Is.Empty);
-            Assert.That(syntaxTree, Is.Not.Null);
+            var syntaxTree = ParseSourceWithoutDiagnostics(source);
             Assert.That(syntaxTree.Functions, Has.Exactly(1).Items);
 
             var function = syntaxTree.Functions[0];
@@ -83,10 +74,7 @@ internal int32 Integer()
  public bool Boolean()
 {
 }";
-            var syntaxTree = ParseSource(source, out var diagnostics);
-
-            Assert.That(diagnostics.Diagnostics, Is.Empty);
-            Assert.That(syntaxTree, Is.Not.Null);
+            var syntaxTree = ParseSourceWithoutDiagnostics(source);
             Assert.That(syntaxTree.Functions, Has.Exactly(2).Items);
 
             var first = syntaxTree.Functions[0];
@@ -113,10 +101,7 @@ internal int32 OneHundred()
 {
     return 100;
 }";
-            var syntaxTree = ParseSource(source, out var diagnostics);
-
-            Assert.That(diagnostics.Diagnostics, Is.Empty);
-            Assert.That(syntaxTree, Is.Not.Null);
+            var syntaxTree = ParseSourceWithoutDiagnostics(source);
             Assert.That(syntaxTree.Functions, Has.Exactly(1).Items);
 
             var function = syntaxTree.Functions[0];
@@ -140,10 +125,7 @@ internal int32 OneHundred()
 {
     return 2*50;
 }";
-            var syntaxTree = ParseSource(source, out var diagnostics);
-
-            Assert.That(diagnostics.Diagnostics, Is.Empty);
-            Assert.That(syntaxTree, Is.Not.Null);
+            var syntaxTree = ParseSourceWithoutDiagnostics(source);
             Assert.That(syntaxTree.Functions, Has.Exactly(1).Items);
 
             var function = syntaxTree.Functions[0];
@@ -168,10 +150,7 @@ internal void DoNothing()
 {
     return;
 }";
-            var syntaxTree = ParseSource(source, out var diagnostics);
-
-            Assert.That(diagnostics.Diagnostics, Is.Empty);
-            Assert.That(syntaxTree, Is.Not.Null);
+            var syntaxTree = ParseSourceWithoutDiagnostics(source);
             Assert.That(syntaxTree.Functions, Has.Exactly(1).Items);
 
             var function = syntaxTree.Functions[0];
@@ -196,10 +175,7 @@ internal void DoNothing()
         return;
     }
 }";
-            var syntaxTree = ParseSource(source, out var diagnostics);
-
-            Assert.That(diagnostics.Diagnostics, Is.Empty);
-            Assert.That(syntaxTree, Is.Not.Null);
+            var syntaxTree = ParseSourceWithoutDiagnostics(source);
             Assert.That(syntaxTree.Functions, Has.Exactly(1).Items);
 
             var function = syntaxTree.Functions[0];
