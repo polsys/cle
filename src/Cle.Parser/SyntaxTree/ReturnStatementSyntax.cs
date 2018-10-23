@@ -13,10 +13,10 @@ namespace Cle.Parser.SyntaxTree
         /// Null for void returns.
         /// </summary>
         [CanBeNull]
-        public SyntaxNode ResultExpression { get; }
+        public ExpressionSyntax ResultExpression { get; }
 
         public ReturnStatementSyntax(
-            [CanBeNull] SyntaxNode expression,
+            [CanBeNull] ExpressionSyntax expression,
             TextPosition position)
             : base(position)
         {
