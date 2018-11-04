@@ -1,16 +1,14 @@
-﻿using System;
-
-namespace Cle.SemanticAnalysis
+﻿namespace Cle.SemanticAnalysis
 {
     /// <summary>
-    /// Represents a method that has passed semantic analysis.
-    /// Instances can be transformed via optimizations and passed to code generation.
+    /// Represents a method that has passed semantic analysis and can be emitted.
+    /// Instances are mutable and can be transformed via optimizations.
     /// </summary>
     public class CompiledMethod
     {
         /// <summary>
-        /// Gets the basic block graph for this method.
+        /// Gets or sets the basic block graph for this method.
         /// </summary>
-        public BasicBlockGraph Body { get; }
+        public BasicBlockGraph Body { get; set; }
     }
 }
