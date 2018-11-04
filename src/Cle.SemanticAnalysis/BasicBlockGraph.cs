@@ -6,7 +6,7 @@ namespace Cle.SemanticAnalysis
     /// <summary>
     /// An immutable graph of basic blocks.
     /// </summary>
-    public readonly struct BasicBlockGraph
+    public class BasicBlockGraph
     {
         [NotNull]
         public readonly ImmutableList<BasicBlock> BasicBlocks;

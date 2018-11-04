@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
 using JetBrains.Annotations;
 
 namespace Cle.SemanticAnalysis
@@ -8,7 +6,7 @@ namespace Cle.SemanticAnalysis
     /// <summary>
     /// An immutable basic block of linearly executable instructions.
     /// </summary>
-    public readonly struct BasicBlock
+    public class BasicBlock
     {
         /// <summary>
         /// Gets the immutable linear list of instructions.
