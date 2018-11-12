@@ -16,6 +16,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Cle.Common\Cle.Common.csproj" />
     <ProjectReference Include="..\..\src\Cle.Parser\Cle.Parser.csproj" />
+    <ProjectReference Include="..\Cle.UnitTests.Common\Cle.UnitTests.Common.csproj" />
   </ItemGroup>
 
 </Project>

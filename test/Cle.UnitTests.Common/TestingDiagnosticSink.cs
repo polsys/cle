@@ -4,7 +4,7 @@ using Cle.Common;
 using JetBrains.Annotations;
 using NUnit.Framework;
 
-namespace Cle.Parser.UnitTests
+namespace Cle.UnitTests.Common
 {
     public class TestingDiagnosticSink : IDiagnosticSink
     {

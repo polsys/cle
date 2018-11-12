@@ -2,7 +2,7 @@
 using JetBrains.Annotations;
 using NUnit.Framework;
 
-namespace Cle.Parser.UnitTests
+namespace Cle.UnitTests.Common
 {
     /// <summary>
     /// Provides fluent syntax for compilation diagnostic assertions.

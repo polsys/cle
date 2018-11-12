@@ -14,6 +14,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Cle.SemanticAnalysis\Cle.SemanticAnalysis.csproj" />
+    <ProjectReference Include="..\Cle.UnitTests.Common\Cle.UnitTests.Common.csproj" />
   </ItemGroup>
 
 </Project>

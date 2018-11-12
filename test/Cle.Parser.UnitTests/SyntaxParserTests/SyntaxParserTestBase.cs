@@ -1,6 +1,7 @@
 using System;
 using System.Text;
 using Cle.Parser.SyntaxTree;
+using Cle.UnitTests.Common;
 using JetBrains.Annotations;
 using NUnit.Framework;
 
