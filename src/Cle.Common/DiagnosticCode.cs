@@ -40,6 +40,8 @@
 
         SemanticErrorStart = 2000,
 
+        TypeNotFound,
+
         SemanticWarningStart = 2500,
 
         BackendErrorStart = 3000,

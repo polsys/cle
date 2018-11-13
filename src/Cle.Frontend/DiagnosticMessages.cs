@@ -71,6 +71,8 @@ namespace Cle.Frontend
                 // Semantic errors
                 case DiagnosticCode.SemanticErrorStart:
                     return "Unspecified semantic error.";
+                case DiagnosticCode.TypeNotFound:
+                    return $"Type {diagnostic.Actual} does not exist or is not visible in this file.";
 
                 // Semantic warnings
                 case DiagnosticCode.SemanticWarningStart:
