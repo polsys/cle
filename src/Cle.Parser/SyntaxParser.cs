@@ -15,15 +15,17 @@ namespace Cle.Parser
     public class SyntaxParser
     {
         [NotNull] private readonly Lexer _lexer;
+        [NotNull] private string _filename;
         [NotNull] private readonly IDiagnosticSink _diagnosticSink;
-        
+
         /// <summary>
         /// Internal for testing only.
         /// Use <see cref="Parse"/> instead.
         /// </summary>
-        internal SyntaxParser(Memory<byte> source, [NotNull] IDiagnosticSink diagnosticSink)
+        internal SyntaxParser(Memory<byte> source, [NotNull] string filename, [NotNull] IDiagnosticSink diagnosticSink)
         {
             _lexer = new Lexer(source);
+            _filename = filename;
             _diagnosticSink = diagnosticSink;
         }
 
@@ -32,11 +34,15 @@ namespace Cle.Parser
         /// If the file cannot be parsed correctly, returns null.
         /// </summary>
         /// <param name="source">The UTF-8 encoded source file content.</param>
+        /// <param name="filename">The name of the source file.</param>
         /// <param name="diagnosticSink">The sink to write parse diagnostics into.</param>
         [CanBeNull]
-        public static SourceFileSyntax Parse(Memory<byte> source, [NotNull] IDiagnosticSink diagnosticSink)
+        public static SourceFileSyntax Parse(
+            Memory<byte> source, 
+            [NotNull] string filename,
+            [NotNull] IDiagnosticSink diagnosticSink)
         {
-            var parser = new SyntaxParser(source, diagnosticSink);
+            var parser = new SyntaxParser(source, filename, diagnosticSink);
             return parser.ParseSourceFile();
         }
 
@@ -143,7 +149,7 @@ namespace Cle.Parser
                 }
             }
 
-            return new SourceFileSyntax(namespaceName, functionListBuilder.ToImmutable());
+            return new SourceFileSyntax(namespaceName, _filename, functionListBuilder.ToImmutable());
         }
         
         private bool TryParseNamespaceDeclaration([NotNull] out string namespaceName)

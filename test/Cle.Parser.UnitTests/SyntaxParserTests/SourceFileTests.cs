@@ -14,5 +14,15 @@ namespace Cle.Parser.UnitTests.SyntaxParserTests
             diagnostics.AssertDiagnosticAt(DiagnosticCode.ExpectedSourceFileItem, new TextPosition(0, 1, 0));
             Assert.That(syntaxTree, Is.Null);
         }
+
+        [Test]
+        public void File_name_is_recorded()
+        {
+            const string source = @"namespace Test;";
+            var syntaxTree = ParseSource(source, out _);
+            
+            Assert.That(syntaxTree, Is.Not.Null);
+            Assert.That(syntaxTree.Filename, Is.EqualTo("test.cle")); // Default of ParseSource(...)
+        }
     }
 }

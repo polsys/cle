@@ -18,7 +18,7 @@ namespace Cle.Parser.UnitTests.SyntaxParserTests
             var sourceBytes = Encoding.UTF8.GetBytes(source);
             diagnostics = new TestingDiagnosticSink();
 
-            return SyntaxParser.Parse(sourceBytes.AsMemory(), diagnostics);
+            return SyntaxParser.Parse(sourceBytes.AsMemory(), "test.cle", diagnostics);
         }
 
         /// <summary>
@@ -59,7 +59,7 @@ namespace Cle.Parser.UnitTests.SyntaxParserTests
             var sourceBytes = Encoding.UTF8.GetBytes(source);
             diagnostics = new TestingDiagnosticSink();
 
-            return new SyntaxParser(sourceBytes.AsMemory(), diagnostics);
+            return new SyntaxParser(sourceBytes.AsMemory(), "test.cle", diagnostics);
         }
     }
 }

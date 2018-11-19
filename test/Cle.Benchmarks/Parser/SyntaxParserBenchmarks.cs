@@ -18,7 +18,7 @@ namespace Cle.Benchmarks.Parser
         {
             var diagnostics = new BenchmarkDiagnosticsSink();
 
-            SyntaxParser.Parse(_source, diagnostics);
+            SyntaxParser.Parse(_source, "filename.cle", diagnostics);
 
             return diagnostics.DiagnosticCount;
         }

@@ -21,24 +21,27 @@ namespace Cle.SemanticAnalysis
         /// <summary>
         /// Verifies and creates type information for the method.
         /// Returns null if this fails, in which case diagnostics are also emitted.
+        /// The name is not checked for duplication in this method.
         /// </summary>
         /// <param name="syntax">The syntax tree for the method.</param>
+        /// <param name="definingFilename">The name of the file that contains the method.</param>
         /// <param name="declarationProvider">The type provider to use for resolving custom types.</param>
         /// <param name="diagnosticSink">The receiver for any semantic errors or warnings.</param>
         [CanBeNull]
         public static MethodDeclaration CompileDeclaration(
             [NotNull] FunctionSyntax syntax,
+            [NotNull] string definingFilename,
             [NotNull] IDeclarationProvider declarationProvider,
             [NotNull] IDiagnosticSink diagnosticSink)
         {
             // TODO: Proper type resolution with the declaration provider
             if (syntax.ReturnTypeName == "bool")
             {
-                return new MethodDeclaration(SimpleType.Bool);
+                return new MethodDeclaration(SimpleType.Bool, syntax.Visibility, definingFilename, syntax.Position);
             }
             else if (syntax.ReturnTypeName == "int32")
             {
-                return new MethodDeclaration(SimpleType.Int32);
+                return new MethodDeclaration(SimpleType.Int32, syntax.Visibility, definingFilename, syntax.Position);
             }
             else
             {
@@ -47,7 +50,6 @@ namespace Cle.SemanticAnalysis
             }
 
             // TODO: Resolve parameter types
-            // TODO: Verify that the name does not already exist
         }
 
         /// <summary>

@@ -2,6 +2,8 @@
 using System.Diagnostics;
 using Cle.Common;
 using Cle.Parser;
+using Cle.Parser.SyntaxTree;
+using Cle.SemanticAnalysis;
 using JetBrains.Annotations;
 
 namespace Cle.Compiler
@@ -34,12 +36,15 @@ namespace Cle.Compiler
 
             // Parse each module
             // TODO: Make this run in parallel
-            ParseModule(mainModule, compilation, sourceFileProvider);
+            ParseModule(mainModule, compilation, sourceFileProvider, out var syntaxTrees);
 
-            // TODO: Compile modules once they and their dependencies are parsed (if there were no parsing errors)
-            // This includes first adding type and method information to the compilation:
-            //   - First add user-defined types
-            //   - Then add methods with fully resolved parameter/return types
+            // TODO: Compile modules only once they and their dependencies are parsed (if there were no parsing errors)
+            // TODO: Make this parallel
+            if (!compilation.HasErrors)
+            {
+                AddDeclarationsForModule(mainModule, compilation, syntaxTrees);
+            }
+
             // After this, the module should be ready for semantic compilation in any order of methods
 
             // TODO: Run the optimizer if enabled
@@ -61,11 +66,14 @@ namespace Cle.Compiler
 
         /// <summary>
         /// Internal for testing only.
-        /// Parses a single module and adds the parsed syntax tree, diagnostics and type information to the compilation.
+        /// Parses a single module and returns the successfully parsed syntax trees.
+        /// Adds parsing diagnostics to the compilation.
         /// </summary>
         internal static void ParseModule([NotNull] string moduleName, [NotNull] Compilation compilation,
-            [NotNull] ISourceFileProvider fileProvider)
+            [NotNull] ISourceFileProvider fileProvider, [NotNull, ItemNotNull] out List<SourceFileSyntax> syntaxTrees)
         {
+            syntaxTrees = new List<SourceFileSyntax>();
+
             // Parse each source file
             if (!fileProvider.TryGetFilenamesForModule(moduleName, out var filesToParse))
             {
@@ -87,14 +95,52 @@ namespace Cle.Compiler
                 // TODO: Add caching for diagnostic sinks
                 var diagnosticSink = new SingleFileDiagnosticSink(moduleName, filename);
 
-                var syntaxTree = SyntaxParser.Parse(sourceBytes, diagnosticSink);
+                var syntaxTree = SyntaxParser.Parse(sourceBytes, filename, diagnosticSink);
+                if (syntaxTree != null)
+                {
+                    syntaxTrees.Add(syntaxTree);
+                }
+
                 allDiagnostics.AddRange(diagnosticSink.Diagnostics);
             }
 
             // Log diagnostics for all the files at once
             compilation.AddDiagnostics(allDiagnostics);
+        }
 
-            // TODO: Store the syntax trees somewhere for the semantic compiler to find (not Compilation?)
+        private static void AddDeclarationsForModule(
+            [NotNull] string moduleName,
+            [NotNull] Compilation compilation,
+            [NotNull, ItemNotNull] List<SourceFileSyntax> syntaxTrees)
+        {
+            // First, add type and method information to the compilation:
+            //   - TODO: First add user-defined types
+            //   - Then add methods with fully resolved parameter/return types
+            foreach (var sourceFile in syntaxTrees)
+            {
+                foreach (var methodSyntax in sourceFile.Functions)
+                {
+                    // TODO: Caching of diagnostic sinks
+                    var diagnosticSink = new SingleFileDiagnosticSink(moduleName, sourceFile.Filename);
+                    var decl = MethodCompiler.CompileDeclaration(methodSyntax, sourceFile.Filename, compilation,
+                        diagnosticSink);
+
+                    if (decl != null)
+                    {
+                        // Declaration is valid, but we still have to verify that the name is not taken
+                        if (!compilation.AddMethodDeclaration(methodSyntax.Name, sourceFile.Namespace, decl))
+                        {
+                            diagnosticSink.Add(DiagnosticCode.MethodAlreadyDefined, decl.DefinitionPosition,
+                                sourceFile.Namespace + "::" + methodSyntax.Name);
+                            compilation.AddDiagnostics(diagnosticSink.Diagnostics);
+                        }
+                    }
+                    else
+                    {
+                        compilation.AddDiagnostics(diagnosticSink.Diagnostics);
+                    }
+                }
+            }
         }
     }
 }

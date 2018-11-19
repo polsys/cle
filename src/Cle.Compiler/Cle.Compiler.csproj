@@ -13,6 +13,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Cle.Common\Cle.Common.csproj" />
     <ProjectReference Include="..\Cle.Parser\Cle.Parser.csproj" />
+    <ProjectReference Include="..\Cle.SemanticAnalysis\Cle.SemanticAnalysis.csproj" />
   </ItemGroup>
 
 </Project>

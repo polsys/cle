@@ -1,4 +1,4 @@
-﻿namespace Cle.Parser.SyntaxTree
+﻿namespace Cle.Common
 {
     /// <summary>
     /// Represents the visibility class of a function, type or member.
@@ -10,7 +10,7 @@
         /// </summary>
         Unknown,
         /// <summary>
-        /// The referenced object is only visible within the source file.
+        /// The referenced object is only visible within the defining source file.
         /// </summary>
         Private,
         /// <summary>

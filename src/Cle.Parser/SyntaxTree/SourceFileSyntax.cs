@@ -15,6 +15,12 @@ namespace Cle.Parser.SyntaxTree
         public string Namespace { get; }
 
         /// <summary>
+        /// Gets the source file name.
+        /// </summary>
+        [NotNull]
+        public string Filename { get; }
+
+        /// <summary>
         /// Gets the global functions declared in this source file.
         /// </summary>
         [NotNull]
@@ -23,9 +29,11 @@ namespace Cle.Parser.SyntaxTree
 
         public SourceFileSyntax(
             [NotNull] string namespaceName,
+            [NotNull] string filename,
             [NotNull, ItemNotNull] ImmutableList<FunctionSyntax> functions)
         {
             Namespace = namespaceName;
+            Filename = filename;
             Functions = functions;
         }
     }

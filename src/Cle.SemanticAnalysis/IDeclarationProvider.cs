@@ -1,4 +1,5 @@
-﻿using JetBrains.Annotations;
+﻿using System.Collections.Generic;
+using JetBrains.Annotations;
 
 namespace Cle.SemanticAnalysis
 {
@@ -8,11 +9,16 @@ namespace Cle.SemanticAnalysis
     public interface IDeclarationProvider
     {
         /// <summary>
-        /// Tries to get type information for the given method.
+        /// Returns a list of matching method declarations.
         /// </summary>
-        /// <param name="name">The name of the method without namespace.</param>
-        /// <param name="method">The type information for the method, if successful. Null otherwise.</param>
-        // TODO: Lists of usable namespaces and modules, extended result type (failure reasons)
-        bool GetMethod([NotNull] string name, [CanBeNull] out MethodDeclaration method);
+        /// <param name="methodName">The name of the method without namespace prefix.</param>
+        /// <param name="visibleNamespaces">Namespaces available for searching the method.</param>
+        /// <param name="sourceFile">The current source file, used for matching private methods.</param>
+        // TODO: Specifying visible modules
+        [NotNull, ItemNotNull]
+        IReadOnlyList<MethodDeclaration> GetMethodDeclarations(
+            [NotNull] string methodName,
+            [NotNull, ItemNotNull] IReadOnlyList<string> visibleNamespaces,
+            [NotNull] string sourceFile);
     }
 }

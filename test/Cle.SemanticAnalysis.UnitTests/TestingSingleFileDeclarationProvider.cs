@@ -11,10 +11,14 @@ namespace Cle.SemanticAnalysis.UnitTests
         /// Gets a mutable dictionary of methods indexed by name.
         /// </summary>
         public Dictionary<string, MethodDeclaration> Methods { get; } = new Dictionary<string, MethodDeclaration>();
-        
-        public bool GetMethod(string name, out MethodDeclaration method)
+
+        public IReadOnlyList<MethodDeclaration> GetMethodDeclarations(
+            string methodName, 
+            IReadOnlyList<string> visibleNamespaces,
+            string sourceFile)
         {
-            return Methods.TryGetValue(name, out method);
+            // Namespaces, bah
+            return Methods.TryGetValue(methodName, out var result) ? new [] { result } : new MethodDeclaration[] { };
         }
     }
 }

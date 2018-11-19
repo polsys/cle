@@ -73,6 +73,8 @@ namespace Cle.Frontend
                     return "Unspecified semantic error.";
                 case DiagnosticCode.TypeNotFound:
                     return $"Type {diagnostic.Actual} does not exist or is not visible in this file.";
+                case DiagnosticCode.MethodAlreadyDefined:
+                    return $"Method {diagnostic.Actual} is already defined in this scope.";
 
                 // Semantic warnings
                 case DiagnosticCode.SemanticWarningStart:

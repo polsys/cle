@@ -41,6 +41,7 @@
         SemanticErrorStart = 2000,
 
         TypeNotFound,
+        MethodAlreadyDefined,
 
         SemanticWarningStart = 2500,
 

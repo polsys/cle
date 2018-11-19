@@ -1,5 +1,7 @@
 ﻿using System.Collections.Generic;
+using System.Collections.Immutable;
 using Cle.Common;
+using Cle.SemanticAnalysis;
 using JetBrains.Annotations;
 
 namespace Cle.Compiler
@@ -9,7 +11,7 @@ namespace Cle.Compiler
     /// A single instance of this type may be used concurrently from multiple threads.
     /// This class handles synchronization unless otherwise noted.
     /// </summary>
-    internal class Compilation
+    internal class Compilation : IDeclarationProvider
     {
         /// <summary>
         /// Gets the list of diagnostics associated with this compilation.
@@ -18,10 +20,6 @@ namespace Cle.Compiler
         [NotNull]
         [ItemNotNull]
         public IReadOnlyList<Diagnostic> Diagnostics => _diagnostics;
-
-        [NotNull]
-        [ItemNotNull]
-        private readonly List<Diagnostic> _diagnostics = new List<Diagnostic>();
 
         /// <summary>
         /// Synchronization object for <see cref="Diagnostics"/>.
@@ -34,6 +32,22 @@ namespace Cle.Compiler
         /// This value may be updated concurrently in sync with <see cref="Diagnostics"/>.
         /// </summary>
         public bool HasErrors { get; private set; }
+
+        [NotNull]
+        [ItemNotNull]
+        private readonly List<Diagnostic> _diagnostics = new List<Diagnostic>();
+
+        /// <summary>
+        /// First level: namespace name.
+        /// Second level: method name.
+        /// Third level: list of methods with the name (because of private methods, may have more than one).
+        /// </summary>
+        [NotNull]
+        private readonly Dictionary<string, Dictionary<string, List<MethodDeclaration>>> _methodDeclarations =
+            new Dictionary<string, Dictionary<string, List<MethodDeclaration>>>();
+
+        [NotNull]
+        private readonly object _declarationLock = new object();
 
         /// <summary>
         /// Adds the given collection of diagnostics to <see cref="Diagnostics"/>.
@@ -81,6 +95,112 @@ namespace Cle.Compiler
                 _diagnostics.Add(new Diagnostic(DiagnosticCode.ModuleNotFound, default, null, moduleName, null));
                 HasErrors = true;
             }
+        }
+
+        /// <summary>
+        /// Adds the given method declaration to the compilation.
+        /// Returns false if the name is already visible.
+        /// This method may be called from multiple threads.
+        /// </summary>
+        /// <param name="methodName">The name of the method without namespace prefix.</param>
+        /// <param name="namespaceName">The namespace name.</param>
+        /// <param name="declaration">The method declaration to be associated with the full method name.</param>
+        // TODO: Modules
+        public bool AddMethodDeclaration(
+            [NotNull] string methodName, 
+            [NotNull] string namespaceName,
+            [NotNull] MethodDeclaration declaration)
+        {
+            // TODO: This imposes a performance penalty, especially as adds typically happen in a batch.
+            // TODO: Investigate when we have a realistic workload.
+            lock (_declarationLock)
+            {
+                // The declaration dictionary is indexed by namespace name
+                // TODO: Add a separate method for creating namespaces, then call that as part of pre-semantic analysis step
+                // TODO: That way, we can assert that all namespace references are valid
+                if (!_methodDeclarations.ContainsKey(namespaceName))
+                {
+                    _methodDeclarations.Add(namespaceName, new Dictionary<string, List<MethodDeclaration>>());
+                }
+
+                var nameMethodDict = _methodDeclarations[namespaceName];
+
+                // Then the value is a dictionary of (method name, list of methods) pairs
+                // TODO: Do we need to support overloading?
+                if (nameMethodDict.TryGetValue(methodName, out var declarations))
+                {
+                    // We know that there are existing methods with the same name (private or not)
+                    // If we're adding a non-private method, fail because the name would become ambiguous
+                    if (declaration.Visibility != Visibility.Private)
+                        return false;
+
+                    // Now we know that the declaration is private
+                    // If the name is used in the same file, or used for a non-private method, fail
+                    foreach (var possibleConflict in declarations)
+                    {
+                        if (possibleConflict.Visibility != Visibility.Private ||
+                            possibleConflict.DefiningFilename == declaration.DefiningFilename)
+                            return false;
+                    }
+
+                    declarations.Add(declaration);
+                    return true;
+                }
+                else
+                {
+                    // Use initial capacity of 1 because that's the common case
+                    nameMethodDict.Add(methodName, new List<MethodDeclaration>(1) { declaration });
+                    return true;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Returns a list of matching method declarations.
+        /// This method may be called from multiple threads.
+        /// </summary>
+        /// <param name="methodName">The name of the method without namespace prefix.</param>
+        /// <param name="visibleNamespaces">Namespaces available for searching the method.</param>
+        /// <param name="sourceFile">The current source file, used for matching private methods.</param>
+        // TODO: Modules
+        [NotNull, ItemNotNull]
+        public IReadOnlyList<MethodDeclaration> GetMethodDeclarations(
+            [NotNull] string methodName,
+            [NotNull, ItemNotNull] IReadOnlyList<string> visibleNamespaces,
+            [NotNull] string sourceFile)
+        {
+            var matchingMethods = ImmutableList<MethodDeclaration>.Empty;
+
+            // TODO: Locking becomes unnecessary once no new methods are being added
+            lock (_declarationLock)
+            {
+                // Go through all the namespace candidates and get matching methods
+                foreach (var namespaceName in visibleNamespaces)
+                {
+                    // This should not happen as the language disallows referencing nonexistent namespaces
+                    // TODO: Implement the said check and then change this to throw
+                    // TODO: There is currently a test for this case; it should be removed as part of this
+                    if (!_methodDeclarations.TryGetValue(namespaceName, out var methodDict))
+                    {
+                        continue;
+                    }
+
+                    // Go through the list of matching methods and add those that are visible (should be just one)
+                    // TODO: Overloading?
+                    if (methodDict.TryGetValue(methodName, out var declarations))
+                    {
+                        foreach (var decl in declarations)
+                        {
+                            if (decl.Visibility == Visibility.Private && decl.DefiningFilename != sourceFile)
+                                continue;
+
+                            matchingMethods = matchingMethods.Add(decl);
+                        }
+                    }
+                }
+            }
+
+            return matchingMethods;
         }
     }
 }
