@@ -11,6 +11,22 @@ namespace Cle.SemanticAnalysis
         private const string Indent = "    ";
 
         /// <summary>
+        /// Writes the type information and disassembled basic blocks of the method to the output string builder.
+        /// </summary>
+        public static void Disassemble([NotNull] CompiledMethod method, [NotNull] StringBuilder outputBuilder)
+        {
+            // Write the types and initial values of locals
+            for (var i = 0; i < method.Values.Count; i++)
+            {
+                var local = method.Values[i];
+                outputBuilder.AppendLine($"; #{i,-3} {local.Type.TypeName} = {local.InitialValue}");
+            }
+
+            // Then write the basic block graph
+            DisassembleBody(method, outputBuilder);
+        }
+
+        /// <summary>
         /// Writes the disassembled basic blocks of the method to the output string builder.
         /// </summary>
         public static void DisassembleBody([NotNull] CompiledMethod method, [NotNull] StringBuilder outputBuilder)

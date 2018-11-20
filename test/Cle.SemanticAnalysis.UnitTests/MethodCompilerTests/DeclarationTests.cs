@@ -5,9 +5,9 @@ using Cle.Parser.SyntaxTree;
 using Cle.UnitTests.Common;
 using NUnit.Framework;
 
-namespace Cle.SemanticAnalysis.UnitTests
+namespace Cle.SemanticAnalysis.UnitTests.MethodCompilerTests
 {
-    public class MethodCompilerTests
+    public class DeclarationTests
     {
         [Test]
         public void CompileDeclaration_parameterless_bool_method_succeeds()

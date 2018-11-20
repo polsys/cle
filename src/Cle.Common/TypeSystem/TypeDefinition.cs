@@ -9,6 +9,11 @@ namespace Cle.Common.TypeSystem
     /// </summary>
     public abstract class TypeDefinition : IEquatable<TypeDefinition>
     {
+        /// <summary>
+        /// Gets the fully qualified name of this type.
+        /// </summary>
+        public abstract string TypeName { get; }
+
         public abstract bool Equals(TypeDefinition other);
         public abstract override bool Equals(object obj);
         public abstract override int GetHashCode();

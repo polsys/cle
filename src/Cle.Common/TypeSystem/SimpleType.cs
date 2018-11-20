@@ -24,6 +24,20 @@ namespace Cle.Common.TypeSystem
             return _typeId == other?._typeId;
         }
 
+        public override string TypeName
+        {
+            get
+            {
+                switch (_typeId)
+                {
+                    case SimpleTypeId.Bool: return "bool";
+                    case SimpleTypeId.Int32: return "int32";
+                    case SimpleTypeId.Void: return "void";
+                    default: throw new NotImplementedException("Unimplemented simple type");
+                }
+            }
+        }
+
         public override bool Equals(TypeDefinition other)
         {
             return other is SimpleType simpleType && Equals(simpleType);
