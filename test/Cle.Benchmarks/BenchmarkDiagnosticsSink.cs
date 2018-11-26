@@ -15,5 +15,10 @@ namespace Cle.Benchmarks
         {
             DiagnosticCount++;
         }
+
+        public void Add(DiagnosticCode code, TextPosition position, string actual, string expected)
+        {
+            DiagnosticCount++;
+        }
     }
 }

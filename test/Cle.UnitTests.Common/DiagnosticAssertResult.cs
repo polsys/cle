@@ -37,5 +37,16 @@ namespace Cle.UnitTests.Common
 
             return this;
         }
+
+        /// <summary>
+        /// Asserts that <see cref="Diagnostic.Expected"/> for this diagnostic
+        /// is equal to <paramref name="expectedExpected"/>.
+        /// </summary>
+        public DiagnosticAssertResult WithExpected([CanBeNull] string expectedExpected)
+        {
+            Assert.That(_diagnostic.Expected, Is.EqualTo(expectedExpected));
+
+            return this;
+        }
     }
 }

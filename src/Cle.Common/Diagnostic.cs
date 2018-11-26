@@ -20,6 +20,13 @@ namespace Cle.Common
         public string Actual { get; }
 
         /// <summary>
+        /// The content of this value depends on the diagnostic code.
+        /// This may be null.
+        /// </summary>
+        [CanBeNull]
+        public string Expected { get; }
+
+        /// <summary>
         /// Gets whether the diagnostic code is classified as an error or not.
         /// </summary>
         public bool IsError =>
@@ -52,15 +59,17 @@ namespace Cle.Common
         /// <param name="filename">The source file name.</param>
         /// <param name="moduleName">The module name.</param>
         /// <param name="actual">Optional actual value encountered.</param>
+        /// <param name="expected">Optional expected value.</param>
         public Diagnostic(DiagnosticCode code, TextPosition position,
             [CanBeNull] string filename, [NotNull] string moduleName,
-            [CanBeNull] string actual)
+            [CanBeNull] string actual, [CanBeNull] string expected)
         {
             Code = code;
             Position = position;
             Filename = filename;
             Module = moduleName;
             Actual = actual;
+            Expected = expected;
         }
 
         public override string ToString()

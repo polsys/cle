@@ -43,6 +43,8 @@
         TypeNotFound,
         MethodAlreadyDefined,
 
+        TypeMismatch,
+
         SemanticWarningStart = 2500,
 
         BackendErrorStart = 3000,

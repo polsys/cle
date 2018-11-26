@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Cle.Common;
 using JetBrains.Annotations;
 
@@ -33,12 +32,17 @@ namespace Cle.Compiler
 
         public void Add(DiagnosticCode code, TextPosition position)
         {
-            _diagnostics.Add(new Diagnostic(code, position, _filename, _moduleName, null));
+            _diagnostics.Add(new Diagnostic(code, position, _filename, _moduleName, null, null));
         }
 
         public void Add(DiagnosticCode code, TextPosition position, string actual)
         {
-            _diagnostics.Add(new Diagnostic(code, position, _filename, _moduleName, actual));
+            _diagnostics.Add(new Diagnostic(code, position, _filename, _moduleName, actual, null));
+        }
+
+        public void Add(DiagnosticCode code, TextPosition position, string actual, string expected)
+        {
+            _diagnostics.Add(new Diagnostic(code, position, _filename, _moduleName, actual, expected));
         }
     }
 }

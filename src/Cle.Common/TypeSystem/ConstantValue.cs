@@ -49,9 +49,17 @@ namespace Cle.Common.TypeSystem
         /// <summary>
         /// Creates a new signed integer constant with the specified value.
         /// </summary>
-        public static ConstantValue SignedInteger(int value)
+        public static ConstantValue SignedInteger(long value)
         {
             return new ConstantValue(ConstantType.SignedInteger, (ulong)value);
+        }
+
+        /// <summary>
+        /// Creates a new void constant.
+        /// </summary>
+        public static ConstantValue Void()
+        {
+            return new ConstantValue(ConstantType.Void, 0);
         }
 
         private ConstantValue(ConstantType type, ulong data)
@@ -82,6 +90,8 @@ namespace Cle.Common.TypeSystem
         {
             switch (Type)
             {
+                case ConstantType.Void:
+                    return "void";
                 case ConstantType.Boolean:
                     return _data == 1 ? "true" : "false";
                 case ConstantType.SignedInteger:
@@ -109,6 +119,7 @@ namespace Cle.Common.TypeSystem
     public enum ConstantType
     {
         Invalid,
+        Void,
         Boolean,
         SignedInteger
     }

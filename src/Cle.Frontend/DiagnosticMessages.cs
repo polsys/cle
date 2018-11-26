@@ -75,6 +75,8 @@ namespace Cle.Frontend
                     return $"Type {diagnostic.Actual} does not exist or is not visible in this file.";
                 case DiagnosticCode.MethodAlreadyDefined:
                     return $"Method {diagnostic.Actual} is already defined in this scope.";
+                case DiagnosticCode.TypeMismatch:
+                    return $"Expression is of type {diagnostic.Actual} but expected {diagnostic.Expected}.";
 
                 // Semantic warnings
                 case DiagnosticCode.SemanticWarningStart:

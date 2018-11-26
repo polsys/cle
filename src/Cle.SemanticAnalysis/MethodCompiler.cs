@@ -52,6 +52,10 @@ namespace Cle.SemanticAnalysis
             {
                 return new MethodDeclaration(SimpleType.Int32, syntax.Visibility, definingFilename, syntax.Position);
             }
+            else if (syntax.ReturnTypeName == "void")
+            {
+                return new MethodDeclaration(SimpleType.Void, syntax.Visibility, definingFilename, syntax.Position);
+            }
             else
             {
                 diagnosticSink.Add(DiagnosticCode.TypeNotFound, syntax.Position, syntax.ReturnTypeName);
@@ -115,7 +119,10 @@ namespace Cle.SemanticAnalysis
 
             // Compile the body
             var graphBuilder = new BasicBlockGraphBuilder();
-            TryCompileBlock(_syntaxTree.Block, graphBuilder.GetInitialBlockBuilder());
+            if (!TryCompileBlock(_syntaxTree.Block, graphBuilder.GetInitialBlockBuilder()))
+            {
+                return null;
+            }
 
             // TODO: Assert that the method really returns
 
@@ -131,7 +138,8 @@ namespace Cle.SemanticAnalysis
                 switch (statement)
                 {
                     case ReturnStatementSyntax returnSyntax:
-                        TryCompileReturn(returnSyntax, builder);
+                        if (!TryCompileReturn(returnSyntax, builder))
+                            return false;
                         break;
                     default:
                         throw new NotImplementedException("Unimplemented statement type");
@@ -143,11 +151,39 @@ namespace Cle.SemanticAnalysis
 
         private bool TryCompileReturn([NotNull] ReturnStatementSyntax syntax, [NotNull] BasicBlockBuilder builder)
         {
-            // TODO: This throws for anything other than valid boolean literals
+            Debug.Assert(_methodInProgress != null);
+            Debug.Assert(_declaration != null);
+            
             // TODO: Implement proper expression compilation
-            // TODO: Implement return type checking
-            var returnValueNumber = _methodInProgress.AddTemporary(SimpleType.Bool,
-                ConstantValue.Bool(((BooleanLiteralSyntax)syntax.ResultExpression).Value));
+            int returnValueNumber;
+            SimpleType returnValueType;
+            switch (syntax.ResultExpression)
+            {
+                case BooleanLiteralSyntax boolean:
+                    returnValueType = SimpleType.Bool;
+                    returnValueNumber = _methodInProgress.AddTemporary(SimpleType.Bool, ConstantValue.Bool(boolean.Value));
+                    break;
+                case IntegerLiteralSyntax integer:
+                    returnValueType = SimpleType.Int32;
+                    // TODO: Proper handling of integers - the value may be unsigned
+                    returnValueNumber =
+                        _methodInProgress.AddTemporary(SimpleType.Int32, ConstantValue.SignedInteger((long)integer.Value));
+                    break;
+                case null:
+                    // TODO: Properly test this case
+                    returnValueType = SimpleType.Void;
+                    returnValueNumber = _methodInProgress.AddTemporary(SimpleType.Void, ConstantValue.Void());
+                    break;
+                default:
+                    throw new NotImplementedException();
+            }
+
+            if (!returnValueType.Equals(_declaration.ReturnType))
+            {
+                _diagnostics.Add(DiagnosticCode.TypeMismatch, syntax.ResultExpression.Position,
+                    returnValueType.TypeName, _declaration.ReturnType.TypeName);
+                return false;
+            }
 
             builder.AppendInstruction(Opcode.Return, returnValueNumber, 0, 0);
             return true;

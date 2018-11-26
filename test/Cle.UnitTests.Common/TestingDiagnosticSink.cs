@@ -18,14 +18,21 @@ namespace Cle.UnitTests.Common
 
         public void Add(DiagnosticCode code, TextPosition position)
         {
-            var diagnostic = new Diagnostic(code, position, string.Empty, string.Empty, null);
+            var diagnostic = new Diagnostic(code, position, string.Empty, string.Empty, null, null);
 
             _diagnostics.Add(diagnostic);
         }
 
         public void Add(DiagnosticCode code, TextPosition position, string actual)
         {
-            var diagnostic = new Diagnostic(code, position, string.Empty, string.Empty, actual);
+            var diagnostic = new Diagnostic(code, position, string.Empty, string.Empty, actual, null);
+
+            _diagnostics.Add(diagnostic);
+        }
+
+        public void Add(DiagnosticCode code, TextPosition position, string actual, string expected)
+        {
+            var diagnostic = new Diagnostic(code, position, string.Empty, string.Empty, actual, expected);
 
             _diagnostics.Add(diagnostic);
         }
