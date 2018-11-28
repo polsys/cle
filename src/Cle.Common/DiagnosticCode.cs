@@ -44,6 +44,7 @@
         MethodAlreadyDefined,
 
         TypeMismatch,
+        IntegerLiteralOutOfBounds,
 
         SemanticWarningStart = 2500,
 

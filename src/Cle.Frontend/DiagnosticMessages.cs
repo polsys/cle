@@ -77,6 +77,8 @@ namespace Cle.Frontend
                     return $"Method {diagnostic.Actual} is already defined in this scope.";
                 case DiagnosticCode.TypeMismatch:
                     return $"Expression is of type {diagnostic.Actual} but expected {diagnostic.Expected}.";
+                case DiagnosticCode.IntegerLiteralOutOfBounds:
+                    return $"Integer literal {diagnostic.Actual} cannot be represented in {diagnostic.Expected}.";
 
                 // Semantic warnings
                 case DiagnosticCode.SemanticWarningStart:

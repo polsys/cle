@@ -65,9 +65,34 @@ public bool Mismatch() { return 42; }";
                 .WithActual("int32")
                 .WithExpected("bool");
         }
+
+        [Test]
+        public void Return_type_is_validated_in_void_return_within_non_void()
+        {
+            const string source = @"namespace Test;
+public bool Mismatch() { return; }";
+            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+
+            Assert.That(compiledMethod, Is.Null);
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.TypeMismatch, 2, 25)
+                .WithActual("void")
+                .WithExpected("bool");
+        }
+
+        [Test]
+        public void Return_type_is_validated_in_non_void_return_within_void()
+        {
+            const string source = @"namespace Test;
+public void Mismatch() { return true; }";
+            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+
+            Assert.That(compiledMethod, Is.Null);
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.TypeMismatch, 2, 32)
+                .WithActual("bool")
+                .WithExpected("void");
+        }
         
         // TODO: Return guarantee and dead code warning (in separate test class)
         // TODO: Int32 expression return
-        // TODO: Integer that does not fit in int32
     }
 }

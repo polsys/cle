@@ -153,37 +153,31 @@ namespace Cle.SemanticAnalysis
         {
             Debug.Assert(_methodInProgress != null);
             Debug.Assert(_declaration != null);
-            
-            // TODO: Implement proper expression compilation
-            int returnValueNumber;
-            SimpleType returnValueType;
-            switch (syntax.ResultExpression)
-            {
-                case BooleanLiteralSyntax boolean:
-                    returnValueType = SimpleType.Bool;
-                    returnValueNumber = _methodInProgress.AddTemporary(SimpleType.Bool, ConstantValue.Bool(boolean.Value));
-                    break;
-                case IntegerLiteralSyntax integer:
-                    returnValueType = SimpleType.Int32;
-                    // TODO: Proper handling of integers - the value may be unsigned
-                    returnValueNumber =
-                        _methodInProgress.AddTemporary(SimpleType.Int32, ConstantValue.SignedInteger((long)integer.Value));
-                    break;
-                case null:
-                    // TODO: Properly test this case
-                    returnValueType = SimpleType.Void;
-                    returnValueNumber = _methodInProgress.AddTemporary(SimpleType.Void, ConstantValue.Void());
-                    break;
-                default:
-                    throw new NotImplementedException();
-            }
 
-            if (!returnValueType.Equals(_declaration.ReturnType))
+            var returnValueNumber = -1; // ExpressionCompiler returns -1 on failure
+            if (syntax.ResultExpression is null)
             {
-                _diagnostics.Add(DiagnosticCode.TypeMismatch, syntax.ResultExpression.Position,
-                    returnValueType.TypeName, _declaration.ReturnType.TypeName);
-                return false;
+                // Void return: verify that the method really returns void, then add a void local to return
+                if (_declaration.ReturnType.Equals(SimpleType.Void))
+                {
+                    returnValueNumber = _methodInProgress.AddTemporary(SimpleType.Void, ConstantValue.Void());
+                }
+                else
+                {
+                    _diagnostics.Add(DiagnosticCode.TypeMismatch, syntax.Position, 
+                        SimpleType.Void.TypeName, _declaration.ReturnType.TypeName);
+                }
             }
+            else
+            {
+                // Non-void return: parse the expression, verifying the type
+                returnValueNumber = ExpressionCompiler.TryCompileExpression(syntax.ResultExpression,
+                    _declaration.ReturnType, _methodInProgress, builder, _diagnostics);
+            }
+            
+            // At this point, a diagnostic should already be logged
+            if (returnValueNumber == -1)
+                return false;
 
             builder.AppendInstruction(Opcode.Return, returnValueNumber, 0, 0);
             return true;
