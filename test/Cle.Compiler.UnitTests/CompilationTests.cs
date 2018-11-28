@@ -27,8 +27,8 @@ namespace Cle.Compiler.UnitTests
 
             compilation.AddDiagnostics(new[]
             {
-                new Diagnostic(DiagnosticCode.ExpectedSemicolon, default, "", "", null),
-                new Diagnostic(DiagnosticCode.ExpectedMethodBody, default, "", "", null)
+                new Diagnostic(DiagnosticCode.ExpectedSemicolon, default, "", "", null, null),
+                new Diagnostic(DiagnosticCode.ExpectedMethodBody, default, "", "", null, null)
             });
 
             Assert.That(compilation.HasErrors, Is.True);
@@ -42,7 +42,7 @@ namespace Cle.Compiler.UnitTests
 
             // TODO: This could be changed once real warnings exist in the codebase
             compilation.AddDiagnostics(new[]
-                { new Diagnostic(DiagnosticCode.SemanticWarningStart, default, "", "", null) });
+                { new Diagnostic(DiagnosticCode.SemanticWarningStart, default, "", "", null, null) });
 
             Assert.That(compilation.HasErrors, Is.False);
             Assert.That(compilation.Diagnostics, Has.Exactly(1).Items);

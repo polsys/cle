@@ -78,7 +78,8 @@ namespace Cle.Compiler
         {
             lock (DiagnosticsLock)
             {
-                _diagnostics.Add(new Diagnostic(DiagnosticCode.SourceFileNotFound, default, filename, moduleName, null));
+                _diagnostics.Add(new Diagnostic(DiagnosticCode.SourceFileNotFound, default, 
+                    filename, moduleName, null, null));
                 HasErrors = true;
             }
         }
@@ -92,7 +93,8 @@ namespace Cle.Compiler
         {
             lock (DiagnosticsLock)
             {
-                _diagnostics.Add(new Diagnostic(DiagnosticCode.ModuleNotFound, default, null, moduleName, null));
+                _diagnostics.Add(new Diagnostic(DiagnosticCode.ModuleNotFound, default, 
+                    null, moduleName, null, null));
                 HasErrors = true;
             }
         }
