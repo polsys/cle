@@ -1,3 +1,4 @@
+using Cle.SemanticAnalysis.IR;
 using NUnit.Framework;
 
 namespace Cle.SemanticAnalysis.UnitTests

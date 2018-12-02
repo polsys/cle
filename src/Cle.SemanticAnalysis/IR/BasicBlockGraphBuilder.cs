@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using JetBrains.Annotations;
 
-namespace Cle.SemanticAnalysis
+namespace Cle.SemanticAnalysis.IR
 {
     /// <summary>
     /// A mutable builder for <see cref="BasicBlockGraph"/> instances.

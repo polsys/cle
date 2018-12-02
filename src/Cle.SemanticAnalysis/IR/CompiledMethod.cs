@@ -2,7 +2,7 @@
 using Cle.Common.TypeSystem;
 using JetBrains.Annotations;
 
-namespace Cle.SemanticAnalysis
+namespace Cle.SemanticAnalysis.IR
 {
     /// <summary>
     /// Represents a method that has passed semantic analysis and can be emitted.

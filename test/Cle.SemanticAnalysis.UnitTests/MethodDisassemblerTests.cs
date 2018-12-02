@@ -1,5 +1,6 @@
 using System.Text;
 using Cle.Common.TypeSystem;
+using Cle.SemanticAnalysis.IR;
 using NUnit.Framework;
 
 namespace Cle.SemanticAnalysis.UnitTests

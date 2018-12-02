@@ -2,7 +2,7 @@
 using System.Collections.Immutable;
 using JetBrains.Annotations;
 
-namespace Cle.SemanticAnalysis
+namespace Cle.SemanticAnalysis.IR
 {
     /// <summary>
     /// A builder for <see cref="BasicBlock"/> instances.

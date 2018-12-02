@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Cle.SemanticAnalysis
+namespace Cle.SemanticAnalysis.IR
 {
     /// <summary>
     /// A single intermediate representation (IR) instruction with operation code and three operands

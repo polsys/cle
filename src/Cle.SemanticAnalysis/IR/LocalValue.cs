@@ -1,6 +1,6 @@
 ﻿using Cle.Common.TypeSystem;
 
-namespace Cle.SemanticAnalysis
+namespace Cle.SemanticAnalysis.IR
 {
     /// <summary>
     /// Represents a variable, temporary or constant local to a method.

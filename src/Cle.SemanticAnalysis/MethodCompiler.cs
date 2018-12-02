@@ -3,6 +3,7 @@ using System.Diagnostics;
 using Cle.Common;
 using Cle.Common.TypeSystem;
 using Cle.Parser.SyntaxTree;
+using Cle.SemanticAnalysis.IR;
 using JetBrains.Annotations;
 
 namespace Cle.SemanticAnalysis

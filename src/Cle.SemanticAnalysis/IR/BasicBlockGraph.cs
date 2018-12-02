@@ -1,7 +1,7 @@
 ﻿using System.Collections.Immutable;
 using JetBrains.Annotations;
 
-namespace Cle.SemanticAnalysis
+namespace Cle.SemanticAnalysis.IR
 {
     /// <summary>
     /// An immutable graph of basic blocks.
