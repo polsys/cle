@@ -21,23 +21,25 @@ namespace Cle.Parser.SyntaxTree
         public BlockSyntax ThenBlockSyntax { get; }
 
         /// <summary>
-        /// Gets the block that will be executed when the condition is false.
-        /// If there is no 'else' block, this will be null.
-        /// 'Else if' is represented as an 'if' statement within this block.
+        /// Gets what will be executed when the condition if false.
+        /// The type of this depends on the kind of 'else':
+        ///  - null, if there is no 'else' block,
+        ///  - BlockSyntax, if there is an 'else' block,
+        ///  - IfStatementSyntax, if there is an 'else if' statement.
         /// </summary>
         [CanBeNull]
-        public BlockSyntax ElseBlockSyntax { get; }
+        public StatementSyntax ElseSyntax { get; }
 
         public IfStatementSyntax(
             [NotNull] ExpressionSyntax condition,
             [NotNull] BlockSyntax thenBlock,
-            [CanBeNull] BlockSyntax elseBlock,
+            [CanBeNull] StatementSyntax elseSyntax,
             TextPosition position)
             : base(position)
         {
             ConditionSyntax = condition;
             ThenBlockSyntax = thenBlock;
-            ElseBlockSyntax = elseBlock;
+            ElseSyntax = elseSyntax;
         }
     }
 }

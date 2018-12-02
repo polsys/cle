@@ -24,8 +24,9 @@ private void Function()
             Assert.That(((BooleanLiteralSyntax)statement.ConditionSyntax).Value, Is.True);
             Assert.That(statement.ThenBlockSyntax, Is.Not.Null);
             Assert.That(statement.ThenBlockSyntax.Statements, Is.Empty);
-            Assert.That(statement.ElseBlockSyntax, Is.Not.Null);
-            Assert.That(statement.ElseBlockSyntax.Statements, Is.Empty);
+            Assert.That(statement.ElseSyntax, Is.Not.Null);
+            Assert.That(statement.ElseSyntax, Is.InstanceOf<BlockSyntax>());
+            Assert.That(((BlockSyntax)statement.ElseSyntax).Statements, Is.Empty);
         }
 
         [Test]
@@ -46,8 +47,9 @@ private void Function()
             Assert.That(((BooleanLiteralSyntax)statement.ConditionSyntax).Value, Is.True);
             Assert.That(statement.ThenBlockSyntax, Is.Not.Null);
             Assert.That(statement.ThenBlockSyntax.Statements, Has.Exactly(1).Items);
-            Assert.That(statement.ElseBlockSyntax, Is.Not.Null);
-            Assert.That(statement.ElseBlockSyntax.Statements, Has.Exactly(2).Items);
+            Assert.That(statement.ElseSyntax, Is.Not.Null);
+            Assert.That(statement.ElseSyntax, Is.InstanceOf<BlockSyntax>());
+            Assert.That(((BlockSyntax)statement.ElseSyntax).Statements, Has.Exactly(2).Items);
         }
 
         [Test]
@@ -68,7 +70,7 @@ private void Function()
             Assert.That(((BooleanLiteralSyntax)statement.ConditionSyntax).Value, Is.True);
             Assert.That(statement.ThenBlockSyntax, Is.Not.Null);
             Assert.That(statement.ThenBlockSyntax.Statements, Is.Empty);
-            Assert.That(statement.ElseBlockSyntax, Is.Null);
+            Assert.That(statement.ElseSyntax, Is.Null);
         }
 
         [Test]
@@ -89,17 +91,17 @@ private void Function()
             Assert.That(((BooleanLiteralSyntax)statement.ConditionSyntax).Value, Is.True);
             Assert.That(statement.ThenBlockSyntax, Is.Not.Null);
             Assert.That(statement.ThenBlockSyntax.Statements, Is.Empty);
-            Assert.That(statement.ElseBlockSyntax, Is.Not.Null);
-            Assert.That(statement.ElseBlockSyntax.Statements, Has.Exactly(1).Items);
-            Assert.That(statement.ElseBlockSyntax.Statements[0], Is.InstanceOf<IfStatementSyntax>());
+            Assert.That(statement.ElseSyntax, Is.Not.Null);
+            Assert.That(statement.ElseSyntax, Is.InstanceOf<IfStatementSyntax>());
 
-            var elseStatement = (IfStatementSyntax)statement.ElseBlockSyntax.Statements[0];
+            var elseStatement = (IfStatementSyntax)statement.ElseSyntax;
             Assert.That(elseStatement.ConditionSyntax, Is.InstanceOf<BooleanLiteralSyntax>());
             Assert.That(((BooleanLiteralSyntax)elseStatement.ConditionSyntax).Value, Is.False);
             Assert.That(elseStatement.ThenBlockSyntax, Is.Not.Null);
             Assert.That(elseStatement.ThenBlockSyntax.Statements, Is.Empty);
-            Assert.That(elseStatement.ElseBlockSyntax, Is.Not.Null);
-            Assert.That(elseStatement.ElseBlockSyntax.Statements, Is.Empty);
+            Assert.That(elseStatement.ElseSyntax, Is.Not.Null);
+            Assert.That(elseStatement.ElseSyntax, Is.InstanceOf<BlockSyntax>());
+            Assert.That(((BlockSyntax)elseStatement.ElseSyntax).Statements, Is.Empty);
         }
 
         [Test]

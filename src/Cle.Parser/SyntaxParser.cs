@@ -292,7 +292,7 @@ namespace Cle.Parser
 
             // There are two cases:
             //   - plain unconditional else with a block (again, no single statements)
-            //   - 'else if' where we wrap the 'if' part in a block of its own
+            //   - 'else if' where we recurse into another 'if'
             if (_lexer.PeekTokenType() == TokenType.OpenBrace)
             {
                 if (!TryParseBlock(out var elseBlock))
@@ -306,15 +306,13 @@ namespace Cle.Parser
             }
             else if (_lexer.PeekTokenType() == TokenType.If)
             {
-                var elseIfPosition = _lexer.Position;
                 if (!TryParseIf(out var elseIf))
                 {
                     return false;
                 }
                 Debug.Assert(elseIf != null);
-
-                var elseBlock = new BlockSyntax(ImmutableList<StatementSyntax>.Empty.Add(elseIf), elseIfPosition);
-                ifStatement = new IfStatementSyntax(condition, thenBlock, elseBlock, startPosition);
+                
+                ifStatement = new IfStatementSyntax(condition, thenBlock, elseIf, startPosition);
                 return true;
             }
             else
