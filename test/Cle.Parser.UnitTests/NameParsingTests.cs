@@ -67,5 +67,21 @@ namespace Cle.Parser.UnitTests
         {
             Assert.That(NameParsing.IsValidFullName(name), Is.False);
         }
+
+        [TestCase("int32")]
+        [TestCase("bool")]
+        [TestCase("void")]
+        public void IsReservedTypeName_true(string name)
+        {
+            Assert.That(NameParsing.IsReservedTypeName(name), Is.True);
+        }
+
+        [TestCase("Int32")]
+        [TestCase("MyTypes::int32")]
+        [TestCase("_int32")]
+        public void IsReservedTypeName_false(string name)
+        {
+            Assert.That(NameParsing.IsReservedTypeName(name), Is.False);
+        }
     }
 }

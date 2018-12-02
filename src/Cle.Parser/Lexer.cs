@@ -229,6 +229,8 @@ namespace Cle.Parser
                         return TokenType.Minus;
                     case (byte)'*':
                         return TokenType.Asterisk;
+                    case (byte)'=':
+                        return TokenType.Equals;
                     case (byte)'/':
                         return TokenType.ForwardSlash;
                     case (byte)';':

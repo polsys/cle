@@ -15,7 +15,7 @@ namespace Cle.Parser
     public class SyntaxParser
     {
         [NotNull] private readonly Lexer _lexer;
-        [NotNull] private string _filename;
+        [NotNull] private readonly string _filename;
         [NotNull] private readonly IDiagnosticSink _diagnosticSink;
 
         /// <summary>
@@ -232,6 +232,16 @@ namespace Cle.Parser
                         {
                             return false;
                         }
+                    case TokenType.Identifier:
+                        if (TryParseStatementStartingWithIdentifier(out var statement))
+                        {
+                            statementList.Add(statement);
+                            break;
+                        }
+                        else
+                        {
+                            return false;
+                        }
                     case TokenType.EndOfFile:
                         _diagnosticSink.Add(DiagnosticCode.ExpectedClosingBrace, _lexer.Position, ReadTokenIntoString());
                         return false;
@@ -350,6 +360,65 @@ namespace Cle.Parser
             }
 
             returnStatement = new ReturnStatementSyntax(expression, startPosition);
+            return true;
+        }
+
+        private bool TryParseStatementStartingWithIdentifier(out StatementSyntax statement)
+        {
+            // This method handles
+            //   - variable declarations ("int32 name = expression;")
+            //   - assignments ("name = expression;") (TODO)
+            //   - standalone method calls ("name(...);") (TODO)
+            statement = null;
+
+            // Read the first identifier
+            var startPosition = _lexer.Position;
+            Debug.Assert(_lexer.PeekTokenType() == TokenType.Identifier);
+            var firstIdentifier = ReadTokenIntoString();
+
+            // Depending on the next token, decide what to do
+            switch (_lexer.PeekTokenType())
+            {
+                case TokenType.Identifier:
+                    var variableName = ReadTokenIntoString();
+
+                    // Validate the type name
+                    if (!NameParsing.IsValidFullName(firstIdentifier))
+                    {
+                        _diagnosticSink.Add(DiagnosticCode.InvalidTypeName, startPosition, firstIdentifier);
+                        return false;
+                    }
+
+                    // Validate the variable name (the latter check disallows 'int32 int32 = 0;')
+                    if (!NameParsing.IsValidSimpleName(variableName) || NameParsing.IsReservedTypeName(variableName))
+                    {
+                        _diagnosticSink.Add(DiagnosticCode.InvalidVariableName, _lexer.LastPosition, variableName);
+                        return false;
+                    }
+
+                    // Read the initial value (both = and the expression)
+                    if (!ExpectToken(TokenType.Equals, DiagnosticCode.ExpectedInitialValue) ||
+                        !TryParseExpression(out var initialValue))
+                    {
+                        return false;
+                    }
+                    Debug.Assert(initialValue != null);
+
+                    // The statement is valid, just check for the semicolon before returning
+                    statement = new VariableDeclarationSyntax(firstIdentifier, variableName, initialValue, startPosition);
+                    break;
+
+                default:
+                    // Note: the diagnostic is intentionally emitted at expected statement start position
+                    _diagnosticSink.Add(DiagnosticCode.ExpectedStatement, startPosition, ReadTokenIntoString());
+                    return false;
+            }
+
+            // This check is shared by all valid cases of the above switch
+            if (!ExpectToken(TokenType.Semicolon, DiagnosticCode.ExpectedSemicolon))
+            {
+                return false;
+            }
             return true;
         }
 

@@ -122,6 +122,16 @@ namespace Cle.Parser
             return true;
         }
 
+        /// <summary>
+        /// Returns whether the given name is equal to a reserved type name.
+        /// </summary>
+        /// <param name="name">The name to check. This may be a simple or a fully qualified name.</param>
+        public static bool IsReservedTypeName([NotNull] string name)
+        {
+            // TODO: More types once they exist (consider matching on the initial part of the name for [u]int[NN])
+            return name == "bool" || name == "int32" || name == "void";
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool IsAlphabeticOrUnderscore(char ch)
         {

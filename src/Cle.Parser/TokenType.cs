@@ -28,6 +28,7 @@
         Plus,
         Minus,
         Asterisk,
+        Equals,
         ForwardSlash,
         Semicolon,
         OpenParen,

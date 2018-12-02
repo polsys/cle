@@ -31,6 +31,8 @@
         ExpectedStatement,
         ExpectedExpression,
         InvalidNumericLiteral,
+        ExpectedInitialValue,
+        InvalidVariableName,
         ExpectedCondition,
         ExpectedBlock,
         ExpectedBlockOrElseIf,
