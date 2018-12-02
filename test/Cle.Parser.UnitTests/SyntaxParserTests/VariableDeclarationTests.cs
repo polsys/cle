@@ -4,7 +4,7 @@ using NUnit.Framework;
 
 namespace Cle.Parser.UnitTests.SyntaxParserTests
 {
-    public class VariableTests : SyntaxParserTestBase
+    public class VariableDeclarationTests : SyntaxParserTestBase
     {
         [Test]
         public void Int32_declaration_with_constant_value_parsed_correctly()

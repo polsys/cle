@@ -53,6 +53,36 @@ namespace Cle.Parser.UnitTests.SyntaxParserTests
             Assert.That(((BooleanLiteralSyntax)expression).Value, Is.EqualTo(expected));
         }
 
+        [TestCase("i")]
+        [TestCase("Somewhere::Something")]
+        public void Variable_or_constant_name_alone(string name)
+        {
+            var parser = GetParserInstance(name, out var diagnostics);
+
+            var returnValue = parser.TryParseExpression(out var expression);
+
+            Assert.That(diagnostics.Diagnostics, Is.Empty);
+            Assert.That(returnValue, Is.True);
+            Assert.That(expression, Is.Not.Null);
+
+            var reference = (NamedValueSyntax)expression;
+            Assert.That(reference.Name, Is.EqualTo(name));
+        }
+
+        [TestCase("_")]
+        [TestCase("int32")]
+        [TestCase("Somewhere:Something")]
+        public void Variable_name_must_be_valid(string name)
+        {
+            var parser = GetParserInstance(name, out var diagnostics);
+
+            var returnValue = parser.TryParseExpression(out var expression);
+
+            Assert.That(returnValue, Is.False);
+            Assert.That(expression, Is.Null);
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.InvalidVariableName, 1, 0).WithActual(name);
+        }
+
         [Test]
         public void Unary_minus_is_parsed_correctly()
         {
@@ -215,6 +245,27 @@ namespace Cle.Parser.UnitTests.SyntaxParserTests
             Assert.That(right.Operation, Is.EqualTo(UnaryOperation.Minus));
             Assert.That(right.InnerExpression, Is.InstanceOf<IntegerLiteralSyntax>());
             Assert.That(((IntegerLiteralSyntax)right.InnerExpression).Value, Is.EqualTo(2));
+        }
+
+        [Test]
+        public void Variable_and_literal_in_binary_expression()
+        {
+            var parser = GetParserInstance("a + 1", out var diagnostics);
+
+            var returnValue = parser.TryParseExpression(out var expression);
+
+            Assert.That(diagnostics.Diagnostics, Is.Empty);
+            Assert.That(returnValue, Is.True);
+            Assert.That(expression, Is.Not.Null);
+
+            var binary = (BinaryExpressionSyntax)expression;
+            Assert.That(binary.Operation, Is.EqualTo(BinaryOperation.Plus));
+
+            Assert.That(binary.Left, Is.InstanceOf<NamedValueSyntax>());
+            Assert.That(((NamedValueSyntax)binary.Left).Name, Is.EqualTo("a"));
+
+            Assert.That(binary.Right, Is.InstanceOf<IntegerLiteralSyntax>());
+            Assert.That(((IntegerLiteralSyntax)binary.Right).Value, Is.EqualTo(1));
         }
 
         [Test]

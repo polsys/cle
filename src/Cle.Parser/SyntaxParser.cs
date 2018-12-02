@@ -367,11 +367,12 @@ namespace Cle.Parser
         {
             // This method handles
             //   - variable declarations ("int32 name = expression;")
-            //   - assignments ("name = expression;") (TODO)
+            //   - assignments ("name = expression;")
             //   - standalone method calls ("name(...);") (TODO)
             statement = null;
 
             // Read the first identifier
+            // TODO: Assignments may target struct fields too
             var startPosition = _lexer.Position;
             Debug.Assert(_lexer.PeekTokenType() == TokenType.Identifier);
             var firstIdentifier = ReadTokenIntoString();
@@ -380,6 +381,7 @@ namespace Cle.Parser
             switch (_lexer.PeekTokenType())
             {
                 case TokenType.Identifier:
+                    // Variable declaration
                     var variableName = ReadTokenIntoString();
 
                     // Validate the type name
@@ -406,6 +408,18 @@ namespace Cle.Parser
 
                     // The statement is valid, just check for the semicolon before returning
                     statement = new VariableDeclarationSyntax(firstIdentifier, variableName, initialValue, startPosition);
+                    break;
+
+                case TokenType.Equals:
+                    // Eat the '=' and read the new value
+                    _lexer.GetToken();
+                    if (!TryParseExpression(out var newValue))
+                    {
+                        return false;
+                    }
+                    Debug.Assert(newValue != null);
+
+                    statement = new AssignmentSyntax(firstIdentifier, newValue, startPosition);
                     break;
 
                 default:
@@ -596,6 +610,19 @@ namespace Cle.Parser
 
                     expressionSyntax = new BooleanLiteralSyntax(true, _lexer.LastPosition);
                     return true;
+                case TokenType.Identifier:
+                    var variableName = ReadTokenIntoString();
+
+                    if (!NameParsing.IsValidFullName(variableName) || NameParsing.IsReservedTypeName(variableName))
+                    {
+                        _diagnosticSink.Add(DiagnosticCode.InvalidVariableName, _lexer.LastPosition, variableName);
+                        return false;
+                    }
+                    else
+                    {
+                        expressionSyntax = new NamedValueSyntax(variableName, _lexer.LastPosition);
+                        return true;
+                    }
                 default:
                     return TryParseNumber(out expressionSyntax);
             }
