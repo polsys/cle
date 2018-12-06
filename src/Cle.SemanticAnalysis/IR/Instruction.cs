@@ -92,5 +92,9 @@ namespace Cle.SemanticAnalysis.IR
         /// Else, jump to the default successor block.
         /// </summary>
         BranchIf,
+        /// <summary>
+        /// Copies the local value indexed by the left operand to the destination operand.
+        /// </summary>
+        CopyValue,
     }
 }

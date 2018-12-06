@@ -13,8 +13,8 @@ namespace Cle.SemanticAnalysis.UnitTests
             var graphBuilder = new BasicBlockGraphBuilder();
             graphBuilder.GetInitialBlockBuilder().AppendInstruction(Opcode.Return, 0, 0, 0);
             var method = new CompiledMethod { Body = graphBuilder.Build() };
-            method.AddTemporary(SimpleType.Int32, ConstantValue.SignedInteger(17));
-            method.AddTemporary(SimpleType.Bool, ConstantValue.Bool(true));
+            method.AddLocal(SimpleType.Int32, ConstantValue.SignedInteger(17));
+            method.AddLocal(SimpleType.Bool, ConstantValue.Bool(true));
 
             const string expected = "; #0   int32 = 17\n" +
                                     "; #1   bool = true\n" +
@@ -34,6 +34,26 @@ namespace Cle.SemanticAnalysis.UnitTests
             var method = new CompiledMethod { Body = graphBuilder.Build() };
 
             const string expected = "BB_0:\n    Return #2\n\n";
+
+            var builder = new StringBuilder();
+            MethodDisassembler.DisassembleBody(method, builder);
+            Assert.That(builder.ToString().Replace("\r\n", "\n"), Is.EqualTo(expected));
+        }
+
+        [Test]
+        public void DisassembleBody_single_basic_block_with_several_instructions()
+        {
+            // TODO: Add new instructions to this test
+
+            var graphBuilder = new BasicBlockGraphBuilder();
+            var blockBuilder = graphBuilder.GetInitialBlockBuilder();
+            blockBuilder.AppendInstruction(Opcode.CopyValue, 1, 0, 2);
+            blockBuilder.AppendInstruction(Opcode.Return, 2, 0, 0);
+            var method = new CompiledMethod { Body = graphBuilder.Build() };
+
+            const string expected = "BB_0:\n" +
+                                    "    CopyValue #1 -> #2\n" +
+                                    "    Return #2\n\n";
 
             var builder = new StringBuilder();
             MethodDisassembler.DisassembleBody(method, builder);

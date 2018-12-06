@@ -20,6 +20,7 @@ namespace Cle.SemanticAnalysis
         /// <param name="expectedType">The expected type of the evaluated expression.</param>
         /// <param name="method">The method to store and get local values from.</param>
         /// <param name="builder">Intermediate representation builder.</param>
+        /// <param name="variableMap">The map of variable names to local indices.</param>
         /// <param name="diagnostics">Receiver for possible diagnostics.</param>
         // TODO: Access to local variables and constants
         public static int TryCompileExpression(
@@ -27,11 +28,12 @@ namespace Cle.SemanticAnalysis
             [NotNull] TypeDefinition expectedType,
             [NotNull] CompiledMethod method,
             [NotNull] BasicBlockBuilder builder,
+            [NotNull] ScopedVariableMap variableMap,
             [NotNull] IDiagnosticSink diagnostics)
         {
             // Compile the expression
             // TODO: Handling more complicated expressions, which may not be constant
-            var valueNumber = -1;
+            int valueNumber;
             if (syntax is IntegerLiteralSyntax integer)
             {
                 // Ensure that the literal can be represented as int32
@@ -45,11 +47,20 @@ namespace Cle.SemanticAnalysis
                     return -1;
                 }
                 
-                valueNumber = method.AddTemporary(SimpleType.Int32, ConstantValue.SignedInteger((long)integer.Value));
+                valueNumber = method.AddLocal(SimpleType.Int32, ConstantValue.SignedInteger((long)integer.Value));
             }
             else if (syntax is BooleanLiteralSyntax boolean)
             {
-                valueNumber = method.AddTemporary(SimpleType.Bool, ConstantValue.Bool(boolean.Value));
+                valueNumber = method.AddLocal(SimpleType.Bool, ConstantValue.Bool(boolean.Value));
+            }
+            else if (syntax is NamedValueSyntax named)
+            {
+                // In case of variable reference, just return the value number
+                if (!variableMap.TryGetVariable(named.Name, out valueNumber))
+                {
+                    diagnostics.Add(DiagnosticCode.VariableNotFound, named.Position, named.Name);
+                    return -1;
+                }
             }
             else
             {

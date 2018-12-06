@@ -49,10 +49,13 @@ namespace Cle.SemanticAnalysis
                     switch (instruction.Operation)
                     {
                         case Opcode.BranchIf:
-                            outputBuilder.AppendLine(" #" + instruction.Left + " ==> BB_" + block.AlternativeSuccessor);
+                            outputBuilder.AppendLine($" #{instruction.Left} ==> BB_{block.AlternativeSuccessor}");
+                            break;
+                        case Opcode.CopyValue:
+                            outputBuilder.AppendLine($" #{instruction.Left} -> #{instruction.Destination}");
                             break;
                         case Opcode.Return:
-                            outputBuilder.AppendLine(" #" + instruction.Left);
+                            outputBuilder.AppendLine($" #{instruction.Left}");
                             break;
                         default:
                             outputBuilder.AppendLine();
@@ -64,7 +67,7 @@ namespace Cle.SemanticAnalysis
                 // However, do not create a line for trivial fallthrough
                 if (block.DefaultSuccessor >= 0 && block.DefaultSuccessor != blockIndex + 1)
                 {
-                    outputBuilder.AppendLine(Indent + "==> BB_" + block.DefaultSuccessor);
+                    outputBuilder.AppendLine($"{Indent}==> BB_{block.DefaultSuccessor}");
                 }
 
                 // Empty line between basic blocks and after the last block

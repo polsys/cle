@@ -23,6 +23,7 @@ namespace Cle.SemanticAnalysis
         [CanBeNull] private FunctionSyntax _syntaxTree;
         [CanBeNull] private string _definingNamespace;
         [CanBeNull] private string _sourceFilename;
+        [NotNull] private readonly ScopedVariableMap _variableMap;
 
         // These fields are reset by InternalCompile()
         [CanBeNull] private MethodDeclaration _declaration;
@@ -44,24 +45,12 @@ namespace Cle.SemanticAnalysis
             [NotNull] IDeclarationProvider declarationProvider,
             [NotNull] IDiagnosticSink diagnosticSink)
         {
-            // TODO: Proper type resolution with the declaration provider
-            if (syntax.ReturnTypeName == "bool")
+            if (!TryResolveType(syntax.ReturnTypeName, diagnosticSink, syntax.Position, out var returnType))
             {
-                return new MethodDeclaration(SimpleType.Bool, syntax.Visibility, definingFilename, syntax.Position);
-            }
-            else if (syntax.ReturnTypeName == "int32")
-            {
-                return new MethodDeclaration(SimpleType.Int32, syntax.Visibility, definingFilename, syntax.Position);
-            }
-            else if (syntax.ReturnTypeName == "void")
-            {
-                return new MethodDeclaration(SimpleType.Void, syntax.Visibility, definingFilename, syntax.Position);
-            }
-            else
-            {
-                diagnosticSink.Add(DiagnosticCode.TypeNotFound, syntax.Position, syntax.ReturnTypeName);
                 return null;
             }
+            Debug.Assert(returnType != null);
+            return new MethodDeclaration(returnType, syntax.Visibility, definingFilename, syntax.Position);
 
             // TODO: Resolve parameter types
         }
@@ -78,6 +67,7 @@ namespace Cle.SemanticAnalysis
         {
             _declarationProvider = declarationProvider;
             _diagnostics = diagnosticSink;
+            _variableMap = new ScopedVariableMap();
         }
 
         /// <summary>
@@ -98,6 +88,8 @@ namespace Cle.SemanticAnalysis
             _definingNamespace = definingNamespace;
             _sourceFilename = sourceFilename;
             
+            // Variable map does not need to be reset if scope pushes/pops are balanced.
+
             return InternalCompile();
         }
 
@@ -134,12 +126,27 @@ namespace Cle.SemanticAnalysis
 
         private bool TryCompileBlock([NotNull] BlockSyntax block, [NotNull] BasicBlockBuilder builder)
         {
+            // Create a new variable scope
+            _variableMap.PushScope();
+
             foreach (var statement in block.Statements)
             {
                 switch (statement)
                 {
+                    case AssignmentSyntax assignment:
+                        if (!TryCompileAssignment(assignment, builder))
+                            return false;
+                        break;
+                    case BlockSyntax innerBlock:
+                        if (!TryCompileBlock(innerBlock, builder))
+                            return false;
+                        break;
                     case ReturnStatementSyntax returnSyntax:
                         if (!TryCompileReturn(returnSyntax, builder))
+                            return false;
+                        break;
+                    case VariableDeclarationSyntax variableDeclaration:
+                        if (!TryCompileVariableDeclaration(variableDeclaration, builder))
                             return false;
                         break;
                     default:
@@ -147,6 +154,34 @@ namespace Cle.SemanticAnalysis
                 }
             }
 
+            // Destroy the variable scope
+            // TODO: Destroy locals (both variables and temporaries!) defined with destructor
+            _variableMap.PopScope();
+
+            return true;
+        }
+
+        private bool TryCompileAssignment([NotNull] AssignmentSyntax assignment, [NotNull] BasicBlockBuilder builder)
+        {
+            Debug.Assert(_methodInProgress != null);
+
+            // Get the target variable
+            if (!_variableMap.TryGetVariable(assignment.Variable, out var targetIndex))
+            {
+                _diagnostics.Add(DiagnosticCode.VariableNotFound, assignment.Position, assignment.Variable);
+                return false;
+            }
+            var expectedType = _methodInProgress.Values[targetIndex].Type;
+
+            // Compile the expression
+            var sourceIndex = ExpressionCompiler.TryCompileExpression(assignment.Value,
+                expectedType, _methodInProgress, builder, _variableMap, _diagnostics);
+
+            if (sourceIndex == -1)
+                return false;
+
+            // Emit a copy operation
+            builder.AppendInstruction(Opcode.CopyValue, sourceIndex, 0, targetIndex);
             return true;
         }
 
@@ -161,7 +196,7 @@ namespace Cle.SemanticAnalysis
                 // Void return: verify that the method really returns void, then add a void local to return
                 if (_declaration.ReturnType.Equals(SimpleType.Void))
                 {
-                    returnValueNumber = _methodInProgress.AddTemporary(SimpleType.Void, ConstantValue.Void());
+                    returnValueNumber = _methodInProgress.AddLocal(SimpleType.Void, ConstantValue.Void());
                 }
                 else
                 {
@@ -173,7 +208,7 @@ namespace Cle.SemanticAnalysis
             {
                 // Non-void return: parse the expression, verifying the type
                 returnValueNumber = ExpressionCompiler.TryCompileExpression(syntax.ResultExpression,
-                    _declaration.ReturnType, _methodInProgress, builder, _diagnostics);
+                    _declaration.ReturnType, _methodInProgress, builder, _variableMap, _diagnostics);
             }
             
             // At this point, a diagnostic should already be logged
@@ -181,6 +216,74 @@ namespace Cle.SemanticAnalysis
                 return false;
 
             builder.AppendInstruction(Opcode.Return, returnValueNumber, 0, 0);
+            return true;
+        }
+
+        private bool TryCompileVariableDeclaration([NotNull] VariableDeclarationSyntax declaration,
+            [NotNull] BasicBlockBuilder builder)
+        {
+            Debug.Assert(_methodInProgress != null);
+            var localCount = _methodInProgress.Values.Count;
+
+            // Compile the initial value (either a runtime expression or compile-time constant)
+            if (!TryResolveType(declaration.TypeName, _diagnostics, declaration.Position, out var type))
+            {
+                return false;
+            }
+            Debug.Assert(type != null);
+            var localIndex = ExpressionCompiler.TryCompileExpression(declaration.InitialValueExpression, 
+                type, _methodInProgress, builder, _variableMap, _diagnostics);
+
+            if (localIndex == -1)
+                return false;
+
+            // There are two cases:
+            //   - ExpressionCompiler created temporaries, the last of which is our initialized variable,
+            //   - ExpressionCompiler returned a reference to an existent local ("Type value = anotherVariable" only).
+            // In the latter case, we must create a new local and emit a copy.
+            if (localCount == _methodInProgress.Values.Count)
+            {
+                var source = localIndex;
+
+                // Don't bother figuring out a correct initial value, it won't be used anyways
+                localIndex = _methodInProgress.AddLocal(type, ConstantValue.Void());
+                builder.AppendInstruction(Opcode.CopyValue, source, 0, localIndex);
+            }
+
+            // Add it to the variable map (unless the name is already in use)
+            if (!_variableMap.TryAddVariable(declaration.Name, localIndex))
+            {
+                _diagnostics.Add(DiagnosticCode.VariableAlreadyDefined, declaration.Position, declaration.Name);
+                return false;
+            }
+
+            return true;
+        }
+        
+        private static bool TryResolveType(
+            [NotNull] string typeName, 
+            [NotNull] IDiagnosticSink diagnostics,
+            TextPosition position,
+            [CanBeNull] out TypeDefinition type)
+        {
+            // TODO: Proper type resolution with the declaration provider
+            switch (typeName)
+            {
+                case "bool":
+                    type = SimpleType.Bool;
+                    break;
+                case "int32":
+                    type = SimpleType.Int32;
+                    break;
+                case "void":
+                    type = SimpleType.Void;
+                    break;
+                default:
+                    diagnostics.Add(DiagnosticCode.TypeNotFound, position, typeName);
+                    type = null;
+                    return false;
+            }
+
             return true;
         }
     }

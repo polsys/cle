@@ -47,6 +47,8 @@
 
         TypeMismatch,
         IntegerLiteralOutOfBounds,
+        VariableAlreadyDefined,
+        VariableNotFound,
 
         SemanticWarningStart = 2500,
 

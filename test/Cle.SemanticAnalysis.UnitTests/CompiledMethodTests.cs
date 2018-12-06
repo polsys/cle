@@ -7,12 +7,12 @@ namespace Cle.SemanticAnalysis.UnitTests
     public class CompiledMethodTests
     {
         [Test]
-        public void CreateTemporary_succeeds_for_int32()
+        public void CreateLocal_succeeds_for_int32()
         {
             var method = new CompiledMethod();
 
-            Assert.That(method.AddTemporary(SimpleType.Int32, ConstantValue.SignedInteger(1)), Is.EqualTo(0));
-            Assert.That(method.AddTemporary(SimpleType.Int32, ConstantValue.SignedInteger(-17)), Is.EqualTo(1));
+            Assert.That(method.AddLocal(SimpleType.Int32, ConstantValue.SignedInteger(1)), Is.EqualTo(0));
+            Assert.That(method.AddLocal(SimpleType.Int32, ConstantValue.SignedInteger(-17)), Is.EqualTo(1));
 
             Assert.That(method.Values, Has.Exactly(2).Items);
             Assert.That(method.Values[0].Type, Is.EqualTo(SimpleType.Int32));
@@ -22,12 +22,12 @@ namespace Cle.SemanticAnalysis.UnitTests
         }
 
         [Test]
-        public void CreateTemporary_succeeds_for_bool()
+        public void CreateLocal_succeeds_for_bool()
         {
             var method = new CompiledMethod();
 
-            Assert.That(method.AddTemporary(SimpleType.Bool, ConstantValue.Bool(true)), Is.EqualTo(0));
-            Assert.That(method.AddTemporary(SimpleType.Bool, ConstantValue.Bool(false)), Is.EqualTo(1));
+            Assert.That(method.AddLocal(SimpleType.Bool, ConstantValue.Bool(true)), Is.EqualTo(0));
+            Assert.That(method.AddLocal(SimpleType.Bool, ConstantValue.Bool(false)), Is.EqualTo(1));
 
             Assert.That(method.Values, Has.Exactly(2).Items);
             Assert.That(method.Values[0].Type, Is.EqualTo(SimpleType.Bool));

@@ -83,6 +83,10 @@ namespace Cle.Frontend
                     return $"Expression is of type {diagnostic.Actual} but expected {diagnostic.Expected}.";
                 case DiagnosticCode.IntegerLiteralOutOfBounds:
                     return $"Integer literal {diagnostic.Actual} cannot be represented in {diagnostic.Expected}.";
+                case DiagnosticCode.VariableAlreadyDefined:
+                    return $"Variable '{diagnostic.Actual}' is already defined in this or enclosing scope.";
+                case DiagnosticCode.VariableNotFound:
+                    return $"Variable '{diagnostic.Actual}' does not exist in this or enclosing scope.";
 
                 // Semantic warnings
                 case DiagnosticCode.SemanticWarningStart:
