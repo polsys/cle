@@ -9,9 +9,10 @@ namespace Cle.SemanticAnalysis.IR
     public class BasicBlockGraph
     {
         [NotNull]
+        [ItemCanBeNull]
         public readonly ImmutableList<BasicBlock> BasicBlocks;
 
-        public BasicBlockGraph(ImmutableList<BasicBlock> basicBlocks)
+        public BasicBlockGraph([NotNull, ItemCanBeNull] ImmutableList<BasicBlock> basicBlocks)
         {
             BasicBlocks = basicBlocks;
         }

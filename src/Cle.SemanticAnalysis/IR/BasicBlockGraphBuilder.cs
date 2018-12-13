@@ -7,6 +7,8 @@ namespace Cle.SemanticAnalysis.IR
 {
     /// <summary>
     /// A mutable builder for <see cref="BasicBlockGraph"/> instances.
+    /// Use <see cref="GetInitialBlockBuilder"/> to get the first basic block builder, then use methods
+    /// on block builders to add instructions and create new blocks.
     /// </summary>
     internal class BasicBlockGraphBuilder
     {
@@ -23,18 +25,18 @@ namespace Cle.SemanticAnalysis.IR
             if (_builders.Count > 0)
                 throw new InvalidOperationException("This method can only be called once.");
 
-            return GetNewBasicBlock().builder;
+            return GetNewBasicBlock();
         }
         
         /// <summary>
-        /// Creates and returns a new basic block.
+        /// Creates and returns a new basic block builder.
         /// </summary>
-        public (BasicBlockBuilder builder, int index) GetNewBasicBlock()
+        public BasicBlockBuilder GetNewBasicBlock()
         {
-            var builder = new BasicBlockBuilder(this);
+            var builder = new BasicBlockBuilder(this, _builders.Count);
             _builders.Add(builder);
 
-            return (builder, _builders.Count - 1);
+            return builder;
         }
 
         /// <summary>
@@ -47,18 +49,26 @@ namespace Cle.SemanticAnalysis.IR
             if (_builders.Count == 0)
                 throw new InvalidOperationException("The basic block graph is empty.");
 
-            // Construct each basic block
+            // Do a marking pass to skip basic blocks with no inbound edges
+            var liveBlocks = new bool[_builders.Count];
+            MarkBlock(0, liveBlocks);
+
+            // Construct each marked basic block
             var blocks = ImmutableList<BasicBlock>.Empty.ToBuilder();
-            foreach (var blockBuilder in _builders)
+            for (var i = 0; i < _builders.Count; i++)
             {
+                // Skip unreachable blocks but append null to preserve indexing
+                // Indexing can be fixed by an optimization pass after possible block merges etc.
+                if (!liveBlocks[i])
+                {
+                    blocks.Add(null);
+                    continue;
+                }
+
+                var blockBuilder = _builders[i];
                 if (!blockBuilder.HasDefinedExitBehavior)
                 {
                     throw new InvalidOperationException("A basic block has undefined exit behavior.");
-                }
-                if (blockBuilder.DefaultSuccessor >= _builders.Count ||
-                    blockBuilder.AlternativeSuccessor >= _builders.Count)
-                {
-                    throw new InvalidOperationException("A basic block references a successor that does not exist.");
                 }
 
                 blocks.Add(new BasicBlock(
@@ -68,6 +78,32 @@ namespace Cle.SemanticAnalysis.IR
             }
 
             return new BasicBlockGraph(blocks.ToImmutable());
+        }
+
+        private void MarkBlock(int blockIndex, bool[] liveBlocks)
+        {
+            // If this block has already been visited, continue
+            if (liveBlocks[blockIndex])
+                return;
+
+            liveBlocks[blockIndex] = true;
+
+            // Recurse into outbound edges
+            var block = _builders[blockIndex];
+            if (block.DefaultSuccessor >= _builders.Count ||
+                block.AlternativeSuccessor >= _builders.Count)
+            {
+                throw new InvalidOperationException("A basic block references a successor that does not exist.");
+            }
+
+            if (block.DefaultSuccessor >= 0)
+            {
+                MarkBlock(block.DefaultSuccessor, liveBlocks);
+            }
+            if (block.AlternativeSuccessor >= 0)
+            {
+                MarkBlock(block.AlternativeSuccessor, liveBlocks);
+            }
         }
     }
 }

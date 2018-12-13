@@ -61,6 +61,22 @@ namespace Cle.SemanticAnalysis.UnitTests
         }
 
         [Test]
+        public void DisassembleBody_handles_null_block()
+        {
+            var graphBuilder = new BasicBlockGraphBuilder();
+            var initialBlockBuilder = graphBuilder.GetInitialBlockBuilder();
+            initialBlockBuilder.AppendInstruction(Opcode.Return, 0, 0, 0);
+            initialBlockBuilder.CreateSuccessorBlock(); // No reference will be made and this will become null in Build()
+            var method = new CompiledMethod { Body = graphBuilder.Build() };
+
+            const string expected = "BB_0:\n    Return #0\n\n";
+
+            var builder = new StringBuilder();
+            MethodDisassembler.DisassembleBody(method, builder);
+            Assert.That(builder.ToString().Replace("\r\n", "\n"), Is.EqualTo(expected));
+        }
+
+        [Test]
         public void DisassembleBody_single_basic_block_with_infinite_loop()
         {
             var graphBuilder = new BasicBlockGraphBuilder();

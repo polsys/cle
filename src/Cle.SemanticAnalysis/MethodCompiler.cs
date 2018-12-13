@@ -112,7 +112,7 @@ namespace Cle.SemanticAnalysis
 
             // Compile the body
             var graphBuilder = new BasicBlockGraphBuilder();
-            if (!TryCompileBlock(_syntaxTree.Block, graphBuilder.GetInitialBlockBuilder()))
+            if (!TryCompileBlock(_syntaxTree.Block, graphBuilder.GetInitialBlockBuilder(), out _))
             {
                 return null;
             }
@@ -124,8 +124,12 @@ namespace Cle.SemanticAnalysis
             return _methodInProgress;
         }
 
-        private bool TryCompileBlock([NotNull] BlockSyntax block, [NotNull] BasicBlockBuilder builder)
+        private bool TryCompileBlock([NotNull] BlockSyntax block, [NotNull] BasicBlockBuilder builder,
+            [NotNull] out BasicBlockBuilder newBuilder)
         {
+            // Some statements may create new basic blocks, but the default is that they do not
+            newBuilder = builder;
+
             // Create a new variable scope
             _variableMap.PushScope();
 
@@ -138,8 +142,14 @@ namespace Cle.SemanticAnalysis
                             return false;
                         break;
                     case BlockSyntax innerBlock:
-                        if (!TryCompileBlock(innerBlock, builder))
+                        if (!TryCompileBlock(innerBlock, builder, out newBuilder))
                             return false;
+                        builder = newBuilder;
+                        break;
+                    case IfStatementSyntax ifStatement:
+                        if (!TryCompileIf(ifStatement, builder, out newBuilder))
+                            return false;
+                        builder = newBuilder;
                         break;
                     case ReturnStatementSyntax returnSyntax:
                         if (!TryCompileReturn(returnSyntax, builder))
@@ -183,6 +193,66 @@ namespace Cle.SemanticAnalysis
             // Emit a copy operation
             builder.AppendInstruction(Opcode.CopyValue, sourceIndex, 0, targetIndex);
             return true;
+        }
+
+        private bool TryCompileIf([NotNull] IfStatementSyntax ifSyntax, [NotNull] BasicBlockBuilder builder, 
+            [NotNull] out BasicBlockBuilder newBuilder)
+        {
+            newBuilder = builder; // Default failure case
+            Debug.Assert(_methodInProgress != null);
+
+            // Compile the condition expression
+            var conditionValue = ExpressionCompiler.TryCompileExpression(ifSyntax.ConditionSyntax,
+                SimpleType.Bool, _methodInProgress, builder, _variableMap, _diagnostics);
+            if (conditionValue == -1)
+            {
+                return false;
+            }
+
+            // Compile the 'then' branch
+            var thenBuilder = builder.CreateBranch(conditionValue);
+            if (!TryCompileBlock(ifSyntax.ThenBlockSyntax, thenBuilder, out thenBuilder))
+            {
+                return false;
+            }
+
+            // Compile the possible 'else' branch.
+            // It can be either an IfStatementSyntax (else if), BlockSyntax (else) or null (no else).
+            if (ifSyntax.ElseSyntax is null)
+            {
+                newBuilder = builder.CreateSuccessorBlock();
+                thenBuilder.SetSuccessor(newBuilder.Index);
+                return true;
+            }
+            else if (ifSyntax.ElseSyntax is BlockSyntax elseBlock)
+            {
+                // Compile the else block
+                var elseBuilder = builder.CreateSuccessorBlock();
+                if (!TryCompileBlock(elseBlock, elseBuilder, out elseBuilder))
+                {
+                    return false;
+                }
+                
+                // Then create a new block that is the target of both the 'then' and 'else' blocks
+                newBuilder = elseBuilder.CreateSuccessorBlock();
+                thenBuilder.SetSuccessor(newBuilder.Index);
+                return true;
+            }
+            else if (ifSyntax.ElseSyntax is IfStatementSyntax elseIf)
+            {
+                // Compile the if, then make the 'then' block point to the created successor
+                if (!TryCompileIf(elseIf, builder.CreateSuccessorBlock(), out newBuilder))
+                {
+                    return false;
+                }
+
+                thenBuilder.SetSuccessor(newBuilder.Index);
+                return true;
+            }
+            else
+            {
+                throw new InvalidOperationException("Invalid syntax node type for 'else'.");
+            }
         }
 
         private bool TryCompileReturn([NotNull] ReturnStatementSyntax syntax, [NotNull] BasicBlockBuilder builder)

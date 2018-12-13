@@ -20,6 +20,8 @@ namespace Cle.SemanticAnalysis.UnitTests
             var blockBuilder = graphBuilder.GetInitialBlockBuilder();
             blockBuilder.AppendInstruction(Opcode.Return, 0, 0, 0);
 
+            Assert.That(blockBuilder.Index, Is.EqualTo(0));
+
             var graph = graphBuilder.Build();
 
             Assert.That(graph.BasicBlocks, Has.Exactly(1).Items);
@@ -46,6 +48,9 @@ namespace Cle.SemanticAnalysis.UnitTests
             var secondBuilder = firstBuilder.CreateSuccessorBlock();
             secondBuilder.AppendInstruction(Opcode.Return, 0, 0, 0);
 
+            Assert.That(firstBuilder.Index, Is.EqualTo(0));
+            Assert.That(secondBuilder.Index, Is.EqualTo(1));
+
             var graph = graphBuilder.Build();
 
             Assert.That(graph.BasicBlocks, Has.Exactly(2).Items);
@@ -69,12 +74,13 @@ namespace Cle.SemanticAnalysis.UnitTests
         }
 
         [Test]
-        public void CreateSuccessorBlock_cannot_be_called_after_adding_return()
+        public void CreateSuccessorBlock_does_not_set_successor_if_return_exists()
         {
             var blockBuilder = new BasicBlockGraphBuilder().GetInitialBlockBuilder();
             blockBuilder.AppendInstruction(Opcode.Return, 0, 0, 0);
 
-            Assert.That(() => blockBuilder.CreateSuccessorBlock(), Throws.InvalidOperationException);
+            Assert.That(blockBuilder.CreateSuccessorBlock(), Is.Not.Null);
+            Assert.That(blockBuilder.DefaultSuccessor, Is.EqualTo(-1));
         }
 
         [Test]
@@ -102,21 +108,24 @@ namespace Cle.SemanticAnalysis.UnitTests
         }
 
         [Test]
-        public void SetSuccessor_cannot_be_called_after_adding_return()
+        public void SetSuccessor_does_nothing_if_return_exists()
         {
             var blockBuilder = new BasicBlockGraphBuilder().GetInitialBlockBuilder();
             blockBuilder.AppendInstruction(Opcode.Return, 0, 0, 0);
 
-            Assert.That(() => blockBuilder.SetSuccessor(0), Throws.InvalidOperationException);
+            Assert.That(() => blockBuilder.SetSuccessor(0), Throws.Nothing);
+            Assert.That(blockBuilder.DefaultSuccessor, Is.EqualTo(-1));
         }
 
         [Test]
-        public void Block_cannot_be_appended_to_after_adding_return()
+        public void Appending_to_block_after_adding_return_does_nothing()
         {
             var blockBuilder = new BasicBlockGraphBuilder().GetInitialBlockBuilder();
             blockBuilder.AppendInstruction(Opcode.Return, 0, 0, 0);
+            Assert.That(blockBuilder.Instructions, Has.Exactly(1).Items);
 
-            Assert.That(() => blockBuilder.AppendInstruction(Opcode.Nop, 0, 0, 0), Throws.InvalidOperationException);
+            blockBuilder.AppendInstruction(Opcode.Nop, 0, 0, 0);
+            Assert.That(blockBuilder.Instructions, Has.Exactly(1).Items);
         }
 
         [Test]
@@ -124,8 +133,9 @@ namespace Cle.SemanticAnalysis.UnitTests
         {
             var blockBuilder = new BasicBlockGraphBuilder().GetInitialBlockBuilder();
             blockBuilder.SetSuccessor(0);
-
-            Assert.That(() => blockBuilder.AppendInstruction(Opcode.Nop, 0, 0, 0), Throws.InvalidOperationException);
+            
+            blockBuilder.AppendInstruction(Opcode.Nop, 0, 0, 0);
+            Assert.That(blockBuilder.Instructions, Is.Empty);
         }
 
         [TestCase(1)]
@@ -171,6 +181,39 @@ namespace Cle.SemanticAnalysis.UnitTests
             Assert.That(graph.BasicBlocks[3].Instructions[0].Operation, Is.EqualTo(Opcode.Return));
             Assert.That(graph.BasicBlocks[3].DefaultSuccessor, Is.EqualTo(-1));
             Assert.That(graph.BasicBlocks[3].AlternativeSuccessor, Is.EqualTo(-1));
+        }
+
+        [Test]
+        public void Graph_with_two_returning_branches_and_empty_block_succeeds()
+        {
+            var graphBuilder = new BasicBlockGraphBuilder();
+            var firstBuilder = graphBuilder.GetInitialBlockBuilder();
+
+            var leftBuilder = firstBuilder.CreateSuccessorBlock();
+            leftBuilder.AppendInstruction(Opcode.Return, 0, 0, 0);
+            var rightBuilder = firstBuilder.CreateBranch(7);
+            rightBuilder.AppendInstruction(Opcode.Return, 0, 0, 0);
+
+            // This block does not return but is not referenced either
+            var finalBuilder = leftBuilder.CreateSuccessorBlock();
+            finalBuilder.AppendInstruction(Opcode.CopyValue, 1, 2, 3);
+
+            var graph = graphBuilder.Build();
+
+            Assert.That(graph.BasicBlocks, Has.Exactly(4).Items);
+            Assert.That(graph.BasicBlocks[0].Instructions, Has.Exactly(1).Items);
+            Assert.That(graph.BasicBlocks[0].Instructions[0].Operation, Is.EqualTo(Opcode.BranchIf));
+            Assert.That(graph.BasicBlocks[0].Instructions[0].Left, Is.EqualTo(7));
+            Assert.That(graph.BasicBlocks[0].DefaultSuccessor, Is.EqualTo(1));
+            Assert.That(graph.BasicBlocks[0].AlternativeSuccessor, Is.EqualTo(2));
+
+            Assert.That(graph.BasicBlocks[1].Instructions, Has.Exactly(1).Items);
+            Assert.That(graph.BasicBlocks[1].DefaultSuccessor, Is.EqualTo(-1));
+
+            Assert.That(graph.BasicBlocks[2].Instructions, Has.Exactly(1).Items);
+            Assert.That(graph.BasicBlocks[2].DefaultSuccessor, Is.EqualTo(-1));
+
+            Assert.That(graph.BasicBlocks[3], Is.Null);
         }
 
         [Test]

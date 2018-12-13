@@ -6,12 +6,18 @@ namespace Cle.SemanticAnalysis.IR
 {
     /// <summary>
     /// A builder for <see cref="BasicBlock"/> instances.
-    /// Instances of this type are managed by <see cref="BasicBlockGraphBuilder"/>.
+    /// Instance methods allow adding instructions and creating/setting successor blocks.
+    /// Additionally, once a basic block is guaranteed to exit, all operations become no-ops to omit dead code.
     /// </summary>
     internal class BasicBlockBuilder
     {
         [NotNull]
         internal ImmutableList<Instruction>.Builder Instructions { get; } = ImmutableList<Instruction>.Empty.ToBuilder();
+
+        /// <summary>
+        /// Gets the index of this basic block.
+        /// </summary>
+        public int Index { get; }
 
         /// <summary>
         /// Gets the index of the next basic block (unless a branch is taken).
@@ -57,19 +63,20 @@ namespace Cle.SemanticAnalysis.IR
         [NotNull]
         private readonly BasicBlockGraphBuilder _parent;
 
-        internal BasicBlockBuilder([NotNull] BasicBlockGraphBuilder parent)
+        internal BasicBlockBuilder([NotNull] BasicBlockGraphBuilder parent, int index)
         {
             _parent = parent;
+            Index = index;
         }
 
         /// <summary>
         /// Appends an instruction with the given parameters.
-        /// If this block already has a defined exit, throws.
+        /// If this block already has a defined exit, does nothing.
         /// </summary>
         public void AppendInstruction(Opcode opcode, int left, int right, int destination)
         {
             if (HasDefinedExitBehavior)
-                throw new InvalidOperationException("This basic block already has an exit.");
+                return;
 
             Instructions.Add(new Instruction(opcode, left, right, destination));
         }
@@ -77,14 +84,17 @@ namespace Cle.SemanticAnalysis.IR
         /// <summary>
         /// Creates a new basic block builder and sets <see cref="DefaultSuccessor"/> to point to the new basic block.
         /// This method may not be called if the successor is already set.
+        /// If this block has defined exit behavior, this only creates a builder and does not set the successor.
         /// </summary>
         public BasicBlockBuilder CreateSuccessorBlock()
         {
+            if (DefaultSuccessor != -1)
+                throw new InvalidOperationException("The default successor is already set.");
             if (HasDefinedExitBehavior)
-                throw new InvalidOperationException("This basic block already has an exit.");
+                return _parent.GetNewBasicBlock();
 
-            var (builder, index) = _parent.GetNewBasicBlock();
-            DefaultSuccessor = index;
+            var builder = _parent.GetNewBasicBlock();
+            DefaultSuccessor = builder.Index;
 
             return builder;
         }
@@ -102,8 +112,8 @@ namespace Cle.SemanticAnalysis.IR
                 throw new InvalidOperationException("This basic block already ends in a return or branch.");
             }
 
-            var (builder, index) = _parent.GetNewBasicBlock();
-            AlternativeSuccessor = index;
+            var builder = _parent.GetNewBasicBlock();
+            AlternativeSuccessor = builder.Index;
 
             // AppendInstruction would incorrectly check for an exit condition
             Instructions.Add(new Instruction(Opcode.BranchIf, conditionValueIndex, 0, 0));
@@ -113,13 +123,16 @@ namespace Cle.SemanticAnalysis.IR
 
         /// <summary>
         /// Sets the default successor to equal the given basic block index.
-        /// This method may not be called if the successor is already set.
+        /// This method may not be called if the default successor is already set.
+        /// If the block already has defined exit behavior, this call does nothing.
         /// </summary>
         /// <param name="index">The basic block index. This is only checked when the basic block graph is built.</param>
         public void SetSuccessor(int index)
         {
+            if (DefaultSuccessor != -1)
+                throw new InvalidOperationException("The default successor is already set.");
             if (HasDefinedExitBehavior)
-                throw new InvalidOperationException("This basic block already has an exit.");
+                return;
 
             DefaultSuccessor = index;
         }
