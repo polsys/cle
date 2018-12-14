@@ -54,6 +54,47 @@ BB_0:
         }
 
         [Test]
+        public void Implicit_void_return()
+        {
+            const string source = @"namespace Test;
+public void DoNothing() { }";
+            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+
+            Assert.That(compiledMethod, Is.Not.Null);
+            Assert.That(diagnostics.Diagnostics, Is.Empty);
+            
+            AssertDisassembly(compiledMethod, @"
+; #0   void = void
+BB_0:
+    Return #0");
+        }
+
+        [Test]
+        public void Implicit_void_return_in_more_complex_method()
+        {
+            const string source = @"namespace Test;
+public void DoNothing() { if (true) { return; } }";
+            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+
+            Assert.That(compiledMethod, Is.Not.Null);
+            Assert.That(diagnostics.Diagnostics, Is.Empty);
+            
+            AssertDisassembly(compiledMethod, @"
+; #0   bool = true
+; #1   void = void
+; #2   void = void
+BB_0:
+    BranchIf #0 ==> BB_1
+    ==> BB_2
+
+BB_1:
+    Return #1
+
+BB_2:
+    Return #2");
+        }
+
+        [Test]
         public void Return_type_is_validated()
         {
             const string source = @"namespace Test;
@@ -92,7 +133,6 @@ public void Mismatch() { return true; }";
                 .WithExpected("void");
         }
         
-        // TODO: Return guarantee and dead code warning (in separate test class)
         // TODO: Int32 expression return
     }
 }

@@ -105,36 +105,62 @@ namespace Cle.SemanticAnalysis
             if (possibleDeclarations.Count != 1)
                 throw new InvalidOperationException("Ambiguous method declaration");
             _declaration = possibleDeclarations[0];
-
             _methodInProgress = new CompiledMethod();
 
             // TODO: Create locals for the parameters
 
             // Compile the body
             var graphBuilder = new BasicBlockGraphBuilder();
-            if (!TryCompileBlock(_syntaxTree.Block, graphBuilder.GetInitialBlockBuilder(), out _))
+            if (!TryCompileBlock(_syntaxTree.Block, graphBuilder.GetInitialBlockBuilder(),
+                out var finalBlockBuilder, out var returnGuaranteed))
             {
                 return null;
             }
 
-            // TODO: Assert that the method really returns
+            Debug.Assert(_declaration != null);
+            Debug.Assert(_methodInProgress != null);
 
-            // ReSharper disable once PossibleNullReferenceException
+            if (!returnGuaranteed)
+            {
+                // Void methods may return implicitly
+                // Others should fail
+                if (_declaration.ReturnType.Equals(SimpleType.Void))
+                {
+                    var voidIndex = _methodInProgress.AddLocal(SimpleType.Void, ConstantValue.Void());
+                    finalBlockBuilder.AppendInstruction(Opcode.Return, voidIndex, 0, 0);
+                }
+                else
+                {
+                    Debug.Assert(_syntaxTree != null);
+                    _diagnostics.Add(DiagnosticCode.ReturnNotGuaranteed, _syntaxTree.Position, _syntaxTree.Name);
+                    return null;
+                }
+            }
+
             _methodInProgress.Body = graphBuilder.Build();
             return _methodInProgress;
         }
 
         private bool TryCompileBlock([NotNull] BlockSyntax block, [NotNull] BasicBlockBuilder builder,
-            [NotNull] out BasicBlockBuilder newBuilder)
+            [NotNull] out BasicBlockBuilder newBuilder, out bool returnGuaranteed)
         {
             // Some statements may create new basic blocks, but the default is that they do not
             newBuilder = builder;
+            returnGuaranteed = false;
+            var deadCodeWarningEmitted = false;
 
             // Create a new variable scope
             _variableMap.PushScope();
 
             foreach (var statement in block.Statements)
             {
+                // Emit a dead code warning if return is already guaranteed
+                if (returnGuaranteed && !deadCodeWarningEmitted)
+                {
+                    _diagnostics.Add(DiagnosticCode.UnreachableCode, statement.Position);
+                    deadCodeWarningEmitted = true;
+                }
+
                 switch (statement)
                 {
                     case AssignmentSyntax assignment:
@@ -142,18 +168,21 @@ namespace Cle.SemanticAnalysis
                             return false;
                         break;
                     case BlockSyntax innerBlock:
-                        if (!TryCompileBlock(innerBlock, builder, out newBuilder))
+                        if (!TryCompileBlock(innerBlock, builder, out newBuilder, out var blockReturns))
                             return false;
                         builder = newBuilder;
+                        returnGuaranteed |= blockReturns;
                         break;
                     case IfStatementSyntax ifStatement:
-                        if (!TryCompileIf(ifStatement, builder, out newBuilder))
+                        if (!TryCompileIf(ifStatement, builder, out newBuilder, out var ifReturns))
                             return false;
                         builder = newBuilder;
+                        returnGuaranteed |= ifReturns;
                         break;
                     case ReturnStatementSyntax returnSyntax:
                         if (!TryCompileReturn(returnSyntax, builder))
                             return false;
+                        returnGuaranteed = true;
                         break;
                     case VariableDeclarationSyntax variableDeclaration:
                         if (!TryCompileVariableDeclaration(variableDeclaration, builder))
@@ -196,9 +225,10 @@ namespace Cle.SemanticAnalysis
         }
 
         private bool TryCompileIf([NotNull] IfStatementSyntax ifSyntax, [NotNull] BasicBlockBuilder builder, 
-            [NotNull] out BasicBlockBuilder newBuilder)
+            [NotNull] out BasicBlockBuilder newBuilder, out bool returnGuaranteed)
         {
             newBuilder = builder; // Default failure case
+            returnGuaranteed = false;
             Debug.Assert(_methodInProgress != null);
 
             // Compile the condition expression
@@ -211,7 +241,7 @@ namespace Cle.SemanticAnalysis
 
             // Compile the 'then' branch
             var thenBuilder = builder.CreateBranch(conditionValue);
-            if (!TryCompileBlock(ifSyntax.ThenBlockSyntax, thenBuilder, out thenBuilder))
+            if (!TryCompileBlock(ifSyntax.ThenBlockSyntax, thenBuilder, out thenBuilder, out var thenReturns))
             {
                 return false;
             }
@@ -222,13 +252,16 @@ namespace Cle.SemanticAnalysis
             {
                 newBuilder = builder.CreateSuccessorBlock();
                 thenBuilder.SetSuccessor(newBuilder.Index);
+                
+                // Here, we cannot give a return guarantee unless the 'then' branch is always taken and returns
+                // TODO: Return guarantee for const conditions
                 return true;
             }
             else if (ifSyntax.ElseSyntax is BlockSyntax elseBlock)
             {
                 // Compile the else block
                 var elseBuilder = builder.CreateSuccessorBlock();
-                if (!TryCompileBlock(elseBlock, elseBuilder, out elseBuilder))
+                if (!TryCompileBlock(elseBlock, elseBuilder, out elseBuilder, out var elseReturns))
                 {
                     return false;
                 }
@@ -236,17 +269,19 @@ namespace Cle.SemanticAnalysis
                 // Then create a new block that is the target of both the 'then' and 'else' blocks
                 newBuilder = elseBuilder.CreateSuccessorBlock();
                 thenBuilder.SetSuccessor(newBuilder.Index);
+                returnGuaranteed = thenReturns & elseReturns;
                 return true;
             }
             else if (ifSyntax.ElseSyntax is IfStatementSyntax elseIf)
             {
                 // Compile the if, then make the 'then' block point to the created successor
-                if (!TryCompileIf(elseIf, builder.CreateSuccessorBlock(), out newBuilder))
+                if (!TryCompileIf(elseIf, builder.CreateSuccessorBlock(), out newBuilder, out var elseIfReturns))
                 {
                     return false;
                 }
 
                 thenBuilder.SetSuccessor(newBuilder.Index);
+                returnGuaranteed = thenReturns & elseIfReturns;
                 return true;
             }
             else

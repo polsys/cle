@@ -50,7 +50,11 @@
         VariableAlreadyDefined,
         VariableNotFound,
 
+        ReturnNotGuaranteed,
+
         SemanticWarningStart = 2500,
+
+        UnreachableCode,
 
         BackendErrorStart = 3000,
 
