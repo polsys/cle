@@ -259,7 +259,8 @@ namespace Cle.Compiler.UnitTests
             [NotNull] string filename,
             [NotNull] Compilation compilation)
         {
-            var diagnostics = new SingleFileDiagnosticSink(".", filename);
+            var diagnostics = new SingleFileDiagnosticSink();
+            diagnostics.Reset(".", filename);
             var methodSyntax = new FunctionSyntax(methodName, "bool", visibility,
                 new BlockSyntax(ImmutableList<StatementSyntax>.Empty, default), default);
             var declaration = MethodCompiler.CompileDeclaration(methodSyntax, filename, 0, compilation, diagnostics);

@@ -6,6 +6,7 @@ namespace Cle.Compiler
 {
     /// <summary>
     /// A diagnostic sink associated with a single file and module.
+    /// Instances are reusable, and <see cref="Reset"/> must be called before using the instance.
     /// </summary>
     internal class SingleFileDiagnosticSink : IDiagnosticSink
     {
@@ -15,19 +16,19 @@ namespace Cle.Compiler
         public IReadOnlyList<Diagnostic> Diagnostics => _diagnostics;
 
         [NotNull]
-        private readonly string _moduleName;
+        private string _moduleName = string.Empty;
 
         [NotNull]
-        private readonly string _filename;
+        private string _filename = string.Empty;
 
         [NotNull, ItemNotNull]
-        private readonly List<Diagnostic> _diagnostics;
+        private readonly List<Diagnostic> _diagnostics = new List<Diagnostic>();
 
-        public SingleFileDiagnosticSink([NotNull] string moduleName, [NotNull] string filename)
+        public void Reset([NotNull] string moduleName, [NotNull] string filename)
         {
             _moduleName = moduleName;
             _filename = filename;
-            _diagnostics = new List<Diagnostic>(0);
+            _diagnostics.Clear();
         }
 
         public void Add(DiagnosticCode code, TextPosition position)

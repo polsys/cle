@@ -88,6 +88,7 @@ namespace Cle.Compiler
             Debug.Assert(filesToParse != null);
 
             var allDiagnostics = new List<Diagnostic>();
+            var diagnosticSink = new SingleFileDiagnosticSink();
 
             foreach (var filename in filesToParse)
             {
@@ -96,10 +97,8 @@ namespace Cle.Compiler
                     compilation.AddMissingFileError(moduleName, filename);
                     continue;
                 }
-                
-                // TODO: Add caching for diagnostic sinks
-                var diagnosticSink = new SingleFileDiagnosticSink(moduleName, filename);
 
+                diagnosticSink.Reset(moduleName, filename);
                 var syntaxTree = SyntaxParser.Parse(sourceBytes, filename, diagnosticSink);
                 if (syntaxTree != null)
                 {
@@ -118,33 +117,33 @@ namespace Cle.Compiler
             [NotNull] Compilation compilation,
             [NotNull, ItemNotNull] List<SourceFileSyntax> syntaxTrees)
         {
+            var diagnosticSink = new SingleFileDiagnosticSink();
+
             // First, add type and method information to the compilation:
             //   - TODO: First add user-defined types
             //   - Then add methods with fully resolved parameter/return types
             foreach (var sourceFile in syntaxTrees)
             {
+                diagnosticSink.Reset(moduleName, sourceFile.Filename);
+
                 foreach (var methodSyntax in sourceFile.Functions)
                 {
-                    // TODO: Caching of diagnostic sinks
-                    var diagnosticSink = new SingleFileDiagnosticSink(moduleName, sourceFile.Filename);
                     var decl = MethodCompiler.CompileDeclaration(methodSyntax, sourceFile.Filename,
                         compilation.ReserveMethodSlot(), compilation, diagnosticSink);
 
-                    if (decl != null)
+                    // Declaration is invalid
+                    if (decl is null)
+                        continue;
+
+                    // Add the declaration to compilation, verifying that the name is not taken
+                    if (!compilation.AddMethodDeclaration(methodSyntax.Name, sourceFile.Namespace, decl))
                     {
-                        // Declaration is valid, but we still have to verify that the name is not taken
-                        if (!compilation.AddMethodDeclaration(methodSyntax.Name, sourceFile.Namespace, decl))
-                        {
-                            diagnosticSink.Add(DiagnosticCode.MethodAlreadyDefined, decl.DefinitionPosition,
-                                sourceFile.Namespace + "::" + methodSyntax.Name);
-                            compilation.AddDiagnostics(diagnosticSink.Diagnostics);
-                        }
-                    }
-                    else
-                    {
-                        compilation.AddDiagnostics(diagnosticSink.Diagnostics);
+                        diagnosticSink.Add(DiagnosticCode.MethodAlreadyDefined, decl.DefinitionPosition,
+                            sourceFile.Namespace + "::" + methodSyntax.Name);
                     }
                 }
+
+                compilation.AddDiagnostics(diagnosticSink.Diagnostics);
             }
         }
 
@@ -153,19 +152,19 @@ namespace Cle.Compiler
             [NotNull] Compilation compilation,
             [NotNull, ItemNotNull] List<SourceFileSyntax> syntaxTrees)
         {
+            var diagnosticSink = new SingleFileDiagnosticSink();
+            var compiler = new MethodCompiler(compilation, diagnosticSink);
+
             // Compile each method body
             foreach (var sourceFile in syntaxTrees)
             {
                 // Compilation.GetMethodDeclarations expects a list of visible namespaces -
                 // here we have a single element only
                 var sourceFileNamespaceAsArray = new[] { sourceFile.Namespace };
+                diagnosticSink.Reset(moduleName, sourceFile.Filename);
 
                 foreach (var methodSyntax in sourceFile.Functions)
                 {
-                    // TODO: Caching of diagnostic sinks - this allows reusing the compiler instance
-                    var diagnosticSink = new SingleFileDiagnosticSink(moduleName, sourceFile.Filename);
-                    var compiler = new MethodCompiler(compilation, diagnosticSink);
-
                     // Get the method declaration
                     var possibleDeclarations = compilation.GetMethodDeclarations(methodSyntax.Name,
                         sourceFileNamespaceAsArray, sourceFile.Filename);
@@ -180,8 +179,9 @@ namespace Cle.Compiler
                     {
                         compilation.SetMethodBody(declaration.BodyIndex, methodBody);
                     }
-                    compilation.AddDiagnostics(diagnosticSink.Diagnostics);
                 }
+
+                compilation.AddDiagnostics(diagnosticSink.Diagnostics);
             }
         }
     }
