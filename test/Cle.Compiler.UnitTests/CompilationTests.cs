@@ -1,7 +1,9 @@
-﻿using System.Collections.Immutable;
+﻿using System;
+using System.Collections.Immutable;
 using Cle.Common;
 using Cle.Parser.SyntaxTree;
 using Cle.SemanticAnalysis;
+using Cle.SemanticAnalysis.IR;
 using JetBrains.Annotations;
 using NUnit.Framework;
 
@@ -39,10 +41,9 @@ namespace Cle.Compiler.UnitTests
         public void AddDiagnostics_with_warning()
         {
             var compilation = new Compilation();
-
-            // TODO: This could be changed once real warnings exist in the codebase
+            
             compilation.AddDiagnostics(new[]
-                { new Diagnostic(DiagnosticCode.SemanticWarningStart, default, "", "", null, null) });
+                { new Diagnostic(DiagnosticCode.UnreachableCode, default, "", "", null, null) });
 
             Assert.That(compilation.HasErrors, Is.False);
             Assert.That(compilation.Diagnostics, Has.Exactly(1).Items);
@@ -75,7 +76,7 @@ namespace Cle.Compiler.UnitTests
         }
 
         [Test]
-        public void AddMethod_succeeds_adding_private_method_with_same_name()
+        public void AddMethodDeclaration_succeeds_adding_private_method_with_same_name()
         {
             var compilation = new Compilation();
             var first = CreateDeclaration("TestMethod", Visibility.Private, "test.cle", compilation);
@@ -86,7 +87,7 @@ namespace Cle.Compiler.UnitTests
         }
 
         [Test]
-        public void AddMethod_fails_adding_private_method_with_same_name_to_same_file()
+        public void AddMethodDeclaration_fails_adding_private_method_with_same_name_to_same_file()
         {
             var compilation = new Compilation();
             var first = CreateDeclaration("TestMethod", Visibility.Private, "test.cle", compilation);
@@ -97,7 +98,7 @@ namespace Cle.Compiler.UnitTests
         }
 
         [Test]
-        public void AddMethod_fails_adding_private_method_after_public_with_same_name()
+        public void AddMethodDeclaration_fails_adding_private_method_after_public_with_same_name()
         {
             var compilation = new Compilation();
             var first = CreateDeclaration("TestMethod", Visibility.Public, "test.cle", compilation);
@@ -108,7 +109,7 @@ namespace Cle.Compiler.UnitTests
         }
 
         [Test]
-        public void AddMethod_fails_adding_public_method_after_private_with_same_name()
+        public void AddMethodDeclaration_fails_adding_public_method_after_private_with_same_name()
         {
             var compilation = new Compilation();
             var first = CreateDeclaration("TestMethod", Visibility.Private, "test.cle", compilation);
@@ -210,6 +211,48 @@ namespace Cle.Compiler.UnitTests
             Assert.That(result, Is.Empty);
         }
 
+        [Test]
+        public void ReserveMethodSlot_returns_successive_indices()
+        {
+            var compilation = new Compilation();
+
+            Assert.That(compilation.ReserveMethodSlot(), Is.EqualTo(0));
+            Assert.That(compilation.ReserveMethodSlot(), Is.EqualTo(1));
+            Assert.That(compilation.ReserveMethodSlot(), Is.EqualTo(2));
+        }
+
+        [Test]
+        public void Method_body_can_be_set_and_got()
+        {
+            var compilation = new Compilation();
+
+            Assert.That(compilation.ReserveMethodSlot(), Is.EqualTo(0));
+            Assert.That(compilation.ReserveMethodSlot(), Is.EqualTo(1));
+
+            var method = new CompiledMethod();
+            Assert.That(() => compilation.SetMethodBody(1, method), Throws.Nothing);
+            Assert.That(compilation.GetMethodBody(1), Is.SameAs(method));
+        }
+
+        [Test]
+        public void GetMethodBody_throws_for_out_of_bounds_or_unset()
+        {
+            var compilation = new Compilation();
+
+            Assert.That(compilation.ReserveMethodSlot(), Is.EqualTo(0));
+            Assert.That(() => compilation.GetMethodBody(0), Throws.InstanceOf<ArgumentException>());
+            Assert.That(() => compilation.GetMethodBody(1), Throws.InstanceOf<ArgumentException>());
+        }
+
+        [Test]
+        public void SetMethodBody_throws_for_out_of_bounds()
+        {
+            var compilation = new Compilation();
+            
+            var method = new CompiledMethod();
+            Assert.That(() => compilation.SetMethodBody(1, method), Throws.InstanceOf<ArgumentException>());
+        }
+
         private static MethodDeclaration CreateDeclaration(
             [NotNull] string methodName,
             Visibility visibility,
@@ -219,7 +262,7 @@ namespace Cle.Compiler.UnitTests
             var diagnostics = new SingleFileDiagnosticSink(".", filename);
             var methodSyntax = new FunctionSyntax(methodName, "bool", visibility,
                 new BlockSyntax(ImmutableList<StatementSyntax>.Empty, default), default);
-            var declaration = MethodCompiler.CompileDeclaration(methodSyntax, filename, compilation, diagnostics);
+            var declaration = MethodCompiler.CompileDeclaration(methodSyntax, filename, 0, compilation, diagnostics);
 
             // Sanity check
             Assert.That(declaration, Is.Not.Null);

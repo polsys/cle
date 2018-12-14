@@ -21,12 +21,12 @@ namespace Cle.SemanticAnalysis
 
         // These fields hold information for the current method and are reset by CompileBody()
         [CanBeNull] private FunctionSyntax _syntaxTree;
+        [CanBeNull] private MethodDeclaration _declaration;
         [CanBeNull] private string _definingNamespace;
         [CanBeNull] private string _sourceFilename;
         [NotNull] private readonly ScopedVariableMap _variableMap;
 
         // These fields are reset by InternalCompile()
-        [CanBeNull] private MethodDeclaration _declaration;
         [CanBeNull] private CompiledMethod _methodInProgress;
 
         /// <summary>
@@ -36,12 +36,14 @@ namespace Cle.SemanticAnalysis
         /// </summary>
         /// <param name="syntax">The syntax tree for the method.</param>
         /// <param name="definingFilename">The name of the file that contains the method.</param>
+        /// <param name="methodBodyIndex">The index associated with the compiled method body.</param>
         /// <param name="declarationProvider">The type provider to use for resolving custom types.</param>
         /// <param name="diagnosticSink">The receiver for any semantic errors or warnings.</param>
         [CanBeNull]
         public static MethodDeclaration CompileDeclaration(
             [NotNull] FunctionSyntax syntax,
             [NotNull] string definingFilename,
+            int methodBodyIndex,
             [NotNull] IDeclarationProvider declarationProvider,
             [NotNull] IDiagnosticSink diagnosticSink)
         {
@@ -50,7 +52,7 @@ namespace Cle.SemanticAnalysis
                 return null;
             }
             Debug.Assert(returnType != null);
-            return new MethodDeclaration(returnType, syntax.Visibility, definingFilename, syntax.Position);
+            return new MethodDeclaration(methodBodyIndex, returnType, syntax.Visibility, definingFilename, syntax.Position);
 
             // TODO: Resolve parameter types
         }
@@ -75,16 +77,19 @@ namespace Cle.SemanticAnalysis
         /// Returns null if the compilation fails, in which case diagnostics are also emitted.
         /// </summary>
         /// <param name="syntaxTree">The syntax tree for the method.</param>
+        /// <param name="declaration">The method declaration.</param>
         /// <param name="definingNamespace">The namespace where the method is defined.</param>
         /// <param name="sourceFilename">The name of the file where the method is defined.</param>
         [CanBeNull]
         public CompiledMethod CompileBody(
             [NotNull] FunctionSyntax syntaxTree,
+            [NotNull] MethodDeclaration declaration,
             [NotNull] string definingNamespace,
             [NotNull] string sourceFilename)
         {
             // Reset most per-method fields
             _syntaxTree = syntaxTree;
+            _declaration = declaration;
             _definingNamespace = definingNamespace;
             _sourceFilename = sourceFilename;
             
@@ -98,13 +103,7 @@ namespace Cle.SemanticAnalysis
         {
             Debug.Assert(_syntaxTree != null);
             Debug.Assert(_sourceFilename != null);
-
-            // Fetch the param and return type information and create a working method instance
-            var possibleDeclarations = _declarationProvider.GetMethodDeclarations(_syntaxTree.Name,
-                new[] { _definingNamespace }, _sourceFilename);
-            if (possibleDeclarations.Count != 1)
-                throw new InvalidOperationException("Ambiguous method declaration");
-            _declaration = possibleDeclarations[0];
+            
             _methodInProgress = new CompiledMethod();
 
             // TODO: Create locals for the parameters
@@ -117,6 +116,7 @@ namespace Cle.SemanticAnalysis
                 return null;
             }
 
+            // ReSharper nullability checker cannot see that the fields weren't changed in TryCompileBlock
             Debug.Assert(_declaration != null);
             Debug.Assert(_methodInProgress != null);
 

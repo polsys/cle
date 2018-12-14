@@ -51,6 +51,31 @@ public NonexistentType Main() {}";
         }
 
         [Test]
+        public void Compile_exits_on_semantic_error()
+        {
+            const string source = @"namespace Test;
+
+public bool TypeMismatch() { return 2; }";
+            var fileProvider = new TestingSourceFileProvider();
+            fileProvider.Add(".", "main.cle", source);
+
+            var result = CompilerDriver.Compile(".", new CompilationOptions(), fileProvider);
+
+            Assert.That(result.FailedCount, Is.EqualTo(1));
+            Assert.That(result.ModuleCount, Is.EqualTo(1));
+            Assert.That(result.SucceededCount, Is.EqualTo(0));
+
+            Assert.That(result.Diagnostics, Has.Exactly(1).Items);
+            Assert.That(result.Diagnostics[0].Code, Is.EqualTo(DiagnosticCode.TypeMismatch));
+            Assert.That(result.Diagnostics[0].Actual, Is.EqualTo("int32"));
+            Assert.That(result.Diagnostics[0].Expected, Is.EqualTo("bool"));
+            Assert.That(result.Diagnostics[0].Position.Line, Is.EqualTo(3));
+            Assert.That(result.Diagnostics[0].Position.ByteInLine, Is.EqualTo(36));
+            Assert.That(result.Diagnostics[0].Module, Is.EqualTo("."));
+            Assert.That(result.Diagnostics[0].Filename, Is.EqualTo("main.cle"));
+        }
+
+        [Test]
         public void Compile_exits_on_multiple_declaration_error()
         {
             const string source1 = @"namespace Test;

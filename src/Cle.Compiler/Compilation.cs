@@ -1,7 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using Cle.Common;
 using Cle.SemanticAnalysis;
+using Cle.SemanticAnalysis.IR;
 using JetBrains.Annotations;
 
 namespace Cle.Compiler
@@ -48,6 +50,13 @@ namespace Cle.Compiler
 
         [NotNull]
         private readonly object _declarationLock = new object();
+
+        [NotNull]
+        private readonly IndexedRandomAccessStore<CompiledMethod> _methodBodies =
+            new IndexedRandomAccessStore<CompiledMethod>();
+
+        [NotNull]
+        private readonly object _methodBodyLock = new object();
 
         /// <summary>
         /// Adds the given collection of diagnostics to <see cref="Diagnostics"/>.
@@ -203,6 +212,57 @@ namespace Cle.Compiler
             }
 
             return matchingMethods;
+        }
+
+        /// <summary>
+        /// Gets a free method index that can be used for <see cref="SetMethodBody"/>.
+        /// </summary>
+        public int ReserveMethodSlot()
+        {
+            lock (_methodBodyLock)
+            {
+                return _methodBodies.ReserveIndex();
+            }
+        }
+
+        /// <summary>
+        /// Returns the method body associated with the given index.
+        /// Throws if there is no method stored.
+        /// </summary>
+        [NotNull]
+        public CompiledMethod GetMethodBody(int index)
+        {
+            try
+            {
+                lock (_methodBodyLock)
+                {
+                    return _methodBodies[index];
+                }
+            }
+            catch (IndexOutOfRangeException)
+            {
+                throw new ArgumentOutOfRangeException(nameof(index), "There is no method stored with the index.");
+            }
+        }
+
+        /// <summary>
+        /// Stores a method body to be accessed via the specified index.
+        /// </summary>
+        /// <param name="index">The method index from <see cref="ReserveMethodSlot"/>. Throws if this is not valid.</param>
+        /// <param name="method">The method to store.</param>
+        public void SetMethodBody(int index, [NotNull] CompiledMethod method)
+        {
+            try
+            {
+                lock (_methodBodyLock)
+                {
+                    _methodBodies[index] = method;
+                }
+            }
+            catch (IndexOutOfRangeException)
+            {
+                throw new ArgumentOutOfRangeException(nameof(index), "The index has not been reserved.");
+            }
         }
     }
 }

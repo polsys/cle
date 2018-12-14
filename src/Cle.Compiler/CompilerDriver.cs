@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using Cle.Common;
 using Cle.Parser;
@@ -46,6 +47,10 @@ namespace Cle.Compiler
             }
 
             // After this, the module should be ready for semantic compilation in any order of methods
+            if (!compilation.HasErrors)
+            {
+                CompileModule(mainModule, compilation, syntaxTrees);
+            }
 
             // TODO: Run the optimizer if enabled
 
@@ -122,8 +127,8 @@ namespace Cle.Compiler
                 {
                     // TODO: Caching of diagnostic sinks
                     var diagnosticSink = new SingleFileDiagnosticSink(moduleName, sourceFile.Filename);
-                    var decl = MethodCompiler.CompileDeclaration(methodSyntax, sourceFile.Filename, compilation,
-                        diagnosticSink);
+                    var decl = MethodCompiler.CompileDeclaration(methodSyntax, sourceFile.Filename,
+                        compilation.ReserveMethodSlot(), compilation, diagnosticSink);
 
                     if (decl != null)
                     {
@@ -139,6 +144,43 @@ namespace Cle.Compiler
                     {
                         compilation.AddDiagnostics(diagnosticSink.Diagnostics);
                     }
+                }
+            }
+        }
+
+        private static void CompileModule(
+            [NotNull] string moduleName,
+            [NotNull] Compilation compilation,
+            [NotNull, ItemNotNull] List<SourceFileSyntax> syntaxTrees)
+        {
+            // Compile each method body
+            foreach (var sourceFile in syntaxTrees)
+            {
+                // Compilation.GetMethodDeclarations expects a list of visible namespaces -
+                // here we have a single element only
+                var sourceFileNamespaceAsArray = new[] { sourceFile.Namespace };
+
+                foreach (var methodSyntax in sourceFile.Functions)
+                {
+                    // TODO: Caching of diagnostic sinks - this allows reusing the compiler instance
+                    var diagnosticSink = new SingleFileDiagnosticSink(moduleName, sourceFile.Filename);
+                    var compiler = new MethodCompiler(compilation, diagnosticSink);
+
+                    // Get the method declaration
+                    var possibleDeclarations = compilation.GetMethodDeclarations(methodSyntax.Name,
+                        sourceFileNamespaceAsArray, sourceFile.Filename);
+                    if (possibleDeclarations.Count != 1)
+                        throw new InvalidOperationException("Ambiguous or missing method declaration");
+                    var declaration = possibleDeclarations[0];
+
+                    // Compile and store the method body
+                    var methodBody = compiler.CompileBody(methodSyntax, declaration,
+                        sourceFile.Namespace, sourceFile.Filename);
+                    if (methodBody != null)
+                    {
+                        compilation.SetMethodBody(declaration.BodyIndex, methodBody);
+                    }
+                    compilation.AddDiagnostics(diagnosticSink.Diagnostics);
                 }
             }
         }

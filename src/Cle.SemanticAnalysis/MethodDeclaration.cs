@@ -10,6 +10,11 @@ namespace Cle.SemanticAnalysis
     public class MethodDeclaration
     {
         /// <summary>
+        /// Gets the index associated with the compiled method body.
+        /// </summary>
+        public int BodyIndex { get; }
+
+        /// <summary>
         /// Gets the return type of this method.
         /// </summary>
         [NotNull]
@@ -33,11 +38,13 @@ namespace Cle.SemanticAnalysis
         public TextPosition DefinitionPosition { get; }
 
         public MethodDeclaration(
+            int bodyIndex,
             [NotNull] TypeDefinition returnType, 
             Visibility visibility,
             [NotNull] string definingFilename,
             TextPosition sourcePosition)
         {
+            BodyIndex = bodyIndex;
             ReturnType = returnType;
             Visibility = visibility;
             DefiningFilename = definingFilename;

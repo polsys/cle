@@ -18,7 +18,7 @@ namespace Cle.SemanticAnalysis.UnitTests.MethodCompilerTests
             var diagnostics = new TestingDiagnosticSink();
             var declarationProvider = new TestingSingleFileDeclarationProvider();
 
-            var result = MethodCompiler.CompileDeclaration(syntax, "bool.cle", declarationProvider, diagnostics);
+            var result = MethodCompiler.CompileDeclaration(syntax, "bool.cle", 7, declarationProvider, diagnostics);
 
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             Assert.That(result, Is.Not.Null);
@@ -26,6 +26,7 @@ namespace Cle.SemanticAnalysis.UnitTests.MethodCompilerTests
             Assert.That(result.Visibility, Is.EqualTo(Visibility.Public));
             Assert.That(result.DefiningFilename, Is.EqualTo("bool.cle"));
             Assert.That(result.DefinitionPosition, Is.EqualTo(position));
+            Assert.That(result.BodyIndex, Is.EqualTo(7));
         }
 
         [Test]
@@ -37,7 +38,7 @@ namespace Cle.SemanticAnalysis.UnitTests.MethodCompilerTests
             var diagnostics = new TestingDiagnosticSink();
             var declarationProvider = new TestingSingleFileDeclarationProvider();
 
-            var result = MethodCompiler.CompileDeclaration(syntax, "int32.cle", declarationProvider, diagnostics);
+            var result = MethodCompiler.CompileDeclaration(syntax, "int32.cle", 8, declarationProvider, diagnostics);
 
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             Assert.That(result, Is.Not.Null);
@@ -45,6 +46,7 @@ namespace Cle.SemanticAnalysis.UnitTests.MethodCompilerTests
             Assert.That(result.Visibility, Is.EqualTo(Visibility.Private));
             Assert.That(result.DefiningFilename, Is.EqualTo("int32.cle"));
             Assert.That(result.DefinitionPosition, Is.EqualTo(position));
+            Assert.That(result.BodyIndex, Is.EqualTo(8));
         }
 
         [Test]
@@ -55,7 +57,7 @@ namespace Cle.SemanticAnalysis.UnitTests.MethodCompilerTests
             var diagnostics = new TestingDiagnosticSink();
             var declarationProvider = new TestingSingleFileDeclarationProvider();
 
-            var result = MethodCompiler.CompileDeclaration(syntax, "unknown.cle", declarationProvider, diagnostics);
+            var result = MethodCompiler.CompileDeclaration(syntax, "unknown.cle", 0, declarationProvider, diagnostics);
 
             Assert.That(result, Is.Null);
             diagnostics.AssertDiagnosticAt(DiagnosticCode.TypeNotFound, 1, 3).WithActual("UltimateBool");

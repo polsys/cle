@@ -28,12 +28,12 @@ namespace Cle.SemanticAnalysis.UnitTests.MethodCompilerTests
             // If needed, refactor this to accept a custom declaration provider
             var declarationProvider = new TestingSingleFileDeclarationProvider();
             var declaration = MethodCompiler.CompileDeclaration(syntaxTree.Functions[0], sourceFilename,
-                declarationProvider, diagnostics);
+                0, declarationProvider, diagnostics);
             Assert.That(declaration, Is.Not.Null, "Method declaration was not compiled successfully.");
             declarationProvider.Methods.Add(syntaxTree.Functions[0].Name, declaration);
 
             return new MethodCompiler(declarationProvider, diagnostics)
-                .CompileBody(syntaxTree.Functions[0], syntaxTree.Namespace, sourceFilename);
+                .CompileBody(syntaxTree.Functions[0], declaration, syntaxTree.Namespace, sourceFilename);
         }
         
         /// <summary>
