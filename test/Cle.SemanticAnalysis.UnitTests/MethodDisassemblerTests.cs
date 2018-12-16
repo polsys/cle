@@ -48,11 +48,21 @@ namespace Cle.SemanticAnalysis.UnitTests
             var graphBuilder = new BasicBlockGraphBuilder();
             var blockBuilder = graphBuilder.GetInitialBlockBuilder();
             blockBuilder.AppendInstruction(Opcode.CopyValue, 1, 0, 2);
+            blockBuilder.AppendInstruction(Opcode.Add, 1, 0, 2);
+            blockBuilder.AppendInstruction(Opcode.Subtract, 1, 0, 2);
+            blockBuilder.AppendInstruction(Opcode.Multiply, 1, 0, 2);
+            blockBuilder.AppendInstruction(Opcode.Divide, 1, 0, 2);
+            blockBuilder.AppendInstruction(Opcode.ArithmeticNegate, 1, 0, 2);
             blockBuilder.AppendInstruction(Opcode.Return, 2, 0, 0);
             var method = new CompiledMethod { Body = graphBuilder.Build() };
 
             const string expected = "BB_0:\n" +
                                     "    CopyValue #1 -> #2\n" +
+                                    "    Add #1 + #0 -> #2\n" +
+                                    "    Subtract #1 - #0 -> #2\n" +
+                                    "    Multiply #1 * #0 -> #2\n" +
+                                    "    Divide #1 / #0 -> #2\n" +
+                                    "    ArithmeticNegate #1 -> #2\n" +
                                     "    Return #2\n\n";
 
             var builder = new StringBuilder();

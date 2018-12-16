@@ -38,6 +38,41 @@ BB_0:
         }
 
         [Test]
+        public void Int32_constant_expression_returning_method_compiled_successfully()
+        {
+            const string source = @"namespace Test;
+public int32 GetTheAnswer() { return 40 + 2; }";
+            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+
+            Assert.That(compiledMethod, Is.Not.Null);
+            Assert.That(diagnostics.Diagnostics, Is.Empty);
+            
+            AssertDisassembly(compiledMethod, @"
+; #0   int32 = 42
+BB_0:
+    Return #0");
+        }
+
+        [Test]
+        public void Int32_expression_returning_method_compiled_successfully()
+        {
+            const string source = @"namespace Test;
+public int32 GetTheAnswer() { int32 almost = 40; return almost + 2; }";
+            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+
+            Assert.That(compiledMethod, Is.Not.Null);
+            Assert.That(diagnostics.Diagnostics, Is.Empty);
+            
+            AssertDisassembly(compiledMethod, @"
+; #0   int32 = 40
+; #1   int32 = 2
+; #2   int32 = void
+BB_0:
+    Add #0 + #1 -> #2
+    Return #2");
+        }
+
+        [Test]
         public void Explicit_void_return()
         {
             const string source = @"namespace Test;
@@ -132,7 +167,5 @@ public void Mismatch() { return true; }";
                 .WithActual("bool")
                 .WithExpected("void");
         }
-        
-        // TODO: Int32 expression return
     }
 }

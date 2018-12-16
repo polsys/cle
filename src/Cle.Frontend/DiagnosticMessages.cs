@@ -81,8 +81,10 @@ namespace Cle.Frontend
                     return $"Method {diagnostic.Actual} is already defined in this scope.";
                 case DiagnosticCode.TypeMismatch:
                     return $"Expression is of type {diagnostic.Actual} but expected {diagnostic.Expected}.";
-                case DiagnosticCode.IntegerLiteralOutOfBounds:
-                    return $"Integer literal {diagnostic.Actual} cannot be represented in {diagnostic.Expected}.";
+                case DiagnosticCode.IntegerConstantOutOfBounds:
+                    return $"Integer expression typed as {diagnostic.Expected} overflows at compile time.";
+                case DiagnosticCode.DivisionByConstantZero:
+                    return "Division by constant zero.";
                 case DiagnosticCode.VariableAlreadyDefined:
                     return $"Variable '{diagnostic.Actual}' is already defined in this or enclosing scope.";
                 case DiagnosticCode.VariableNotFound:

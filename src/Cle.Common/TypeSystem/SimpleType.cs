@@ -11,6 +11,7 @@ namespace Cle.Common.TypeSystem
         public static SimpleType Void { get; } = new SimpleType(SimpleTypeId.Void);
         public static SimpleType Bool { get; } = new SimpleType(SimpleTypeId.Bool);
         public static SimpleType Int32 { get; } = new SimpleType(SimpleTypeId.Int32);
+        public static SimpleType UInt32 { get; } = new SimpleType(SimpleTypeId.UInt32);
 
         private readonly SimpleTypeId _typeId;
 
@@ -32,6 +33,7 @@ namespace Cle.Common.TypeSystem
                 {
                     case SimpleTypeId.Bool: return "bool";
                     case SimpleTypeId.Int32: return "int32";
+                    case SimpleTypeId.UInt32: return "uint32";
                     case SimpleTypeId.Void: return "void";
                     default: throw new NotImplementedException("Unimplemented simple type");
                 }
@@ -58,7 +60,8 @@ namespace Cle.Common.TypeSystem
             // TODO: Add the remaining cases
             Void,
             Bool,
-            Int32
+            Int32,
+            UInt32
         }
     }
 }

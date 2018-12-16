@@ -96,5 +96,25 @@ namespace Cle.SemanticAnalysis.IR
         /// Copies the local value indexed by the left operand to the destination operand.
         /// </summary>
         CopyValue,
+        /// <summary>
+        /// Adds the local values indexed by left and right operands and stores the result in the destination index.
+        /// </summary>
+        Add,
+        /// <summary>
+        /// Subtracts the right local from the left local and stores the result in the destination index.
+        /// </summary>
+        Subtract,
+        /// <summary>
+        /// Multiplies the local values indexed by left and right operands and stores the result in the destination index.
+        /// </summary>
+        Multiply,
+        /// <summary>
+        /// Divides the left local by the right local and stores the result in the destination index.
+        /// </summary>
+        Divide,
+        /// <summary>
+        /// Negates the numeric value indexed by the left operand and stores the result in the destination index.
+        /// </summary>
+        ArithmeticNegate,
     }
 }

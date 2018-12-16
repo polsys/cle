@@ -46,7 +46,8 @@
         MethodAlreadyDefined,
 
         TypeMismatch,
-        IntegerLiteralOutOfBounds,
+        IntegerConstantOutOfBounds,
+        DivisionByConstantZero,
         VariableAlreadyDefined,
         VariableNotFound,
 

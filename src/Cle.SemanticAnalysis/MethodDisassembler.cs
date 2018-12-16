@@ -51,14 +51,29 @@ namespace Cle.SemanticAnalysis
                     // Depending on the instruction, the parameters or just a newline
                     switch (instruction.Operation)
                     {
+                        case Opcode.Add:
+                            outputBuilder.AppendLine($" #{instruction.Left} + #{instruction.Right} -> #{instruction.Destination}");
+                            break;
+                        case Opcode.ArithmeticNegate:
+                            outputBuilder.AppendLine($" #{instruction.Left} -> #{instruction.Destination}");
+                            break;
                         case Opcode.BranchIf:
                             outputBuilder.AppendLine($" #{instruction.Left} ==> BB_{block.AlternativeSuccessor}");
                             break;
                         case Opcode.CopyValue:
                             outputBuilder.AppendLine($" #{instruction.Left} -> #{instruction.Destination}");
                             break;
+                        case Opcode.Divide:
+                            outputBuilder.AppendLine($" #{instruction.Left} / #{instruction.Right} -> #{instruction.Destination}");
+                            break;
+                        case Opcode.Multiply:
+                            outputBuilder.AppendLine($" #{instruction.Left} * #{instruction.Right} -> #{instruction.Destination}");
+                            break;
                         case Opcode.Return:
                             outputBuilder.AppendLine($" #{instruction.Left}");
+                            break;
+                        case Opcode.Subtract:
+                            outputBuilder.AppendLine($" #{instruction.Left} - #{instruction.Right} -> #{instruction.Destination}");
                             break;
                         default:
                             outputBuilder.AppendLine();

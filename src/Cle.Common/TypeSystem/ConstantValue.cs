@@ -21,22 +21,15 @@ namespace Cle.Common.TypeSystem
 
         /// <summary>
         /// Gets the value of this constant as a boolean.
-        /// Throws if <see cref="Type"/> is not equal to <see cref="ConstantType.Boolean"/>.
+        /// <see cref="Type"/> is not checked.
         /// </summary>
-        public bool AsBool => ReturnAssertingType(ConstantType.Boolean, _data == 1);
+        public bool AsBool => _data == 1;
 
         /// <summary>
         /// Gets the value of this constant as a signed integer.
-        /// Throws if <see cref="Type"/> is not equal to <see cref="ConstantType.SignedInteger"/>.
+        /// <see cref="Type"/> is not checked.
         /// </summary>
-        public int AsSignedInteger => ReturnAssertingType(ConstantType.SignedInteger, (int)_data);
-
-        private T ReturnAssertingType<T>(ConstantType expectedType, T value)
-        {
-            if (Type != expectedType)
-                throw new InvalidOperationException("Type mismatch");
-            return value;
-        }
+        public long AsSignedInteger => (long)_data;
 
         /// <summary>
         /// Creates a new boolean constant with the specified value.
