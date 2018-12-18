@@ -81,20 +81,17 @@ namespace Cle.Parser
             _currentByteInRow += _currentTokenLengthBytes;
             _currentTokenLengthBytes = 0;
 
-            // Skip whitespace
-            while (TryReadByte(out var b) && IsWhitespace(b))
+            // Skip whitespace and comments until we hit a token
+            while (_currentOffsetBytes < _source.Length)
             {
-                _currentOffsetBytes++;
+                var positionBeforeSkipping = _currentOffsetBytes;
 
-                // Update the position
-                if (b == (byte)'\n')
+                SkipWhitespace();
+                SkipSingleLineComment();
+
+                if (positionBeforeSkipping == _currentOffsetBytes)
                 {
-                    _currentRow++;
-                    _currentByteInRow = 0;
-                }
-                else
-                {
-                    _currentByteInRow++;
+                    break;
                 }
             }
 
@@ -152,7 +149,7 @@ namespace Cle.Parser
         }
 
         /// <summary>
-        /// Gets the next byte and updates the current position.
+        /// Gets the next byte but does not update current position.
         /// Returns false if end of file is reached.
         /// </summary>
         /// <param name="b">Will contain the byte read, or undefined if EOF.</param>
@@ -181,6 +178,44 @@ namespace Cle.Parser
             if (_source.Span[0] == 0xEF && _source.Span[1] == 0xBB && _source.Span[2] == 0xBF)
             {
                 _currentOffsetBytes = 3;
+            }
+        }
+
+        private void SkipWhitespace()
+        {
+            while (TryReadByte(out var b) && IsWhitespace(b))
+            {
+                _currentOffsetBytes++;
+
+                // Update the position
+                if (b == (byte)'\n')
+                {
+                    _currentRow++;
+                    _currentByteInRow = 0;
+                }
+                else
+                {
+                    _currentByteInRow++;
+                }
+            }
+        }
+
+        private void SkipSingleLineComment()
+        {
+            if (_source.Length - _currentOffsetBytes >= 2)
+            {
+                var possibleDoubleSlash = _source.Slice(_currentOffsetBytes, 2).Span;
+
+                if (possibleDoubleSlash[0] == (byte)'/' && possibleDoubleSlash[1] == (byte)'/')
+                {
+                    // Read until end-of-line
+                    // SkipWhitespace will eat the newline character and update the row
+                    while (TryReadByte(out var ch) && ch != (byte)'\n')
+                    {
+                        _currentOffsetBytes++;
+                        _currentByteInRow++;
+                    }
+                }
             }
         }
 

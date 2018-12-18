@@ -33,6 +33,8 @@ public int32 IntegerExpression()
     return 42 * 28 + 35 - 1 + 32 / (--1);
 }
 
+// You could, and probably should, ask whether this method makes any sense.
+// At least it is a good place for a comment.
 public bool IsTrue()
 {
     return true;

@@ -203,6 +203,35 @@ namespace Cle.Parser.UnitTests
             Assert.That(Utf8ToString(lexer.GetToken()), Is.EqualTo(";"));
         }
 
+        [Test]
+        public void Single_line_comments_are_skipped()
+        {
+            var source = StringToMemory(@"// A comment at the start of the file
+// Another comment on the next line
+namespace//Look ma, no spaces!
+
+ something // Here we have a space
+
++// There is no space after a symbol
+// This file ends in a comment
+//");
+            var lexer = new Lexer(source);
+
+            Assert.That(Utf8ToString(lexer.GetToken()), Is.EqualTo("namespace"));
+            Assert.That(lexer.LastPosition.Line, Is.EqualTo(3));
+            Assert.That(lexer.LastPosition.ByteInLine, Is.EqualTo(0));
+
+            Assert.That(Utf8ToString(lexer.GetToken()), Is.EqualTo("something"));
+            Assert.That(lexer.LastPosition.Line, Is.EqualTo(5));
+            Assert.That(lexer.LastPosition.ByteInLine, Is.EqualTo(1));
+
+            Assert.That(Utf8ToString(lexer.GetToken()), Is.EqualTo("+"));
+            Assert.That(lexer.LastPosition.Line, Is.EqualTo(7));
+            Assert.That(lexer.LastPosition.ByteInLine, Is.EqualTo(0));
+
+            Assert.That(Utf8ToString(lexer.GetToken()), Is.Empty);
+        }
+
         /// <summary>
         /// Converts a UTF-16 encoded source code string into a view of a UTF-8 array.
         /// </summary>
