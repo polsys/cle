@@ -20,5 +20,15 @@ steps:
     dotnet build --configuration $(configuration)
   displayName: 'Build Release'
 - script: |
-    dotnet test --configuration $(configuration)
+    dotnet test --configuration $(configuration) --logger trx --collect "Code coverage"
   displayName: 'Run tests'
+- script: |
+    dotnet publish src/Cle.Frontend --configuration $(configuration) --output $(Build.ArtifactStagingDirectory)
+  displayName: 'Publish Cle.Frontend'
+- task: PublishBuildArtifacts@1
+  displayName: 'Publish build artifacts'
+- task: PublishTestResults@2
+  inputs:
+    testRunner: VSTest
+    testResultsFiles: '**/*.trx'
+  displayName: 'Publish test results'
