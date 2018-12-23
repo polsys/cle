@@ -24,10 +24,11 @@ steps:
   displayName: 'Run tests'
 - script: |
     dotnet publish src/Cle.Frontend --configuration $(configuration) --output $(Build.ArtifactStagingDirectory)
-  displayName: 'Publish Cle.Frontend'
+  displayName: 'Package Cle.Frontend'
 - task: PublishBuildArtifacts@1
   displayName: 'Publish build artifacts'
 - task: PublishTestResults@2
+  condition: succeededOrFailed()
   inputs:
     testRunner: VSTest
     testResultsFiles: '**/*.trx'
