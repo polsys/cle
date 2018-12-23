@@ -63,14 +63,15 @@ namespace Cle.Compiler.UnitTests
         }
 
         [Test]
-        public void AddMissingModuleError_adds_error()
+        public void AddModuleLevelDiagnostic_adds_error()
         {
             var compilation = new Compilation();
 
-            compilation.AddMissingModuleError("ModuleName");
+            compilation.AddModuleLevelDiagnostic(DiagnosticCode.ModuleNotFound, "ModuleName");
 
             Assert.That(compilation.HasErrors, Is.True);
             Assert.That(compilation.Diagnostics, Has.Exactly(1).Items);
+            Assert.That(compilation.Diagnostics[0].Code, Is.EqualTo(DiagnosticCode.ModuleNotFound));
             Assert.That(compilation.Diagnostics[0].Module, Is.EqualTo("ModuleName"));
             Assert.That(compilation.Diagnostics[0].Filename, Is.Null);
         }
@@ -251,6 +252,18 @@ namespace Cle.Compiler.UnitTests
             
             var method = new CompiledMethod();
             Assert.That(() => compilation.SetMethodBody(1, method), Throws.InstanceOf<ArgumentException>());
+        }
+
+        [Test]
+        public void TrySetEntryPointIndex_can_be_called_only_once()
+        {
+            var compilation = new Compilation();
+
+            Assert.That(compilation.EntryPointIndex, Is.EqualTo(-1));
+            Assert.That(compilation.TrySetEntryPointIndex(17), Is.True);
+            Assert.That(compilation.EntryPointIndex, Is.EqualTo(17));
+            Assert.That(compilation.TrySetEntryPointIndex(34), Is.False);
+            Assert.That(compilation.EntryPointIndex, Is.EqualTo(17));
         }
 
         private static MethodDeclaration CreateDeclaration(

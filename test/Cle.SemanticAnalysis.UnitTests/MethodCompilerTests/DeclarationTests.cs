@@ -23,6 +23,7 @@ namespace Cle.SemanticAnalysis.UnitTests.MethodCompilerTests
 
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             Assert.That(result, Is.Not.Null);
+            Assert.That(result.IsEntryPoint, Is.False);
             Assert.That(result.ReturnType, Is.EqualTo(SimpleType.Bool));
             Assert.That(result.Visibility, Is.EqualTo(Visibility.Public));
             Assert.That(result.DefiningFilename, Is.EqualTo("bool.cle"));
@@ -44,6 +45,7 @@ namespace Cle.SemanticAnalysis.UnitTests.MethodCompilerTests
 
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             Assert.That(result, Is.Not.Null);
+            Assert.That(result.IsEntryPoint, Is.False);
             Assert.That(result.ReturnType, Is.EqualTo(SimpleType.Int32));
             Assert.That(result.Visibility, Is.EqualTo(Visibility.Private));
             Assert.That(result.DefiningFilename, Is.EqualTo("int32.cle"));
@@ -65,5 +67,58 @@ namespace Cle.SemanticAnalysis.UnitTests.MethodCompilerTests
             Assert.That(result, Is.Null);
             diagnostics.AssertDiagnosticAt(DiagnosticCode.TypeNotFound, 1, 3).WithActual("UltimateBool");
         }
+
+        [Test]
+        public void CompileDeclaration_does_not_accept_unknown_attribute()
+        {
+            var position = new TextPosition(140, 13, 4);
+            var attribute = new AttributeSyntax("TotallyNonexistentAttribute", position);
+            var syntax = new FunctionSyntax("MethodName", "bool",
+                Visibility.Public, ImmutableList<AttributeSyntax>.Empty.Add(attribute),
+                new BlockSyntax(ImmutableList<StatementSyntax>.Empty, default), default);
+            var diagnostics = new TestingDiagnosticSink();
+            var declarationProvider = new TestingSingleFileDeclarationProvider();
+
+            var result = MethodCompiler.CompileDeclaration(syntax, "unknown.cle", 0, declarationProvider, diagnostics);
+
+            Assert.That(result, Is.Null);
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.UnknownAttribute, position.Line, position.ByteInLine)
+                .WithActual("TotallyNonexistentAttribute");
+        }
+
+        [Test]
+        public void CompileDeclaration_entry_point_is_flagged()
+        {
+            var entryPointAttribute = new AttributeSyntax("EntryPoint", default);
+            var syntax = new FunctionSyntax("Main", "int32",
+                Visibility.Private, ImmutableList<AttributeSyntax>.Empty.Add(entryPointAttribute),
+                new BlockSyntax(ImmutableList<StatementSyntax>.Empty, default), default);
+            var diagnostics = new TestingDiagnosticSink();
+            var declarationProvider = new TestingSingleFileDeclarationProvider();
+
+            var result = MethodCompiler.CompileDeclaration(syntax, "int32.cle", 8, declarationProvider, diagnostics);
+
+            Assert.That(diagnostics.Diagnostics, Is.Empty);
+            Assert.That(result, Is.Not.Null);
+            Assert.That(result.IsEntryPoint, Is.True);
+        }
+
+        [Test]
+        public void CompileDeclaration_entry_point_must_return_int32()
+        {
+            var entryPointAttribute = new AttributeSyntax("EntryPoint", default);
+            var syntax = new FunctionSyntax("Main", "bool",
+                Visibility.Public, ImmutableList<AttributeSyntax>.Empty.Add(entryPointAttribute),
+                new BlockSyntax(ImmutableList<StatementSyntax>.Empty, default), new TextPosition(3, 1, 3));
+            var diagnostics = new TestingDiagnosticSink();
+            var declarationProvider = new TestingSingleFileDeclarationProvider();
+
+            var result = MethodCompiler.CompileDeclaration(syntax, "unknown.cle", 0, declarationProvider, diagnostics);
+
+            Assert.That(result, Is.Null);
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.EntryPointMustBeDeclaredCorrectly, 1, 3);
+        }
+
+        // TODO: Test for entry point parameter list correctness once parameter lists exist
     }
 }

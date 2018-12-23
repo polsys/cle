@@ -47,6 +47,10 @@
 
         TypeNotFound,
         MethodAlreadyDefined,
+        UnknownAttribute,
+        EntryPointMustBeDeclaredCorrectly,
+        NoEntryPointProvided,
+        MultipleEntryPointsProvided,
 
         TypeMismatch,
         IntegerConstantOutOfBounds,

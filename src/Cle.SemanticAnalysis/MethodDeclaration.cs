@@ -15,6 +15,11 @@ namespace Cle.SemanticAnalysis
         public int BodyIndex { get; }
 
         /// <summary>
+        /// If true, this method is the entry point for an executable application.
+        /// </summary>
+        public bool IsEntryPoint { get; }
+
+        /// <summary>
         /// Gets the return type of this method.
         /// </summary>
         [NotNull]
@@ -42,13 +47,15 @@ namespace Cle.SemanticAnalysis
             [NotNull] TypeDefinition returnType, 
             Visibility visibility,
             [NotNull] string definingFilename,
-            TextPosition sourcePosition)
+            TextPosition sourcePosition,
+            bool isEntryPoint)
         {
             BodyIndex = bodyIndex;
             ReturnType = returnType;
             Visibility = visibility;
             DefiningFilename = definingFilename;
             DefinitionPosition = sourcePosition;
+            IsEntryPoint = isEntryPoint;
         }
     }
 }

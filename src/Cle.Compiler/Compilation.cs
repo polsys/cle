@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Threading;
 using Cle.Common;
 using Cle.SemanticAnalysis;
 using Cle.SemanticAnalysis.IR;
@@ -35,6 +36,12 @@ namespace Cle.Compiler
         /// </summary>
         public bool HasErrors { get; private set; }
 
+        /// <summary>
+        /// Gets the index of the method marked as the entry point.
+        /// This value can be set only once, by <see cref="TrySetEntryPointIndex"/>.
+        /// </summary>
+        public int EntryPointIndex => _entryPointIndex;
+
         [NotNull]
         [ItemNotNull]
         private readonly List<Diagnostic> _diagnostics = new List<Diagnostic>();
@@ -57,6 +64,7 @@ namespace Cle.Compiler
 
         [NotNull]
         private readonly object _methodBodyLock = new object();
+        private int _entryPointIndex = -1;
 
         /// <summary>
         /// Adds the given collection of diagnostics to <see cref="Diagnostics"/>.
@@ -87,23 +95,23 @@ namespace Cle.Compiler
         {
             lock (DiagnosticsLock)
             {
-                _diagnostics.Add(new Diagnostic(DiagnosticCode.SourceFileNotFound, default, 
+                _diagnostics.Add(new Diagnostic(DiagnosticCode.SourceFileNotFound, default,
                     filename, moduleName, null, null));
                 HasErrors = true;
             }
         }
 
         /// <summary>
-        /// Adds an error about missing module.
+        /// Adds a diagnostic specific to a single module.
         /// This function may be called from multiple threads.
         /// </summary>
+        /// <param name="code">The error code.</param>
         /// <param name="moduleName">The module that was not found.</param>
-        public void AddMissingModuleError([NotNull] string moduleName)
+        public void AddModuleLevelDiagnostic(DiagnosticCode code, [NotNull] string moduleName)
         {
             lock (DiagnosticsLock)
             {
-                _diagnostics.Add(new Diagnostic(DiagnosticCode.ModuleNotFound, default, 
-                    null, moduleName, null, null));
+                _diagnostics.Add(new Diagnostic(code, default, null, moduleName, null, null));
                 HasErrors = true;
             }
         }
@@ -118,7 +126,7 @@ namespace Cle.Compiler
         /// <param name="declaration">The method declaration to be associated with the full method name.</param>
         // TODO: Modules
         public bool AddMethodDeclaration(
-            [NotNull] string methodName, 
+            [NotNull] string methodName,
             [NotNull] string namespaceName,
             [NotNull] MethodDeclaration declaration)
         {
@@ -263,6 +271,19 @@ namespace Cle.Compiler
             {
                 throw new ArgumentOutOfRangeException(nameof(index), "The index has not been reserved.");
             }
+        }
+
+        /// <summary>
+        /// Sets the entry point index if not yet set.
+        /// If the entry point is already set, returns false.
+        /// This method performs necessary locking.
+        /// </summary>
+        /// <param name="index">The method index of the entry point.</param>
+        public bool TrySetEntryPointIndex(int index)
+        {
+            // This can be done in a single atomic operation:
+            // if the value is still the default, swap; if not, do nothing.
+            return Interlocked.CompareExchange(ref _entryPointIndex, index, -1) == -1;
         }
     }
 }

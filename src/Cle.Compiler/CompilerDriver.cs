@@ -52,6 +52,12 @@ namespace Cle.Compiler
                 CompileModule(mainModule, compilation, syntaxTrees);
             }
 
+            // There must be a main method
+            if (!compilation.HasErrors && compilation.EntryPointIndex == -1)
+            {
+                compilation.AddModuleLevelDiagnostic(DiagnosticCode.NoEntryPointProvided, mainModule);
+            }
+
             // TODO: Run the optimizer if enabled
 
             // TODO: Generate code
@@ -82,7 +88,7 @@ namespace Cle.Compiler
             // Parse each source file
             if (!fileProvider.TryGetFilenamesForModule(moduleName, out var filesToParse))
             {
-                compilation.AddMissingModuleError(moduleName);
+                compilation.AddModuleLevelDiagnostic(DiagnosticCode.ModuleNotFound, moduleName);
                 return;
             }
             Debug.Assert(filesToParse != null);
@@ -136,10 +142,22 @@ namespace Cle.Compiler
                         continue;
 
                     // Add the declaration to compilation, verifying that the name is not taken
+                    var fullName = sourceFile.Namespace + "::" + methodSyntax.Name;
                     if (!compilation.AddMethodDeclaration(methodSyntax.Name, sourceFile.Namespace, decl))
                     {
-                        diagnosticSink.Add(DiagnosticCode.MethodAlreadyDefined, decl.DefinitionPosition,
-                            sourceFile.Namespace + "::" + methodSyntax.Name);
+                        diagnosticSink.Add(DiagnosticCode.MethodAlreadyDefined,
+                            decl.DefinitionPosition, fullName);
+                    }
+
+                    // If the declaration has an [EntryPoint] attribute, store that
+                    // TODO: Only do this when compiling the the main module
+                    if (decl.IsEntryPoint)
+                    {
+                        if (!compilation.TrySetEntryPointIndex(decl.BodyIndex))
+                        {
+                            diagnosticSink.Add(DiagnosticCode.MultipleEntryPointsProvided,
+                                decl.DefinitionPosition, fullName);
+                        }
                     }
                 }
 
