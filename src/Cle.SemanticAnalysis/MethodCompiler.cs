@@ -47,14 +47,39 @@ namespace Cle.SemanticAnalysis
             [NotNull] IDeclarationProvider declarationProvider,
             [NotNull] IDiagnosticSink diagnosticSink)
         {
+            // Resolve the return type
             if (!TryResolveType(syntax.ReturnTypeName, diagnosticSink, syntax.Position, out var returnType))
             {
                 return null;
             }
             Debug.Assert(returnType != null);
-            return new MethodDeclaration(methodBodyIndex, returnType, syntax.Visibility, definingFilename, syntax.Position);
 
             // TODO: Resolve parameter types
+
+            // Apply the attributes
+            var isEntryPoint = false;
+            foreach (var attribute in syntax.Attributes)
+            {
+                if (attribute.Name == "EntryPoint")
+                {
+                    // TODO: Check that the method has no parameters
+                    if (!returnType.Equals(SimpleType.Int32))
+                    {
+                        diagnosticSink.Add(DiagnosticCode.EntryPointMustBeDeclaredCorrectly, syntax.Position);
+                        return null;
+                    }
+
+                    isEntryPoint = true;
+                }
+                else
+                {
+                    diagnosticSink.Add(DiagnosticCode.UnknownAttribute, attribute.Position, attribute.Name);
+                    return null;
+                }
+            }
+
+            return new MethodDeclaration(methodBodyIndex, returnType, syntax.Visibility,
+                definingFilename, syntax.Position, isEntryPoint);
         }
 
         /// <summary>

@@ -85,6 +85,14 @@ namespace Cle.Frontend
                     return $"Type {diagnostic.Actual} does not exist or is not visible in this file.";
                 case DiagnosticCode.MethodAlreadyDefined:
                     return $"Method {diagnostic.Actual} is already defined in this scope.";
+                case DiagnosticCode.UnknownAttribute:
+                    return $"Attribute {diagnostic.Actual} is not known by the compiler.";
+                case DiagnosticCode.EntryPointMustBeDeclaredCorrectly:
+                    return "A method marked as an entry point must return int32 and take no parameters.";
+                case DiagnosticCode.NoEntryPointProvided:
+                    return "The main module does not contain a method marked as the entry point.";
+                case DiagnosticCode.MultipleEntryPointsProvided:
+                    return "The main module already has an entry point.";
                 case DiagnosticCode.TypeMismatch:
                     return $"Expression is of type {diagnostic.Actual} but expected {diagnostic.Expected}.";
                 case DiagnosticCode.IntegerConstantOutOfBounds:
