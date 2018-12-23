@@ -13,6 +13,10 @@ steps:
     version: '2.2.101'
   displayName: 'Install .Net Core 2.2 SDK' # Needed for test filtering
 - script: |
+    dotnet tool install --tool-path . nbgv
+    .\nbgv cloud
+  displayName: 'Install NerdBank.GitVersioning'
+- script: |
     dotnet build --configuration $(configuration)
   displayName: 'Build Release'
 - script: |
