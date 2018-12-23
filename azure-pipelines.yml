@@ -1,0 +1,14 @@
+trigger:
+- master
+
+pool:
+  vmImage: 'vs2017-win2016'
+
+variables:
+  configuration: 'Release'
+
+steps:
+- script: |
+    dotnet build --configuration $(configuration)
+    dotnet test --configuration $(configuration)
+  displayName: 'Build and test'
