@@ -234,7 +234,8 @@ namespace Cle.Parser
                    character == (byte)'*' || character == (byte)'/' || 
                    character == (byte)';' ||
                    character == (byte)'(' || character == (byte)')' ||
-                   character == (byte)'{' || character == (byte)'}';
+                   character == (byte)'{' || character == (byte)'}' ||
+                   character == (byte)'[' || character == (byte)']';
         }
 
         private static TokenType ClassifyToken(ReadOnlySpan<byte> token)
@@ -278,6 +279,10 @@ namespace Cle.Parser
                         return TokenType.OpenBrace;
                     case (byte)'}':
                         return TokenType.CloseBrace;
+                    case (byte)'[':
+                        return TokenType.OpenBracket;
+                    case (byte)']':
+                        return TokenType.CloseBracket;
                 }
             }
 

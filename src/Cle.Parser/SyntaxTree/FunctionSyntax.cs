@@ -1,4 +1,5 @@
-﻿using Cle.Common;
+﻿using System.Collections.Immutable;
+using Cle.Common;
 using JetBrains.Annotations;
 
 namespace Cle.Parser.SyntaxTree
@@ -28,6 +29,14 @@ namespace Cle.Parser.SyntaxTree
         public string ReturnTypeName { get; }
 
         /// <summary>
+        /// Gets the list of attributes applied to this function.
+        /// The list may be empty.
+        /// </summary>
+        [NotNull]
+        [ItemNotNull]
+        public ImmutableList<AttributeSyntax> Attributes { get; }
+
+        /// <summary>
         /// Gets the code block of this function.
         /// </summary>
         [NotNull]
@@ -37,6 +46,7 @@ namespace Cle.Parser.SyntaxTree
             [NotNull] string name,
             [NotNull] string returnType,
             Visibility visibility,
+            [NotNull, ItemNotNull] ImmutableList<AttributeSyntax> attributes,
             [NotNull] BlockSyntax block,
             TextPosition position)
             : base(position)
@@ -44,6 +54,7 @@ namespace Cle.Parser.SyntaxTree
             Name = name;
             ReturnTypeName = returnType;
             Visibility = visibility;
+            Attributes = attributes;
             Block = block;
         }
     }

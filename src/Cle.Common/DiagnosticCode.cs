@@ -16,6 +16,8 @@
         ExpectedNamespaceName,
         InvalidNamespaceName,
 
+        ExpectedAttributeName,
+        AttributesOnlyApplicableToFunctions,
         ExpectedVisibilityModifier,
         ExpectedType,
         ExpectedFunctionName,
@@ -27,6 +29,7 @@
         ExpectedSemicolon,
         ExpectedClosingParen,
         ExpectedClosingBrace,
+        ExpectedClosingBracket,
 
         ExpectedStatement,
         ExpectedExpression,
