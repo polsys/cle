@@ -55,10 +55,33 @@ namespace Cle.Parser
             // Parse source file level items until end-of-file
             while (!_lexer.PeekToken().IsEmpty)
             {
+                // First, parse any attributes
+                var attributes = ImmutableList<AttributeSyntax>.Empty;
+                while (_lexer.PeekTokenType() == TokenType.OpenBracket)
+                {
+                    if (TryParseAttribute(out var attribute))
+                    {
+                        Debug.Assert(attribute != null);
+                        attributes = attributes.Add(attribute);
+                    }
+                    else
+                    {
+                        return null;
+                    }
+                }
+
+                // Then read the item
                 var itemPosition = _lexer.Position;
 
                 if (_lexer.PeekTokenType() == TokenType.Namespace)
                 {
+                    // Attributes may not be applied to namespaces
+                    if (!attributes.IsEmpty)
+                    {
+                        _diagnosticSink.Add(DiagnosticCode.AttributesOnlyApplicableToFunctions, itemPosition);
+                        return null;
+                    }
+
                     // Only a single namespace declaration is allowed per file
                     if (namespaceName != string.Empty)
                     {
@@ -140,7 +163,8 @@ namespace Cle.Parser
 
                     // Add the parsed function to the syntax tree
                     Debug.Assert(methodBody != null);
-                    functionListBuilder.Add(new FunctionSyntax(functionName, typeName, visibility, methodBody, itemPosition));
+                    functionListBuilder.Add(new FunctionSyntax(functionName, typeName, visibility, 
+                        attributes, methodBody, itemPosition));
                 }
                 else
                 {
@@ -151,7 +175,33 @@ namespace Cle.Parser
 
             return new SourceFileSyntax(namespaceName, _filename, functionListBuilder.ToImmutable());
         }
-        
+
+        private bool TryParseAttribute([CanBeNull] out AttributeSyntax attribute)
+        {
+            attribute = null;
+
+            // Eat the '['
+            Debug.Assert(_lexer.PeekTokenType() == TokenType.OpenBracket);
+            var startPosition = _lexer.Position;
+            _lexer.GetToken();
+
+            // Read the attribute name
+            if (_lexer.PeekTokenType() != TokenType.Identifier)
+            {
+                _diagnosticSink.Add(DiagnosticCode.ExpectedAttributeName, _lexer.Position, ReadTokenIntoString());
+                return false;
+            }
+            var attributeName = ReadTokenIntoString();
+
+            // TODO: Parameter lists
+
+            // Eat the closing bracket
+            ExpectToken(TokenType.CloseBracket, DiagnosticCode.ExpectedClosingBracket);
+
+            attribute = new AttributeSyntax(attributeName, startPosition);
+            return true;
+        }
+
         private bool TryParseNamespaceDeclaration([NotNull] out string namespaceName)
         {
             namespaceName = string.Empty;

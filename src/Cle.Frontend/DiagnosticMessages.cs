@@ -29,6 +29,10 @@ namespace Cle.Frontend
                     return $"Expected namespace name, read '{diagnostic.Actual}'.";
                 case DiagnosticCode.InvalidNamespaceName:
                     return $"'{diagnostic.Actual}' is not a valid namespace name.";
+                case DiagnosticCode.ExpectedAttributeName:
+                    return $"Expected attribute name, read '{diagnostic.Actual}'";
+                case DiagnosticCode.AttributesOnlyApplicableToFunctions:
+                    return "Attributes can only be applied to functions.";
                 case DiagnosticCode.ExpectedVisibilityModifier:
                     return $"Expected definition preceded by a visibility modifier, read '{diagnostic.Actual}'.";
                 case DiagnosticCode.ExpectedType:
@@ -49,6 +53,8 @@ namespace Cle.Frontend
                     return $"Expected ')', read '{diagnostic.Actual}'.";
                 case DiagnosticCode.ExpectedClosingBrace:
                     return $"Expected '}}', read '{diagnostic.Actual}'.";
+                case DiagnosticCode.ExpectedClosingBracket:
+                    return $"Expected ']', read '{diagnostic.Actual}'.";
                 case DiagnosticCode.ExpectedStatement:
                     return $"Expected statement, read '{diagnostic.Actual}'.";
                 case DiagnosticCode.ExpectedExpression:

@@ -35,6 +35,8 @@
         CloseParen,
         OpenBrace,
         CloseBrace,
+        OpenBracket,
+        CloseBracket,
         EndOfFile,
     }
 }

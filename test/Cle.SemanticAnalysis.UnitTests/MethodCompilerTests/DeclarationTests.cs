@@ -13,7 +13,8 @@ namespace Cle.SemanticAnalysis.UnitTests.MethodCompilerTests
         public void CompileDeclaration_parameterless_bool_method_succeeds()
         {
             var position = new TextPosition(13, 3, 4);
-            var syntax = new FunctionSyntax("MethodName", "bool", Visibility.Public,
+            var syntax = new FunctionSyntax("MethodName", "bool",
+                Visibility.Public, ImmutableList<AttributeSyntax>.Empty,
                 new BlockSyntax(ImmutableList<StatementSyntax>.Empty, default), position);
             var diagnostics = new TestingDiagnosticSink();
             var declarationProvider = new TestingSingleFileDeclarationProvider();
@@ -33,7 +34,8 @@ namespace Cle.SemanticAnalysis.UnitTests.MethodCompilerTests
         public void CompileDeclaration_parameterless_int32_method_succeeds()
         {
             var position = new TextPosition(280, 14, 8);
-            var syntax = new FunctionSyntax("MethodName", "int32", Visibility.Private,
+            var syntax = new FunctionSyntax("MethodName", "int32",
+                Visibility.Private, ImmutableList<AttributeSyntax>.Empty,
                 new BlockSyntax(ImmutableList<StatementSyntax>.Empty, default), position);
             var diagnostics = new TestingDiagnosticSink();
             var declarationProvider = new TestingSingleFileDeclarationProvider();
@@ -52,7 +54,8 @@ namespace Cle.SemanticAnalysis.UnitTests.MethodCompilerTests
         [Test]
         public void CompileDeclaration_parameterless_method_with_unknown_type_fails()
         {
-            var syntax = new FunctionSyntax("MethodName", "UltimateBool", Visibility.Public,
+            var syntax = new FunctionSyntax("MethodName", "UltimateBool", 
+                Visibility.Public, ImmutableList<AttributeSyntax>.Empty,
                 new BlockSyntax(ImmutableList<StatementSyntax>.Empty, default), new TextPosition(3, 1, 3));
             var diagnostics = new TestingDiagnosticSink();
             var declarationProvider = new TestingSingleFileDeclarationProvider();
