@@ -196,7 +196,10 @@ namespace Cle.Parser
             // TODO: Parameter lists
 
             // Eat the closing bracket
-            ExpectToken(TokenType.CloseBracket, DiagnosticCode.ExpectedClosingBracket);
+            if (!ExpectToken(TokenType.CloseBracket, DiagnosticCode.ExpectedClosingBracket))
+            {
+                return false;
+            }
 
             attribute = new AttributeSyntax(attributeName, startPosition);
             return true;

@@ -30,7 +30,7 @@ namespace Cle.Frontend
                 case DiagnosticCode.InvalidNamespaceName:
                     return $"'{diagnostic.Actual}' is not a valid namespace name.";
                 case DiagnosticCode.ExpectedAttributeName:
-                    return $"Expected attribute name, read '{diagnostic.Actual}'";
+                    return $"Expected attribute name, read '{diagnostic.Actual}'.";
                 case DiagnosticCode.AttributesOnlyApplicableToFunctions:
                     return "Attributes can only be applied to functions.";
                 case DiagnosticCode.ExpectedVisibilityModifier:
