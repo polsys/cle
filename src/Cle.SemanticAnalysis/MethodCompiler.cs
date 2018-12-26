@@ -213,6 +213,11 @@ namespace Cle.SemanticAnalysis
                         if (!TryCompileVariableDeclaration(variableDeclaration, builder))
                             return false;
                         break;
+                    case WhileStatementSyntax whileStatement:
+                        if (!TryCompileWhile(whileStatement, builder, out newBuilder))
+                            return false;
+                        builder = newBuilder;
+                        break;
                     default:
                         throw new NotImplementedException("Unimplemented statement type");
                 }
@@ -249,7 +254,7 @@ namespace Cle.SemanticAnalysis
             return true;
         }
 
-        private bool TryCompileIf([NotNull] IfStatementSyntax ifSyntax, [NotNull] BasicBlockBuilder builder, 
+        private bool TryCompileIf([NotNull] IfStatementSyntax ifSyntax, [NotNull] BasicBlockBuilder builder,
             [NotNull] out BasicBlockBuilder newBuilder, out bool returnGuaranteed)
         {
             newBuilder = builder; // Default failure case
@@ -277,7 +282,7 @@ namespace Cle.SemanticAnalysis
             {
                 newBuilder = builder.CreateSuccessorBlock();
                 thenBuilder.SetSuccessor(newBuilder.Index);
-                
+
                 // Here, we cannot give a return guarantee unless the 'then' branch is always taken and returns
                 // TODO: Return guarantee for const conditions
                 return true;
@@ -290,7 +295,7 @@ namespace Cle.SemanticAnalysis
                 {
                     return false;
                 }
-                
+
                 // Then create a new block that is the target of both the 'then' and 'else' blocks
                 newBuilder = elseBuilder.CreateSuccessorBlock();
                 thenBuilder.SetSuccessor(newBuilder.Index);
@@ -313,6 +318,42 @@ namespace Cle.SemanticAnalysis
             {
                 throw new InvalidOperationException("Invalid syntax node type for 'else'.");
             }
+        }
+
+        private bool TryCompileWhile([NotNull] WhileStatementSyntax whileSyntax, [NotNull] BasicBlockBuilder builder,
+            [NotNull] out BasicBlockBuilder newBuilder)
+        {
+            newBuilder = builder; // Default failure case
+            Debug.Assert(_methodInProgress != null);
+
+            // Create a new basic block which will be the backwards branch target
+            var conditionBuilder = builder.CreateSuccessorBlock();
+            var conditionBlockIndex = conditionBuilder.Index;
+
+            // Compile the condition
+            var conditionValue = ExpressionCompiler.TryCompileExpression(whileSyntax.ConditionSyntax,
+                SimpleType.Bool, _methodInProgress, conditionBuilder, _variableMap, _diagnostics);
+            if (conditionValue == -1)
+            {
+                return false;
+            }
+
+            // Then compile the body.
+            // The return guarantee is not propagated up as we don't know whether the loop will ever be entered.
+            // TODO: Recognizing compile-time constant condition
+            var bodyBuilder = conditionBuilder.CreateBranch(conditionValue);
+            if (!TryCompileBlock(whileSyntax.BodySyntax, bodyBuilder, out bodyBuilder, out var _))
+            {
+                return false;
+            }
+
+            // Create the backwards branch
+            bodyBuilder.SetSuccessor(conditionBlockIndex);
+
+            // Create the exit branch
+            newBuilder = conditionBuilder.CreateSuccessorBlock();
+
+            return true;
         }
 
         private bool TryCompileReturn([NotNull] ReturnStatementSyntax syntax, [NotNull] BasicBlockBuilder builder)
