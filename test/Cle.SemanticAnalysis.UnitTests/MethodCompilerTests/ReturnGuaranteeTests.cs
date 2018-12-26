@@ -6,7 +6,7 @@ namespace Cle.SemanticAnalysis.UnitTests.MethodCompilerTests
     public class ReturnGuaranteeTests : MethodCompilerTestBase
     {
         [Test]
-        public void Int32_method_without_return_fails()
+        public void Method_without_return_fails()
         {
             const string source = @"namespace Test;
 public int32 Fail() {
@@ -19,7 +19,7 @@ public int32 Fail() {
         }
 
         [Test]
-        public void Int32_method_without_return_in_one_branch_fails()
+        public void Method_without_return_in_one_branch_fails()
         {
             const string source = @"namespace Test;
 public int32 Fail() {
@@ -34,7 +34,7 @@ public int32 Fail() {
         }
 
         [Test]
-        public void Int32_method_without_return_in_else_if_branch_fails()
+        public void Method_without_return_in_else_if_branch_fails()
         {
             const string source = @"namespace Test;
 public int32 Fail() {
@@ -52,7 +52,7 @@ public int32 Fail() {
         }
 
         [Test]
-        public void Int32_method_with_unreachable_block_causes_warning()
+        public void Method_with_unreachable_block_causes_warning()
         {
             const string source = @"namespace Test;
 public int32 Warn() {
@@ -83,7 +83,7 @@ public int32 Warn() {
         }
 
         [Test]
-        public void Int32_method_with_return_in_nested_block_causes_two_warnings()
+        public void Method_with_return_in_nested_block_causes_two_warnings()
         {
             const string source = @"namespace Test;
 public int32 Warn() {
@@ -102,7 +102,7 @@ public int32 Warn() {
         }
 
         [Test]
-        public void Int32_method_with_return_in_two_if_branches_causes_warning()
+        public void Method_with_return_in_two_if_branches_causes_warning()
         {
             const string source = @"namespace Test;
 public int32 Warn() {
@@ -119,7 +119,7 @@ public int32 Warn() {
         }
 
         [Test]
-        public void Int32_method_with_return_in_three_if_branches_causes_warning()
+        public void Method_with_return_in_three_if_branches_causes_warning()
         {
             const string source = @"namespace Test;
 public int32 Warn() {
@@ -137,6 +137,34 @@ public int32 Warn() {
             diagnostics.AssertDiagnosticAt(DiagnosticCode.UnreachableCode, 8, 4);
         }
 
-        // TODO: Warning for constant condition in if
+        [Test]
+        public void Method_with_return_only_in_while_fails()
+        {
+            const string source = @"namespace Test;
+public int32 Fail() {
+    bool a = true;
+    while (a) { return 1; }
+}";
+            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+
+            Assert.That(compiledMethod, Is.Null);
+            Assert.That(diagnostics.Diagnostics, Has.Exactly(1).Items);
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.ReturnNotGuaranteed, 2, 0).WithActual("Fail");
+        }
+
+        [Test]
+        public void Method_with_return_in_while_does_not_cause_warning()
+        {
+            const string source = @"namespace Test;
+public int32 Warn() {
+    bool a = true;
+    while (a) { return 1; }
+    return 4;
+}";
+            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+
+            Assert.That(compiledMethod, Is.Not.Null);
+            Assert.That(diagnostics.Diagnostics, Is.Empty);
+        }
     }
 }
