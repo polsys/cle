@@ -310,7 +310,8 @@ namespace Cle.Parser
                 (Encoding.UTF8.GetBytes("private"), TokenType.Private),
                 (Encoding.UTF8.GetBytes("public"), TokenType.Public),
                 (Encoding.UTF8.GetBytes("return"), TokenType.Return),
-                (Encoding.UTF8.GetBytes("true"), TokenType.True)
+                (Encoding.UTF8.GetBytes("true"), TokenType.True),
+                (Encoding.UTF8.GetBytes("while"), TokenType.While),
             };
         }
     }
