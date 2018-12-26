@@ -285,6 +285,16 @@ namespace Cle.Parser
                         {
                             return false;
                         }
+                    case TokenType.While:
+                        if (TryParseWhileStatement(out var whileStatement))
+                        {
+                            statementList.Add(whileStatement);
+                            break;
+                        }
+                        else
+                        {
+                            return false;
+                        }
                     case TokenType.Identifier:
                         if (TryParseStatementStartingWithIdentifier(out var statement))
                         {
@@ -323,10 +333,7 @@ namespace Cle.Parser
             _lexer.GetToken();
 
             // Read the condition
-            // TODO: Refactor this out when implementing other conditionals (like while)
-            if (!ExpectToken(TokenType.OpenParen, DiagnosticCode.ExpectedCondition) ||
-                !TryParseExpression(out var condition) ||
-                !ExpectToken(TokenType.CloseParen, DiagnosticCode.ExpectedClosingParen))
+            if (!TryParseCondition(out var condition))
             {
                 return false;
             }
@@ -413,6 +420,51 @@ namespace Cle.Parser
             }
 
             returnStatement = new ReturnStatementSyntax(expression, startPosition);
+            return true;
+        }
+
+        private bool TryParseWhileStatement([CanBeNull] out WhileStatementSyntax whileStatement)
+        {
+            whileStatement = null;
+
+            // Eat the 'while' keyword
+            var startPosition = _lexer.Position;
+            Debug.Assert(_lexer.PeekTokenType() == TokenType.While);
+            _lexer.GetToken();
+
+            // Parse the condition
+            if (!TryParseCondition(out var condition))
+            {
+                return false;
+            }
+            Debug.Assert(condition != null);
+
+            // Parse the body
+            if (_lexer.PeekTokenType() != TokenType.OpenBrace)
+            {
+                _diagnosticSink.Add(DiagnosticCode.ExpectedBlock, _lexer.Position, ReadTokenIntoString());
+                return false;
+            }
+            if (!TryParseBlock(out var body))
+            {
+                return false;
+            }
+            Debug.Assert(body != null);
+
+            whileStatement = new WhileStatementSyntax(condition, body, startPosition);
+            return true;
+        }
+
+        private bool TryParseCondition([CanBeNull] out ExpressionSyntax condition)
+        {
+            if (!ExpectToken(TokenType.OpenParen, DiagnosticCode.ExpectedCondition) ||
+                !TryParseExpression(out condition) ||
+                !ExpectToken(TokenType.CloseParen, DiagnosticCode.ExpectedClosingParen))
+            {
+                condition = null;
+                return false;
+            }
+
             return true;
         }
 

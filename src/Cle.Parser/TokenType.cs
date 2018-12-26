@@ -23,6 +23,7 @@
         Public,
         Return,
         True,
+        While,
 
         // Symbols
         Plus,
