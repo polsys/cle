@@ -181,9 +181,7 @@ namespace Cle.Parser
             attribute = null;
 
             // Eat the '['
-            Debug.Assert(_lexer.PeekTokenType() == TokenType.OpenBracket);
-            var startPosition = _lexer.Position;
-            _lexer.GetToken();
+            var startPosition = EatAndAssertToken(TokenType.OpenBracket);
 
             // Read the attribute name
             if (_lexer.PeekTokenType() != TokenType.Identifier)
@@ -210,8 +208,7 @@ namespace Cle.Parser
             namespaceName = string.Empty;
 
             // Eat the 'namespace' token
-            Debug.Assert(_lexer.PeekTokenType() == TokenType.Namespace);
-            _lexer.GetToken();
+            EatAndAssertToken(TokenType.Namespace);
 
             // Read and validate the namespace name
             if (_lexer.PeekTokenType() != TokenType.Identifier)
@@ -241,9 +238,7 @@ namespace Cle.Parser
             block = null;
 
             // Eat the opening brace
-            var startPosition = _lexer.Position;
-            Debug.Assert(_lexer.PeekTokenType() == TokenType.OpenBrace);
-            _lexer.GetToken();
+            var startPosition = EatAndAssertToken(TokenType.OpenBrace);
 
             // Parse statements until a closing brace is found
             var statementList = ImmutableList<StatementSyntax>.Empty.ToBuilder();
@@ -328,9 +323,7 @@ namespace Cle.Parser
             ifStatement = null;
 
             // Eat the 'if' keyword
-            var startPosition = _lexer.Position;
-            Debug.Assert(_lexer.PeekTokenType() == TokenType.If);
-            _lexer.GetToken();
+            var startPosition = EatAndAssertToken(TokenType.If);
 
             // Read the condition
             if (!TryParseCondition(out var condition))
@@ -397,9 +390,7 @@ namespace Cle.Parser
             returnStatement = null;
 
             // Eat the 'return' keyword
-            var startPosition = _lexer.Position;
-            Debug.Assert(_lexer.PeekTokenType() == TokenType.Return);
-            _lexer.GetToken();
+            var startPosition = EatAndAssertToken(TokenType.Return);
 
             // There are two kinds of returns: void return and value return.
             // In case of the former, the keyword is immediately followed by a semicolon.
@@ -428,9 +419,7 @@ namespace Cle.Parser
             whileStatement = null;
 
             // Eat the 'while' keyword
-            var startPosition = _lexer.Position;
-            Debug.Assert(_lexer.PeekTokenType() == TokenType.While);
-            _lexer.GetToken();
+            var startPosition = EatAndAssertToken(TokenType.While);
 
             // Parse the condition
             if (!TryParseCondition(out var condition))
@@ -777,6 +766,22 @@ namespace Cle.Parser
                 default:
                     return Visibility.Unknown;
             }
+        }
+
+        /// <summary>
+        /// Eats a token and throws if the token type does not match.
+        /// Returns the token position.
+        /// </summary>
+        private TextPosition EatAndAssertToken(TokenType expectedTokenType)
+        {
+            if (_lexer.PeekTokenType() != expectedTokenType)
+            {
+                throw new InvalidOperationException(
+                    $"The method requires {expectedTokenType} but read {_lexer.PeekTokenType()}.");
+            }
+            _lexer.GetToken();
+
+            return _lexer.LastPosition;
         }
 
         /// <summary>
