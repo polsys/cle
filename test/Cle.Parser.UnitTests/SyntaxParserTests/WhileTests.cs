@@ -74,12 +74,12 @@ private void Error()
             const string source = @"namespace Test;
 private void Error()
 {
-    while (true)
+    while (true) return true;
 }";
             var syntaxTree = ParseSource(source, out var diagnostics);
 
             Assert.That(syntaxTree, Is.Null);
-            diagnostics.AssertDiagnosticAt(DiagnosticCode.ExpectedBlock, 5, 0).WithActual("}");
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.ExpectedBlock, 4, 17).WithActual("return");
         }
     }
 }
