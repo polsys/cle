@@ -15,7 +15,7 @@ namespace Cle.Frontend
         public string DumpRegex { get; set; }
 
         [CanBeNull, ItemNotNull]
-        [Value(0, Required = false, Max = 1,
+        [Value(0, Required = false,
             HelpText = "Main module path relative to current directory.", MetaName = "module")]
         public IEnumerable<string> MainModule { get; set; }
     }

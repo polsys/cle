@@ -34,6 +34,19 @@ namespace Cle.Frontend
 
             if (result is Parsed<CommandLineOptions> parsed)
             {
+                // Handle the case where multiple main modules are specified by ourselves.
+                // We could also set an Value attribute property Max=1, but the error message would be:
+                //   "A sequence value not bound to option name is defined with few items than required."
+                // So yeah, maybe it is better to handle that by ourselves.
+                if (parsed.Value.MainModule.Count() > 1)
+                {
+                    output.WriteLine("ERROR(S):");
+                    output.WriteLine("More than one main module specified.");
+
+                    options = null;
+                    return false;
+                }
+
                 // Convert the options into compilation options
                 options = new CompilationOptions(
                     parsed.Value.MainModule.FirstOrDefault() ?? ".",
