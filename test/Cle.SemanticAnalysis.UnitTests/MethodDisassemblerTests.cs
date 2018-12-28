@@ -12,7 +12,7 @@ namespace Cle.SemanticAnalysis.UnitTests
         {
             var graphBuilder = new BasicBlockGraphBuilder();
             graphBuilder.GetInitialBlockBuilder().AppendInstruction(Opcode.Return, 0, 0, 0);
-            var method = new CompiledMethod { Body = graphBuilder.Build() };
+            var method = new CompiledMethod("Test::Method") { Body = graphBuilder.Build() };
             method.AddLocal(SimpleType.Int32, ConstantValue.SignedInteger(17));
             method.AddLocal(SimpleType.Bool, ConstantValue.Bool(true));
 
@@ -31,7 +31,7 @@ namespace Cle.SemanticAnalysis.UnitTests
         {
             var graphBuilder = new BasicBlockGraphBuilder();
             graphBuilder.GetInitialBlockBuilder().AppendInstruction(Opcode.Return, 2, 0, 0);
-            var method = new CompiledMethod { Body = graphBuilder.Build() };
+            var method = new CompiledMethod("Test::Method") { Body = graphBuilder.Build() };
 
             const string expected = "BB_0:\n    Return #2\n\n";
 
@@ -54,7 +54,7 @@ namespace Cle.SemanticAnalysis.UnitTests
             blockBuilder.AppendInstruction(Opcode.Divide, 1, 0, 2);
             blockBuilder.AppendInstruction(Opcode.ArithmeticNegate, 1, 0, 2);
             blockBuilder.AppendInstruction(Opcode.Return, 2, 0, 0);
-            var method = new CompiledMethod { Body = graphBuilder.Build() };
+            var method = new CompiledMethod("Test::Method") { Body = graphBuilder.Build() };
 
             const string expected = "BB_0:\n" +
                                     "    CopyValue #1 -> #2\n" +
@@ -77,7 +77,7 @@ namespace Cle.SemanticAnalysis.UnitTests
             var initialBlockBuilder = graphBuilder.GetInitialBlockBuilder();
             initialBlockBuilder.AppendInstruction(Opcode.Return, 0, 0, 0);
             initialBlockBuilder.CreateSuccessorBlock(); // No reference will be made and this will become null in Build()
-            var method = new CompiledMethod { Body = graphBuilder.Build() };
+            var method = new CompiledMethod("Test::Method") { Body = graphBuilder.Build() };
 
             const string expected = "BB_0:\n    Return #0\n\n";
 
@@ -91,7 +91,7 @@ namespace Cle.SemanticAnalysis.UnitTests
         {
             var graphBuilder = new BasicBlockGraphBuilder();
             graphBuilder.GetInitialBlockBuilder().SetSuccessor(0);
-            var method = new CompiledMethod { Body = graphBuilder.Build() };
+            var method = new CompiledMethod("Test::Method") { Body = graphBuilder.Build() };
 
             const string expected = "BB_0:\n    ==> BB_0\n\n";
 
@@ -105,7 +105,7 @@ namespace Cle.SemanticAnalysis.UnitTests
         {
             var graphBuilder = new BasicBlockGraphBuilder();
             graphBuilder.GetInitialBlockBuilder().CreateSuccessorBlock().SetSuccessor(0);
-            var method = new CompiledMethod { Body = graphBuilder.Build() };
+            var method = new CompiledMethod("Test::Method") { Body = graphBuilder.Build() };
 
             // Fallthrough from BB_0 to BB_1 is not explicitly displayed
             const string expected = "BB_0:\n\nBB_1:\n    ==> BB_0\n\n";
@@ -128,7 +128,7 @@ namespace Cle.SemanticAnalysis.UnitTests
             var returnBuilder = firstBuilder.CreateBranch(1);
             returnBuilder.AppendInstruction(Opcode.Return, 0, 0, 0);
 
-            var method = new CompiledMethod { Body = graphBuilder.Build() };
+            var method = new CompiledMethod("Test::Method") { Body = graphBuilder.Build() };
 
             // ...and the fallthrough from BB_0 to BB_1 is not explicitly displayed.
             const string expected = "BB_0:\n    BranchIf #1 ==> BB_2\n\n" +
@@ -153,7 +153,7 @@ namespace Cle.SemanticAnalysis.UnitTests
             loopBuilder.AppendInstruction(Opcode.Nop, 0, 0, 0);
             loopBuilder.SetSuccessor(0);
 
-            var method = new CompiledMethod { Body = graphBuilder.Build() };
+            var method = new CompiledMethod("Test::Method") { Body = graphBuilder.Build() };
 
             // ...and both successors are displayed.
             const string expected = "BB_0:\n    BranchIf #1 ==> BB_1\n    ==> BB_2\n\n" +

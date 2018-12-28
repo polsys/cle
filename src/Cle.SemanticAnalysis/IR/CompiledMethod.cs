@@ -11,6 +11,12 @@ namespace Cle.SemanticAnalysis.IR
     public class CompiledMethod
     {
         /// <summary>
+        /// Gets the full name of this method.
+        /// This can be used for debugging and emitting symbols.
+        /// </summary>
+        public string FullName { get; }
+
+        /// <summary>
         /// Gets or sets the basic block graph for this method.
         /// </summary>
         public BasicBlockGraph Body { get; set; }
@@ -22,6 +28,11 @@ namespace Cle.SemanticAnalysis.IR
         public IReadOnlyList<LocalValue> Values => _values;
 
         private readonly List<LocalValue> _values = new List<LocalValue>();
+
+        public CompiledMethod([NotNull] string fullName)
+        {
+            FullName = fullName;
+        }
 
         /// <summary>
         /// Creates a new local value with the specified type and initial value, and returns its value index.

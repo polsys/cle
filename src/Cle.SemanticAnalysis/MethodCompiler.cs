@@ -128,8 +128,8 @@ namespace Cle.SemanticAnalysis
         {
             Debug.Assert(_syntaxTree != null);
             Debug.Assert(_sourceFilename != null);
-            
-            _methodInProgress = new CompiledMethod();
+
+            _methodInProgress = new CompiledMethod(_definingNamespace + "::" + _syntaxTree.Name);
 
             // TODO: Create locals for the parameters
 
