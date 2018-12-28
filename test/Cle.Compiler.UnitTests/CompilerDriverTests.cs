@@ -12,7 +12,7 @@ namespace Cle.Compiler.UnitTests
             var fileProvider = new TestingSourceFileProvider();
             fileProvider.Add(".", "main.cle", source);
 
-            var result = CompilerDriver.Compile(".", new CompilationOptions(), fileProvider);
+            var result = CompilerDriver.Compile(new CompilationOptions("."), fileProvider);
 
             Assert.That(result.FailedCount, Is.EqualTo(1));
             Assert.That(result.ModuleCount, Is.EqualTo(1));
@@ -35,7 +35,7 @@ public NonexistentType Main() {}";
             var fileProvider = new TestingSourceFileProvider();
             fileProvider.Add(".", "main.cle", source);
 
-            var result = CompilerDriver.Compile(".", new CompilationOptions(), fileProvider);
+            var result = CompilerDriver.Compile(new CompilationOptions("."), fileProvider);
 
             Assert.That(result.FailedCount, Is.EqualTo(1));
             Assert.That(result.ModuleCount, Is.EqualTo(1));
@@ -59,7 +59,7 @@ public bool TypeMismatch() { return 2; }";
             var fileProvider = new TestingSourceFileProvider();
             fileProvider.Add(".", "main.cle", source);
 
-            var result = CompilerDriver.Compile(".", new CompilationOptions(), fileProvider);
+            var result = CompilerDriver.Compile(new CompilationOptions("."), fileProvider);
 
             Assert.That(result.FailedCount, Is.EqualTo(1));
             Assert.That(result.ModuleCount, Is.EqualTo(1));
@@ -86,7 +86,7 @@ internal int32 IntFunction() {}";
             fileProvider.Add(".", "file1.cle", source1);
             fileProvider.Add(".", "file2.cle", source2);
 
-            var result = CompilerDriver.Compile(".", new CompilationOptions(), fileProvider);
+            var result = CompilerDriver.Compile(new CompilationOptions("."), fileProvider);
 
             Assert.That(result.FailedCount, Is.EqualTo(1));
             Assert.That(result.ModuleCount, Is.EqualTo(1));
@@ -108,7 +108,7 @@ internal int32 IntFunction() {}";
             var fileProvider = new TestingSourceFileProvider();
             fileProvider.Add(".", "main.cle", source1);
 
-            var result = CompilerDriver.Compile(".", new CompilationOptions(), fileProvider);
+            var result = CompilerDriver.Compile(new CompilationOptions("."), fileProvider);
 
             Assert.That(result.FailedCount, Is.EqualTo(1));
             Assert.That(result.ModuleCount, Is.EqualTo(1));
@@ -133,7 +133,7 @@ private int32 MuchBetterMain() { return 42; }";
             fileProvider.Add(".", "file1.cle", source1);
             fileProvider.Add(".", "file2.cle", source2);
 
-            var result = CompilerDriver.Compile(".", new CompilationOptions(), fileProvider);
+            var result = CompilerDriver.Compile(new CompilationOptions("."), fileProvider);
 
             Assert.That(result.FailedCount, Is.EqualTo(1));
             Assert.That(result.ModuleCount, Is.EqualTo(1));
