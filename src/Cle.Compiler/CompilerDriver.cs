@@ -20,33 +20,43 @@ namespace Cle.Compiler
         /// </summary>
         /// <param name="options">Additional options, such as optimization and logging levels.</param>
         /// <param name="sourceFileProvider">Interface for source file access.</param>
+        /// <param name="outputFileProvider">Interface for output file access.</param>
         [NotNull]
         public static CompilationResult Compile(
             [NotNull] CompilationOptions options,
-            [NotNull] ISourceFileProvider sourceFileProvider)
+            [NotNull] ISourceFileProvider sourceFileProvider,
+            [NotNull] IOutputFileProvider outputFileProvider)
         {
             // TODO: Determinism (basically, compile everything in a fixed order)
 
             var compilation = new Compilation();
+
+            // Create a debug logger. If logging is not enabled, all operations do nothing.
+            var debugLogger = new DebugLogger(
+                options.DebugOutput ? outputFileProvider.GetDebugFileWriter() : null,
+                options.DebugPattern);
 
             // TODO: Build the dependency graph and decide the build order
             var mainModule = options.MainModule;
 
             // Parse each module
             // TODO: Make this run in parallel
+            debugLogger.WriteHeader("PARSING PHASE");
             ParseModule(mainModule, compilation, sourceFileProvider, out var syntaxTrees);
 
             // TODO: Compile modules only once they and their dependencies are parsed (if there were no parsing errors)
             // TODO: Make this parallel
             if (!compilation.HasErrors)
             {
+                debugLogger.WriteHeader("DECLARATION COMPILATION PHASE");
                 AddDeclarationsForModule(mainModule, compilation, syntaxTrees);
             }
 
             // After this, the module should be ready for semantic compilation in any order of methods
             if (!compilation.HasErrors)
             {
-                CompileModule(mainModule, compilation, syntaxTrees);
+                debugLogger.WriteHeader("SEMANTIC COMPILATION PHASE");
+                CompileModule(mainModule, compilation, syntaxTrees, debugLogger);
             }
 
             // There must be a main method
@@ -165,7 +175,8 @@ namespace Cle.Compiler
         private static void CompileModule(
             [NotNull] string moduleName,
             [NotNull] Compilation compilation,
-            [NotNull, ItemNotNull] List<SourceFileSyntax> syntaxTrees)
+            [NotNull, ItemNotNull] List<SourceFileSyntax> syntaxTrees,
+            [NotNull] DebugLogger debugLogger)
         {
             var diagnosticSink = new SingleFileDiagnosticSink();
             var compiler = new MethodCompiler(compilation, diagnosticSink);
@@ -193,6 +204,7 @@ namespace Cle.Compiler
                     if (methodBody != null)
                     {
                         compilation.SetMethodBody(declaration.BodyIndex, methodBody);
+                        debugLogger.DumpMethod(methodBody);
                     }
                 }
 

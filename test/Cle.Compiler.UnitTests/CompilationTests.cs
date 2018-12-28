@@ -230,7 +230,7 @@ namespace Cle.Compiler.UnitTests
             Assert.That(compilation.ReserveMethodSlot(), Is.EqualTo(0));
             Assert.That(compilation.ReserveMethodSlot(), Is.EqualTo(1));
 
-            var method = new CompiledMethod();
+            var method = new CompiledMethod("Test::Method");
             Assert.That(() => compilation.SetMethodBody(1, method), Throws.Nothing);
             Assert.That(compilation.GetMethodBody(1), Is.SameAs(method));
         }
@@ -250,7 +250,7 @@ namespace Cle.Compiler.UnitTests
         {
             var compilation = new Compilation();
             
-            var method = new CompiledMethod();
+            var method = new CompiledMethod("Test::Method");
             Assert.That(() => compilation.SetMethodBody(1, method), Throws.InstanceOf<ArgumentException>());
         }
 

@@ -18,15 +18,36 @@ namespace Cle.Frontend
 
             // TODO: Create a logger for diagnostics and output messages as they are produced
 
-            // Create a file interface
-            var fileProvider = new SourceFileProvider(Directory.GetCurrentDirectory());
+            // Create file interfaces
+            var sourceProvider = new SourceFileProvider(Directory.GetCurrentDirectory());
+            using (var outputProvider = new OutputFileProvider(Directory.GetCurrentDirectory()))
+            {
 
-            // Initialize a compiler instance and call it
-            var result = CompilerDriver.Compile(options, fileProvider);
+                // Initialize a compiler instance and call it
+                var result = CompilerDriver.Compile(options, sourceProvider, outputProvider);
 
-            // Write an output summary
-            PrintDiagnostics(result);
-            
+                // Write an output summary
+                PrintDiagnostics(result);
+                PrintSummary(result);
+
+                // Return an according return value
+                return result.FailedCount;
+            }
+        }
+
+        private static void PrintDiagnostics(CompilationResult result)
+        {
+            foreach (var diagnostic in result.Diagnostics)
+            {
+                // TODO: Display paths relative to module root, including subdirectories
+                Console.WriteLine($"{Path.GetFileName(diagnostic.Filename)} " +
+                                  $"({diagnostic.Position.Line},{diagnostic.Position.ByteInLine}): " +
+                                  DiagnosticMessages.GetMessage(diagnostic));
+            }
+        }
+
+        private static void PrintSummary(CompilationResult result)
+        {
             if (result.Diagnostics.Count > 0)
             {
                 // Separate the diagnostics list from the summary
@@ -43,21 +64,8 @@ namespace Cle.Frontend
                 Console.WriteLine("Build failed.");
                 Console.ResetColor();
             }
+
             Console.WriteLine($"Succeeded modules: {result.SucceededCount}, Failed modules: {result.FailedCount}");
-
-            // Return an according return value
-            return result.FailedCount;
-        }
-
-        private static void PrintDiagnostics(CompilationResult result)
-        {
-            foreach (var diagnostic in result.Diagnostics)
-            {
-                // TODO: Display paths relative to module root, including subdirectories
-                Console.WriteLine($"{Path.GetFileName(diagnostic.Filename)} " +
-                                  $"({diagnostic.Position.Line},{diagnostic.Position.ByteInLine}): " +
-                                  DiagnosticMessages.GetMessage(diagnostic));
-            }
         }
     }
 }

@@ -16,7 +16,7 @@ namespace Cle.SemanticAnalysis.UnitTests
         public void Integer_literal_stored_in_int32_succeeds()
         {
             var syntax = new IntegerLiteralSyntax(1234, default);
-            var method = new CompiledMethod();
+            var method = new CompiledMethod("Test::Method");
             var builder = new BasicBlockGraphBuilder().GetInitialBlockBuilder();
             var variableMap = new ScopedVariableMap();
             var diagnostics = new TestingDiagnosticSink();
@@ -38,7 +38,7 @@ namespace Cle.SemanticAnalysis.UnitTests
         {
             var position = new TextPosition(10, 3, 4);
             var syntax = new IntegerLiteralSyntax(1234, position);
-            var method = new CompiledMethod();
+            var method = new CompiledMethod("Test::Method");
             var builder = new BasicBlockGraphBuilder().GetInitialBlockBuilder();
             var variableMap = new ScopedVariableMap();
             var diagnostics = new TestingDiagnosticSink();
@@ -57,7 +57,7 @@ namespace Cle.SemanticAnalysis.UnitTests
         {
             var position = new TextPosition(10, 3, 4);
             var syntax = new IntegerLiteralSyntax((ulong)int.MaxValue + 1, position);
-            var method = new CompiledMethod();
+            var method = new CompiledMethod("Test::Method");
             var builder = new BasicBlockGraphBuilder().GetInitialBlockBuilder();
             var variableMap = new ScopedVariableMap();
             var diagnostics = new TestingDiagnosticSink();
@@ -74,7 +74,7 @@ namespace Cle.SemanticAnalysis.UnitTests
         public void Boolean_literal_stored_in_bool_succeeds()
         {
             var syntax = new BooleanLiteralSyntax(true, default);
-            var method = new CompiledMethod();
+            var method = new CompiledMethod("Test::Method");
             var builder = new BasicBlockGraphBuilder().GetInitialBlockBuilder();
             var variableMap = new ScopedVariableMap();
             var diagnostics = new TestingDiagnosticSink();
@@ -95,7 +95,7 @@ namespace Cle.SemanticAnalysis.UnitTests
         public void Variable_reference_returns_local_index_of_variable()
         {
             var syntax = new NamedValueSyntax("a", default);
-            var method = new CompiledMethod();
+            var method = new CompiledMethod("Test::Method");
             var builder = new BasicBlockGraphBuilder().GetInitialBlockBuilder();
             var diagnostics = new TestingDiagnosticSink();
 
@@ -116,7 +116,7 @@ namespace Cle.SemanticAnalysis.UnitTests
         {
             var position = new TextPosition(10, 3, 4);
             var syntax = new NamedValueSyntax("a", position);
-            var method = new CompiledMethod();
+            var method = new CompiledMethod("Test::Method");
             var builder = new BasicBlockGraphBuilder().GetInitialBlockBuilder();
             var diagnostics = new TestingDiagnosticSink();
 
@@ -138,7 +138,7 @@ namespace Cle.SemanticAnalysis.UnitTests
         {
             var position = new TextPosition(10, 3, 4);
             var syntax = new NamedValueSyntax("a", position);
-            var method = new CompiledMethod();
+            var method = new CompiledMethod("Test::Method");
             var builder = new BasicBlockGraphBuilder().GetInitialBlockBuilder();
             var diagnostics = new TestingDiagnosticSink();
             var variableMap = new ScopedVariableMap();
@@ -164,7 +164,7 @@ namespace Cle.SemanticAnalysis.UnitTests
         public void Int32_constant_expression_compiled_successfully(string expressionString, int expectedValue)
         {
             var expressionSyntax = ParseExpression(expressionString);
-            var method = new CompiledMethod();
+            var method = new CompiledMethod("Test::Method");
             var builder = new BasicBlockGraphBuilder().GetInitialBlockBuilder();
             var diagnostics = new TestingDiagnosticSink();
             var variableMap = new ScopedVariableMap();
@@ -185,7 +185,7 @@ namespace Cle.SemanticAnalysis.UnitTests
         public void Int32_non_constant_binary_expression_compiled_successfully(string expressionString, Opcode expectedOp)
         {
             var expressionSyntax = ParseExpression(expressionString);
-            var method = new CompiledMethod();
+            var method = new CompiledMethod("Test::Method");
             var builder = new BasicBlockGraphBuilder().GetInitialBlockBuilder();
             var diagnostics = new TestingDiagnosticSink();
             var variableMap = new ScopedVariableMap();
@@ -211,7 +211,7 @@ namespace Cle.SemanticAnalysis.UnitTests
         public void Int32_non_constant_unary_expression_compiled_successfully(string expressionString, Opcode expectedOp)
         {
             var expressionSyntax = ParseExpression(expressionString);
-            var method = new CompiledMethod();
+            var method = new CompiledMethod("Test::Method");
             var builder = new BasicBlockGraphBuilder().GetInitialBlockBuilder();
             var diagnostics = new TestingDiagnosticSink();
             var variableMap = new ScopedVariableMap();
@@ -241,7 +241,7 @@ namespace Cle.SemanticAnalysis.UnitTests
         public void Type_error_in_constant_expression(string expressionString)
         {
             var expressionSyntax = ParseExpression(expressionString);
-            var method = new CompiledMethod();
+            var method = new CompiledMethod("Test::Method");
             var builder = new BasicBlockGraphBuilder().GetInitialBlockBuilder();
             var diagnostics = new TestingDiagnosticSink();
             var variableMap = new ScopedVariableMap();
@@ -259,7 +259,7 @@ namespace Cle.SemanticAnalysis.UnitTests
         public void Failure_in_inner_expression_is_bubbled_up(string expressionString)
         {
             var expressionSyntax = ParseExpression(expressionString);
-            var method = new CompiledMethod();
+            var method = new CompiledMethod("Test::Method");
             var builder = new BasicBlockGraphBuilder().GetInitialBlockBuilder();
             var diagnostics = new TestingDiagnosticSink();
             var variableMap = new ScopedVariableMap();
@@ -279,7 +279,7 @@ namespace Cle.SemanticAnalysis.UnitTests
                 new IntegerLiteralSyntax(2ul, default), 
                 new IntegerLiteralSyntax(0, default), 
                 position);
-            var method = new CompiledMethod();
+            var method = new CompiledMethod("Test::Method");
             var builder = new BasicBlockGraphBuilder().GetInitialBlockBuilder();
             var diagnostics = new TestingDiagnosticSink();
             var variableMap = new ScopedVariableMap();
@@ -299,7 +299,7 @@ namespace Cle.SemanticAnalysis.UnitTests
                 new NamedValueSyntax("a", default), 
                 new IntegerLiteralSyntax(0, default),
                 position);
-            var method = new CompiledMethod();
+            var method = new CompiledMethod("Test::Method");
             var builder = new BasicBlockGraphBuilder().GetInitialBlockBuilder();
             var diagnostics = new TestingDiagnosticSink();
             var variableMap = new ScopedVariableMap();
@@ -320,7 +320,7 @@ namespace Cle.SemanticAnalysis.UnitTests
             var syntax = new UnaryExpressionSyntax(UnaryOperation.Minus,
                 new IntegerLiteralSyntax(2_147_483_649, default), // One less than smallest int32
                 position);
-            var method = new CompiledMethod();
+            var method = new CompiledMethod("Test::Method");
             var builder = new BasicBlockGraphBuilder().GetInitialBlockBuilder();
             var diagnostics = new TestingDiagnosticSink();
             var variableMap = new ScopedVariableMap();

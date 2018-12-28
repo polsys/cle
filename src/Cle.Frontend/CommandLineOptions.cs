@@ -10,8 +10,9 @@ namespace Cle.Frontend
     internal class CommandLineOptions
     {
         [CanBeNull]
-        [Option("dump", HelpText = "If specified, debug information for all methods " + 
-            "matching the regex parameter will be dumped to cle-dump.txt.")]
+        [Option("dump", HelpText = "If specified, compiler debug information for all methods " + 
+            "where the name contains the parameter string will be logged to cle-dump.txt. " +
+            "Specify * to dump all methods. More complex wildcard syntax is not supported.")]
         public string DumpRegex { get; set; }
 
         [CanBeNull, ItemNotNull]

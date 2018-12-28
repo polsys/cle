@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using BenchmarkDotNet.Attributes;
 using Cle.Compiler;
@@ -9,16 +10,19 @@ namespace Cle.Benchmarks.Compiler
     public class CompilerDriverBenchmarks
     {
         private readonly SingleFileProvider _almostSemanticallyValidSourceProvider;
+        private readonly NullOutputProvider _nullOutputProvider;
 
         public CompilerDriverBenchmarks()
         {
             _almostSemanticallyValidSourceProvider = new SingleFileProvider(AlmostSemanticallyValidSource);
+            _nullOutputProvider = new NullOutputProvider();
         }
 
         [Benchmark]
         public int CompileSingleFileWithSemanticError()
         {
-            var result = CompilerDriver.Compile(new CompilationOptions("."), _almostSemanticallyValidSourceProvider);
+            var result = CompilerDriver.Compile(new CompilationOptions("."),
+                _almostSemanticallyValidSourceProvider, _nullOutputProvider);
             return result.Diagnostics.Count;
         }
         
@@ -79,6 +83,14 @@ private bool TypeMismatch()
                     fileBytes = Memory<byte>.Empty;
                     return false;
                 }
+            }
+        }
+
+        private class NullOutputProvider : IOutputFileProvider
+        {
+            public TextWriter GetDebugFileWriter()
+            {
+                return null;
             }
         }
     }

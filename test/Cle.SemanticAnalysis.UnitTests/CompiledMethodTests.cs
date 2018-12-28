@@ -9,7 +9,7 @@ namespace Cle.SemanticAnalysis.UnitTests
         [Test]
         public void CreateLocal_succeeds_for_int32()
         {
-            var method = new CompiledMethod();
+            var method = new CompiledMethod("Test::Method");
 
             Assert.That(method.AddLocal(SimpleType.Int32, ConstantValue.SignedInteger(1)), Is.EqualTo(0));
             Assert.That(method.AddLocal(SimpleType.Int32, ConstantValue.SignedInteger(-17)), Is.EqualTo(1));
@@ -24,7 +24,7 @@ namespace Cle.SemanticAnalysis.UnitTests
         [Test]
         public void CreateLocal_succeeds_for_bool()
         {
-            var method = new CompiledMethod();
+            var method = new CompiledMethod("Test::Method");
 
             Assert.That(method.AddLocal(SimpleType.Bool, ConstantValue.Bool(true)), Is.EqualTo(0));
             Assert.That(method.AddLocal(SimpleType.Bool, ConstantValue.Bool(false)), Is.EqualTo(1));
