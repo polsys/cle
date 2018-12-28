@@ -18,7 +18,7 @@ namespace Cle.Benchmarks.Compiler
         [Benchmark]
         public int CompileSingleFileWithSemanticError()
         {
-            var result = CompilerDriver.Compile(".", new CompilationOptions(), _almostSemanticallyValidSourceProvider);
+            var result = CompilerDriver.Compile(new CompilationOptions("."), _almostSemanticallyValidSourceProvider);
             return result.Diagnostics.Count;
         }
         

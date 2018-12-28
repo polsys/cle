@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 using Cle.Compiler;
 
@@ -8,11 +9,12 @@ namespace Cle.Frontend
     {
         public static int Main(string[] args)
         {
-            Console.WriteLine("Cle Compiler");
-            Console.WriteLine("WIP: This executable currently only parses the Cle files in current directory.");
-            Console.WriteLine();
-
-            // TODO: Read command line parameters
+            // Read command line parameters
+            if (!CommandLineParser.TryParseArguments(args, Console.Out, out var options))
+            {
+                return 0;
+            }
+            Debug.Assert(options != null);
 
             // TODO: Create a logger for diagnostics and output messages as they are produced
 
@@ -20,7 +22,7 @@ namespace Cle.Frontend
             var fileProvider = new SourceFileProvider(Directory.GetCurrentDirectory());
 
             // TODO: Initialize a compiler instance and call it
-            var result = CompilerDriver.Compile(".", new CompilationOptions(), fileProvider);
+            var result = CompilerDriver.Compile(options, fileProvider);
 
             // Write an output summary
             PrintDiagnostics(result);

@@ -18,14 +18,10 @@ namespace Cle.Compiler
         /// Compiles the specified module and its dependencies.
         /// Returns compilation diagnostics and statistics.
         /// </summary>
-        /// <param name="mainModule">
-        /// The main module name. This module will be located and its dependencies will be added to the compilation.
-        /// </param>
         /// <param name="options">Additional options, such as optimization and logging levels.</param>
         /// <param name="sourceFileProvider">Interface for source file access.</param>
         [NotNull]
         public static CompilationResult Compile(
-            [NotNull] string mainModule,
             [NotNull] CompilationOptions options,
             [NotNull] ISourceFileProvider sourceFileProvider)
         {
@@ -34,6 +30,7 @@ namespace Cle.Compiler
             var compilation = new Compilation();
 
             // TODO: Build the dependency graph and decide the build order
+            var mainModule = options.MainModule;
 
             // Parse each module
             // TODO: Make this run in parallel
