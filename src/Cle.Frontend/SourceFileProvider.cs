@@ -17,13 +17,20 @@ namespace Cle.Frontend
 
         public bool TryGetFilenamesForModule(string moduleName, out IEnumerable<string> filenames)
         {
-            // TODO: Support for multiple modules
-            if (moduleName != ".")
-                throw new NotImplementedException("Support for modules");
-            
-            // TODO: Evaluate which exceptions can be handled (access denied, etc.)
-            filenames = Directory.EnumerateFiles(_mainDirectory, "*.cle", SearchOption.AllDirectories);
-            return true;
+            // Use absolute paths everywhere
+            // TODO: Support for module search paths
+            try
+            {
+                filenames = Directory.EnumerateFiles(Path.GetFullPath(Path.Combine(_mainDirectory, moduleName)),
+                    "*.cle", SearchOption.TopDirectoryOnly);
+                return true;
+            }
+            catch (IOException)
+            {
+                // TODO: Is there some kind of IO exception that should not be handled?
+                filenames = null;
+                return false;
+            }
         }
 
         public bool TryGetSourceFile(string filename, out Memory<byte> fileBytes)
@@ -35,7 +42,7 @@ namespace Cle.Frontend
             }
             catch (IOException)
             {
-                // TODO: Is there some kind of exception that cannot be handled?
+                // TODO: Is there some kind of IO exception that should not be handled?
                 // TODO: Should there be a way to message the type of error?
                 fileBytes = Memory<byte>.Empty;
                 return false;
