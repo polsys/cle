@@ -12,16 +12,16 @@ namespace Cle.Frontend
             // Read command line parameters
             if (!CommandLineParser.TryParseArguments(args, Console.Out, out var options))
             {
-                return 0;
+                return 1;
             }
             Debug.Assert(options != null);
 
             // TODO: Create a logger for diagnostics and output messages as they are produced
 
-            // TODO: Create a file interface
+            // Create a file interface
             var fileProvider = new SourceFileProvider(Directory.GetCurrentDirectory());
 
-            // TODO: Initialize a compiler instance and call it
+            // Initialize a compiler instance and call it
             var result = CompilerDriver.Compile(options, fileProvider);
 
             // Write an output summary
@@ -45,8 +45,8 @@ namespace Cle.Frontend
             }
             Console.WriteLine($"Succeeded modules: {result.SucceededCount}, Failed modules: {result.FailedCount}");
 
-            // TODO: Return an according return value
-            return 0;
+            // Return an according return value
+            return result.FailedCount;
         }
 
         private static void PrintDiagnostics(CompilationResult result)
