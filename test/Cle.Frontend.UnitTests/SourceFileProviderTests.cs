@@ -10,7 +10,14 @@ namespace Cle.Frontend.UnitTests
         [OneTimeSetUp]
         public void SetUpFolderStructure()
         {
-            Directory.Delete(ModuleName, true);
+            // Clean up the directory structure from previous runs or other sources.
+            // The Directory.Exists check is not thread-safe, but we already assume that
+            // nobody is messing with our test data directory.
+            if (Directory.Exists(ModuleName))
+            {
+                Directory.Delete(ModuleName, true);
+            }
+
             Directory.CreateDirectory(ModuleName);
             var skippedFolder = Path.Combine(ModuleName, "ToBeSkipped");
             Directory.CreateDirectory(skippedFolder);
