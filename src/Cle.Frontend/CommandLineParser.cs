@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
 using Cle.Compiler;
 using CommandLine;
 using JetBrains.Annotations;
@@ -38,7 +35,8 @@ namespace Cle.Frontend
                 // We could also set an Value attribute property Max=1, but the error message would be:
                 //   "A sequence value not bound to option name is defined with few items than required."
                 // So yeah, maybe it is better to handle that by ourselves.
-                if (parsed.Value.MainModule.Count() > 1)
+                var mainModules = new List<string>(parsed.Value.MainModule);
+                if (mainModules.Count > 1)
                 {
                     output.WriteLine("ERROR(S):");
                     output.WriteLine("More than one main module specified.");
@@ -49,7 +47,7 @@ namespace Cle.Frontend
 
                 // Convert the options into compilation options
                 options = new CompilationOptions(
-                    parsed.Value.MainModule.FirstOrDefault() ?? ".",
+                    mainModules.Count == 0 ? "." : mainModules[0],
                     debugPattern: parsed.Value.DumpRegex);
 
                 return true;
