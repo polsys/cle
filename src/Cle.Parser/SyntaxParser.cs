@@ -536,13 +536,192 @@ namespace Cle.Parser
         /// </summary>
         internal bool TryParseExpression([CanBeNull] out ExpressionSyntax expressionSyntax)
         {
-            // TODO: Relative operators
-            return TryParseArithmeticExpression(out expressionSyntax);
+            return TryParseLogicalExpression(out expressionSyntax);
         }
-        
+
+        private bool TryParseLogicalExpression([CanBeNull] out ExpressionSyntax expressionSyntax)
+        {
+            // Logical expression := Logical expression [& && | || ^] Relational expression
+            expressionSyntax = null;
+
+            // Read the initial expression
+            if (!TryParseRelationalExpression(out var currentSyntax))
+            {
+                return false;
+            }
+            Debug.Assert(currentSyntax != null);
+
+            // Recurse left
+            while (true)
+            {
+                BinaryOperation op;
+                switch (_lexer.PeekTokenType())
+                {
+                    case TokenType.Ampersand:
+                        op = BinaryOperation.And;
+                        break;
+                    case TokenType.DoubleAmpersand:
+                        op = BinaryOperation.ShortCircuitAnd;
+                        break;
+                    case TokenType.Bar:
+                        op = BinaryOperation.Or;
+                        break;
+                    case TokenType.DoubleBar:
+                        op = BinaryOperation.ShortCircuitOr;
+                        break;
+                    case TokenType.Circumflex:
+                        op = BinaryOperation.Xor;
+                        break;
+                    default:
+                        expressionSyntax = currentSyntax;
+                        return true;
+                }
+
+                if (!ParseOperation(op))
+                    return false;
+            }
+            
+            bool ParseOperation(BinaryOperation operation)
+            {
+                // Eat the operator
+                var operatorPosition = _lexer.Position;
+                _lexer.GetToken();
+
+                // Read the right operand
+                if (!TryParseRelationalExpression(out var right))
+                {
+                    return false;
+                }
+                Debug.Assert(right != null);
+
+                // Update the result
+                currentSyntax = new BinaryExpressionSyntax(operation, currentSyntax, right, operatorPosition);
+                return true;
+            }
+        }
+
+        private bool TryParseRelationalExpression([CanBeNull] out ExpressionSyntax expressionSyntax)
+        {
+            // Relational expression := Relational expression [== != < <= >= >] Shift expression
+            expressionSyntax = null;
+
+            // Read the initial expression
+            if (!TryParseShiftExpression(out var currentSyntax))
+            {
+                return false;
+            }
+            Debug.Assert(currentSyntax != null);
+
+            // Recurse left
+            while (true)
+            {
+                BinaryOperation op;
+                switch (_lexer.PeekTokenType())
+                {
+                    case TokenType.DoubleEquals:
+                        op = BinaryOperation.Equal;
+                        break;
+                    case TokenType.NotEquals:
+                        op = BinaryOperation.NotEqual;
+                        break;
+                    case TokenType.LessThan:
+                        op = BinaryOperation.LessThan;
+                        break;
+                    case TokenType.LessThanOrEquals:
+                        op = BinaryOperation.LessThanOrEqual;
+                        break;
+                    case TokenType.GreaterThanOrEquals:
+                        op = BinaryOperation.GreaterThanOrEqual;
+                        break;
+                    case TokenType.GreaterThan:
+                        op = BinaryOperation.GreaterThan;
+                        break;
+                    default:
+                        expressionSyntax = currentSyntax;
+                        return true;
+                }
+
+                if (!ParseOperation(op))
+                    return false;
+            }
+
+            // Local helper method for sharing code between the operators
+            bool ParseOperation(BinaryOperation operation)
+            {
+                // Eat the operator
+                var operatorPosition = _lexer.Position;
+                _lexer.GetToken();
+
+                // Read the right operand
+                if (!TryParseShiftExpression(out var right))
+                {
+                    return false;
+                }
+                Debug.Assert(right != null);
+
+                // Update the result
+                currentSyntax = new BinaryExpressionSyntax(operation, currentSyntax, right, operatorPosition);
+                return true;
+            }
+        }
+
+        private bool TryParseShiftExpression([CanBeNull] out ExpressionSyntax expressionSyntax)
+        {
+            // Shift expression := Shift expression [<< >>] Arithmetic expression
+            expressionSyntax = null;
+
+            // Read the initial expression
+            if (!TryParseArithmeticExpression(out var currentSyntax))
+            {
+                return false;
+            }
+            Debug.Assert(currentSyntax != null);
+
+            // Recurse left
+            while (true)
+            {
+                switch (_lexer.PeekTokenType())
+                {
+                    case TokenType.DoubleLessThan:
+                    {
+                        if (!ParseOperation(BinaryOperation.ShiftLeft))
+                            return false;
+                        break;
+                    }
+                    case TokenType.DoubleGreaterThan:
+                    {
+                        if (!ParseOperation(BinaryOperation.ShiftRight))
+                            return false;
+                        break;
+                    }
+                    default:
+                        expressionSyntax = currentSyntax;
+                        return true;
+                }
+            }
+            
+            bool ParseOperation(BinaryOperation operation)
+            {
+                // Eat the operator
+                var operatorPosition = _lexer.Position;
+                _lexer.GetToken();
+
+                // Read the right operand
+                if (!TryParseArithmeticExpression(out var right))
+                {
+                    return false;
+                }
+                Debug.Assert(right != null);
+
+                // Update the result
+                currentSyntax = new BinaryExpressionSyntax(operation, currentSyntax, right, operatorPosition);
+                return true;
+            }
+        }
+
         private bool TryParseArithmeticExpression([CanBeNull] out ExpressionSyntax expressionSyntax)
         {
-            // Arithmetic expression := Arithmetic expression [+-] Term
+            // Arithmetic expression := Arithmetic expression [+ -] Term
             expressionSyntax = null;
 
             // Read the initial term
@@ -555,24 +734,22 @@ namespace Cle.Parser
             // Recurse left
             while (true)
             {
+                BinaryOperation op;
                 switch (_lexer.PeekTokenType())
                 {
                     case TokenType.Plus:
-                    {
-                        if (!ParseOperation(BinaryOperation.Plus))
-                            return false;
+                        op = BinaryOperation.Plus;
                         break;
-                    }
                     case TokenType.Minus:
-                    {
-                        if (!ParseOperation(BinaryOperation.Minus))
-                            return false;
+                        op = BinaryOperation.Minus;
                         break;
-                    }
                     default:
                         expressionSyntax = currentSyntax;
                         return true;
                 }
+
+                if (!ParseOperation(op))
+                    return false;
             }
 
             // Local helper method for sharing code between the '+' and '-' paths
@@ -597,7 +774,7 @@ namespace Cle.Parser
 
         private bool TryParseTerm([CanBeNull] out ExpressionSyntax expressionSyntax)
         {
-            // Term := Term [+-] Factor
+            // Term := Term [* / %] Factor
             expressionSyntax = null;
 
             // Read the initial term
@@ -610,24 +787,25 @@ namespace Cle.Parser
             // Recurse left
             while (true)
             {
+                BinaryOperation op;
                 switch (_lexer.PeekTokenType())
                 {
                     case TokenType.Asterisk:
-                    {
-                        if (!ParseOperation(BinaryOperation.Times))
-                            return false;
+                        op = BinaryOperation.Times;
                         break;
-                    }
                     case TokenType.ForwardSlash:
-                    {
-                        if (!ParseOperation(BinaryOperation.Divide))
-                            return false;
+                        op = BinaryOperation.Divide;
                         break;
-                    }
+                    case TokenType.Percent:
+                        op = BinaryOperation.Modulo;
+                        break;
                     default:
                         expressionSyntax = currentSyntax;
                         return true;
                 }
+
+                if (!ParseOperation(op))
+                    return false;
             }
 
             // Local helper method for sharing code between the '*' and '/' paths
@@ -652,28 +830,18 @@ namespace Cle.Parser
 
         private bool TryParseFactor([CanBeNull] out ExpressionSyntax expressionSyntax)
         {
-            // Factor := Number | Boolean literal | ( Expression ) | -Factor
+            // Factor := Identifier | Number | Boolean literal | ( Expression ) | -Factor | !Factor | ~Factor
             
             expressionSyntax = null;
 
             switch (_lexer.PeekTokenType())
             {
                 case TokenType.Minus:
-                    // Eat the minus
-                    var minusPosition = _lexer.Position;
-                    _lexer.GetToken();
-
-                    // Recurse to the inner factor
-                    if (TryParseFactor(out var innerFactor))
-                    {
-                        Debug.Assert(innerFactor != null);
-                        expressionSyntax = new UnaryExpressionSyntax(UnaryOperation.Minus, innerFactor, minusPosition);
-                        return true;
-                    }
-                    else
-                    {
-                        return false;
-                    }
+                    return ParseUnary(UnaryOperation.Minus, out expressionSyntax);
+                case TokenType.Exclamation:
+                    return ParseUnary(UnaryOperation.Negation, out expressionSyntax);
+                case TokenType.Tilde:
+                    return ParseUnary(UnaryOperation.Complement, out expressionSyntax);
                 case TokenType.OpenParen:
                     // Eat the '('
                     _lexer.GetToken();
@@ -719,6 +887,27 @@ namespace Cle.Parser
                     }
                 default:
                     return TryParseNumber(out expressionSyntax);
+            }
+
+            // Local helper method for sharing code between the various unary paths
+            bool ParseUnary(UnaryOperation op, out ExpressionSyntax syntax)
+            {
+                // Eat the operator
+                var opPosition = _lexer.Position;
+                _lexer.GetToken();
+
+                // Recurse into the inner expression, which is a factor too
+                if (TryParseFactor(out var innerFactor))
+                {
+                    Debug.Assert(innerFactor != null);
+                    syntax = new UnaryExpressionSyntax(op, innerFactor, opPosition);
+                    return true;
+                }
+                else
+                {
+                    syntax = null;
+                    return false;
+                }
             }
         }
 

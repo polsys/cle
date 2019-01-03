@@ -83,10 +83,11 @@ namespace Cle.Parser.UnitTests.SyntaxParserTests
             diagnostics.AssertDiagnosticAt(DiagnosticCode.InvalidVariableName, 1, 0).WithActual(name);
         }
 
-        [Test]
-        public void Unary_minus_is_parsed_correctly()
+        [TestCase("-123", UnaryOperation.Minus)]
+        [TestCase("~123", UnaryOperation.Complement)]
+        public void Unary_integer_operation_is_parsed_correctly(string source, UnaryOperation expectedOp)
         {
-            var parser = GetParserInstance("-123", out var diagnostics);
+            var parser = GetParserInstance(source, out var diagnostics);
 
             var returnValue = parser.TryParseExpression(out var expression);
 
@@ -95,9 +96,26 @@ namespace Cle.Parser.UnitTests.SyntaxParserTests
             Assert.That(expression, Is.Not.Null);
 
             var unary = (UnaryExpressionSyntax)expression;
-            Assert.That(unary.Operation, Is.EqualTo(UnaryOperation.Minus));
+            Assert.That(unary.Operation, Is.EqualTo(expectedOp));
             Assert.That(unary.InnerExpression, Is.InstanceOf<IntegerLiteralSyntax>());
             Assert.That(((IntegerLiteralSyntax)unary.InnerExpression).Value, Is.EqualTo(123));
+        }
+
+        [TestCase("!true", UnaryOperation.Negation)]
+        public void Unary_boolean_operation_is_parsed_correctly(string source, UnaryOperation expectedOp)
+        {
+            var parser = GetParserInstance(source, out var diagnostics);
+
+            var returnValue = parser.TryParseExpression(out var expression);
+
+            Assert.That(diagnostics.Diagnostics, Is.Empty);
+            Assert.That(returnValue, Is.True);
+            Assert.That(expression, Is.Not.Null);
+
+            var unary = (UnaryExpressionSyntax)expression;
+            Assert.That(unary.Operation, Is.EqualTo(expectedOp));
+            Assert.That(unary.InnerExpression, Is.InstanceOf<BooleanLiteralSyntax>());
+            Assert.That(((BooleanLiteralSyntax)unary.InnerExpression).Value, Is.EqualTo(true));
         }
 
         [Test]
@@ -124,7 +142,15 @@ namespace Cle.Parser.UnitTests.SyntaxParserTests
         [TestCase("1 - 2 - 3", BinaryOperation.Minus)]
         [TestCase("1 * 2 * 3", BinaryOperation.Times)]
         [TestCase("1 / 2 / 3", BinaryOperation.Divide)]
+        [TestCase("1 % 2 % 3", BinaryOperation.Modulo)]
+        [TestCase("1 & 2 & 3", BinaryOperation.And)]
+        [TestCase("1 && 2 && 3", BinaryOperation.ShortCircuitAnd)]
+        [TestCase("1 | 2 | 3", BinaryOperation.Or)]
+        [TestCase("1 || 2 || 3", BinaryOperation.ShortCircuitOr)]
+        [TestCase("1 ^ 2 ^ 3", BinaryOperation.Xor)]
+        [TestCase("1 == 2 == 3", BinaryOperation.Equal)]
         [TestCase("(1 + 2 + 3)", BinaryOperation.Plus)] // Parens outside the expression have no effect
+        [TestCase("(1 ^ 2 ^ 3)", BinaryOperation.Xor)]
         public void Binary_operation_is_left_associative([NotNull] string source, BinaryOperation operation)
         {
             var parser = GetParserInstance(source, out var diagnostics);
@@ -346,6 +372,74 @@ namespace Cle.Parser.UnitTests.SyntaxParserTests
             Assert.That(((IntegerLiteralSyntax)right.Right).Value, Is.EqualTo(3));
         }
 
+        [TestCase("(-1 + 2) << 2 < 3 * 4 % 5", BinaryOperation.LessThan)]
+        [TestCase("(-1 + 2) << 2 <= 3 * 4 % 5", BinaryOperation.LessThanOrEqual)]
+        [TestCase("(-1 + 2) << 2 > 3 * 4 % 5", BinaryOperation.GreaterThan)]
+        [TestCase("(-1 + 2) << 2 >= 3 * 4 % 5", BinaryOperation.GreaterThanOrEqual)]
+        [TestCase("(-1 + 2) << 2 == 3 * 4 % 5", BinaryOperation.Equal)]
+        [TestCase("(-1 + 2) << 2 != 3 * 4 % 5", BinaryOperation.NotEqual)]
+        public void Relational_operators_have_lower_precedence_than_arithmetic_or_shift(string source, BinaryOperation expected)
+        {
+            var parser = GetParserInstance(source, out var diagnostics);
+
+            var returnValue = parser.TryParseExpression(out var expression);
+
+            Assert.That(diagnostics.Diagnostics, Is.Empty);
+            Assert.That(returnValue, Is.True);
+            Assert.That(expression, Is.Not.Null);
+
+            var binary = (BinaryExpressionSyntax)expression;
+            Assert.That(binary.Operation, Is.EqualTo(expected));
+
+            Assert.That(binary.Left, Is.InstanceOf<BinaryExpressionSyntax>());
+            Assert.That(((BinaryExpressionSyntax)binary.Left).Operation, Is.EqualTo(BinaryOperation.ShiftLeft));
+
+            Assert.That(binary.Right, Is.InstanceOf<BinaryExpressionSyntax>());
+            Assert.That(((BinaryExpressionSyntax)binary.Right).Operation, Is.EqualTo(BinaryOperation.Modulo));
+        }
+        
+        [Test]
+        public void Logical_operators_have_lower_precedence_than_relational()
+        {
+            var parser = GetParserInstance("1 == 1 && 2 != 3", out var diagnostics);
+
+            var returnValue = parser.TryParseExpression(out var expression);
+
+            Assert.That(diagnostics.Diagnostics, Is.Empty);
+            Assert.That(returnValue, Is.True);
+            Assert.That(expression, Is.Not.Null);
+
+            var binary = (BinaryExpressionSyntax)expression;
+            Assert.That(binary.Operation, Is.EqualTo(BinaryOperation.ShortCircuitAnd));
+
+            Assert.That(binary.Left, Is.InstanceOf<BinaryExpressionSyntax>());
+            Assert.That(((BinaryExpressionSyntax)binary.Left).Operation, Is.EqualTo(BinaryOperation.Equal));
+
+            Assert.That(binary.Right, Is.InstanceOf<BinaryExpressionSyntax>());
+            Assert.That(((BinaryExpressionSyntax)binary.Right).Operation, Is.EqualTo(BinaryOperation.NotEqual));
+        }
+
+        [Test]
+        public void Shift_operator_has_lower_precedence_than_arithmetic()
+        {
+            var parser = GetParserInstance("2 + 2 << 2 - 1", out var diagnostics);
+
+            var returnValue = parser.TryParseExpression(out var expression);
+
+            Assert.That(diagnostics.Diagnostics, Is.Empty);
+            Assert.That(returnValue, Is.True);
+            Assert.That(expression, Is.Not.Null);
+
+            var binary = (BinaryExpressionSyntax)expression;
+            Assert.That(binary.Operation, Is.EqualTo(BinaryOperation.ShiftLeft));
+
+            Assert.That(binary.Left, Is.InstanceOf<BinaryExpressionSyntax>());
+            Assert.That(((BinaryExpressionSyntax)binary.Left).Operation, Is.EqualTo(BinaryOperation.Plus));
+
+            Assert.That(binary.Right, Is.InstanceOf<BinaryExpressionSyntax>());
+            Assert.That(((BinaryExpressionSyntax)binary.Right).Operation, Is.EqualTo(BinaryOperation.Minus));
+        }
+
         [Test]
         public void Binary_plus_fails_if_right_side_is_not_term()
         {
@@ -404,6 +498,19 @@ namespace Cle.Parser.UnitTests.SyntaxParserTests
             Assert.That(returnValue, Is.False);
             Assert.That(expression, Is.Null);
             diagnostics.AssertDiagnosticAt(DiagnosticCode.ExpectedExpression, 1, 1).WithActual(";");
+        }
+
+        [Test]
+        public void Right_hand_operand_must_be_valid()
+        {
+            // This test should exercise a failure path on all expression parsing levels
+            var parser = GetParserInstance("true ^ 2 != 2 << 1 + 2 * -if", out var diagnostics);
+
+            var returnValue = parser.TryParseExpression(out var expression);
+
+            Assert.That(returnValue, Is.False);
+            Assert.That(expression, Is.Null);
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.ExpectedExpression, 1, 26).WithActual("if");
         }
     }
 }
