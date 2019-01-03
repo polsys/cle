@@ -17,7 +17,16 @@ namespace Cle.Parser
         private int _currentRow = 1;
         private int _currentByteInRow;
 
+        /// <summary>
+        /// Lookup table for keywords and two-character symbols.
+        /// </summary>
         private static readonly List<(byte[], TokenType)> s_keywords = InitializeKeywords();
+
+        /// <summary>
+        /// Lookup table for single-character symbols.
+        /// This does not include " or classification for any other character classes.
+        /// </summary>
+        private static readonly byte[] s_symbols = InitializeSymbolTable();
 
         public Lexer(Memory<byte> source)
         {
@@ -248,17 +257,7 @@ namespace Cle.Parser
 
         private static bool IsSymbol(byte character)
         {
-            // TODO: Re-measure the performance of this when all the symbols are defined
-            return character == (byte)'+' || character == (byte)'-' ||
-                   character == (byte)'*' || character == (byte)'/' ||
-                   character == (byte)'%' || character == (byte)'=' ||
-                   character == (byte)'<' || character == (byte)'>' ||
-                   character == (byte)'!' || character == (byte)'~' ||
-                   character == (byte)'^' || character == (byte)'&' ||
-                   character == (byte)'|' || character == (byte)';' ||
-                   character == (byte)'(' || character == (byte)')' ||
-                   character == (byte)'{' || character == (byte)'}' ||
-                   character == (byte)'[' || character == (byte)']';
+            return s_symbols[character] != 0;
         }
 
         private static TokenType ClassifyToken(ReadOnlySpan<byte> token)
@@ -275,54 +274,14 @@ namespace Cle.Parser
             if (token[0] >= (byte)'0' && token[0] <= (byte)'9')
                 return TokenType.Number;
 
-            // TODO: Early out for tokens beginning with _
+            // TODO: Early out for tokens beginning with _ if that is beneficial in real workloads
 
             // Test for one-character symbols
             if (token.Length == 1)
             {
-                switch (token[0])
-                {
-                    case (byte)'+':
-                        return TokenType.Plus;
-                    case (byte)'-':
-                        return TokenType.Minus;
-                    case (byte)'*':
-                        return TokenType.Asterisk;
-                    case (byte)'=':
-                        return TokenType.Equals;
-                    case (byte)'/':
-                        return TokenType.ForwardSlash;
-                    case (byte)'%':
-                        return TokenType.Percent;
-                    case (byte)'<':
-                        return TokenType.LessThan;
-                    case (byte)'>':
-                        return TokenType.GreaterThan;
-                    case (byte)'!':
-                        return TokenType.Exclamation;
-                    case (byte)'~':
-                        return TokenType.Tilde;
-                    case (byte)'^':
-                        return TokenType.Circumflex;
-                    case (byte)'&':
-                        return TokenType.Ampersand;
-                    case (byte)'|':
-                        return TokenType.Bar;
-                    case (byte)';':
-                        return TokenType.Semicolon;
-                    case (byte)'(':
-                        return TokenType.OpenParen;
-                    case (byte)')':
-                        return TokenType.CloseParen;
-                    case (byte)'{':
-                        return TokenType.OpenBrace;
-                    case (byte)'}':
-                        return TokenType.CloseBrace;
-                    case (byte)'[':
-                        return TokenType.OpenBracket;
-                    case (byte)']':
-                        return TokenType.CloseBracket;
-                }
+                var symbolType = s_symbols[token[0]];
+                if (symbolType != 0)
+                    return (TokenType)symbolType;
             }
 
             // Keywords and two-character symbols are collected in a list of (keyword bytes, token type) tuples
@@ -360,6 +319,33 @@ namespace Cle.Parser
                 (Encoding.UTF8.GetBytes("true"), TokenType.True),
                 (Encoding.UTF8.GetBytes("while"), TokenType.While),
             };
+        }
+
+        private static byte[] InitializeSymbolTable()
+        {
+            var table = new byte[256];
+            table[(byte)'+'] = (byte)TokenType.Plus;
+            table[(byte)'-'] = (byte)TokenType.Minus;
+            table[(byte)'*'] = (byte)TokenType.Asterisk;
+            table[(byte)'/'] = (byte)TokenType.ForwardSlash;
+            table[(byte)'%'] = (byte)TokenType.Percent;
+            table[(byte)'='] = (byte)TokenType.Equals;
+            table[(byte)'<'] = (byte)TokenType.LessThan;
+            table[(byte)'>'] = (byte)TokenType.GreaterThan;
+            table[(byte)'!'] = (byte)TokenType.Exclamation;
+            table[(byte)'~'] = (byte)TokenType.Tilde;
+            table[(byte)'^'] = (byte)TokenType.Circumflex;
+            table[(byte)'&'] = (byte)TokenType.Ampersand;
+            table[(byte)'|'] = (byte)TokenType.Bar;
+            table[(byte)';'] = (byte)TokenType.Semicolon;
+            table[(byte)'('] = (byte)TokenType.OpenParen;
+            table[(byte)')'] = (byte)TokenType.CloseParen;
+            table[(byte)'{'] = (byte)TokenType.OpenBrace;
+            table[(byte)'}'] = (byte)TokenType.CloseBrace;
+            table[(byte)'['] = (byte)TokenType.OpenBracket;
+            table[(byte)']'] = (byte)TokenType.CloseBracket;
+
+            return table;
         }
     }
 }

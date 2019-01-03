@@ -33,6 +33,7 @@ namespace Test;
 public         int32 Name(){
 {{
 1234 identifier + false £invalid -
+if (25 > 4^5 && 1 != 5 | 6) { return true; }
 }}}
 ";
     }
