@@ -12,7 +12,21 @@ namespace Cle.Parser.SyntaxTree
         Plus,
         Minus,
         Times,
-        Divide
+        Divide,
+        Modulo,
+        And,
+        ShortCircuitAnd,
+        Or,
+        ShortCircuitOr,
+        Xor,
+        ShiftLeft,
+        ShiftRight,
+        LessThan,
+        LessThanOrEqual,
+        GreaterThan,
+        GreaterThanOrEqual,
+        Equal,
+        NotEqual,
     }
 
     /// <summary>

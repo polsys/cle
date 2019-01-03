@@ -135,15 +135,34 @@ namespace Cle.Parser
                     var isSymbol = IsSymbol(currentByte);
 
                     // Read until whitespace or a symbol ends the current token
-                    if (IsWhitespace(currentByte) || isSymbol && _currentTokenLengthBytes > 0)
+                    if (IsWhitespace(currentByte) || (isSymbol && _currentTokenLengthBytes > 0))
                         break;
 
                     _currentTokenLengthBytes++;
 
-                    // If this token is a symbol, break after reading one character
-                    // TODO: Support longer symbols (such as <= or &&)
+                    // If this token is a symbol, break after reading one (or two in case of longer symbols) character
                     if (isSymbol)
+                    {
+                        // Two-char symbols
+                        if (TryReadByte(out var nextByte))
+                        {
+                            switch (nextByte)
+                            {
+                                case (byte)'=' when currentByte == (byte)'=':
+                                case (byte)'=' when currentByte == (byte)'!':
+                                case (byte)'<' when currentByte == (byte)'<':
+                                case (byte)'>' when currentByte == (byte)'>':
+                                case (byte)'=' when currentByte == (byte)'<':
+                                case (byte)'=' when currentByte == (byte)'>':
+                                case (byte)'&' when currentByte == (byte)'&':
+                                case (byte)'|' when currentByte == (byte)'|':
+                                    _currentTokenLengthBytes++;
+                                    break;
+                            }
+                        }
+
                         break;
+                    }
                 }
             }
         }
@@ -231,8 +250,12 @@ namespace Cle.Parser
         {
             // TODO: Re-measure the performance of this when all the symbols are defined
             return character == (byte)'+' || character == (byte)'-' ||
-                   character == (byte)'*' || character == (byte)'/' || 
-                   character == (byte)';' ||
+                   character == (byte)'*' || character == (byte)'/' ||
+                   character == (byte)'%' || character == (byte)'=' ||
+                   character == (byte)'<' || character == (byte)'>' ||
+                   character == (byte)'!' || character == (byte)'~' ||
+                   character == (byte)'^' || character == (byte)'&' ||
+                   character == (byte)'|' || character == (byte)';' ||
                    character == (byte)'(' || character == (byte)')' ||
                    character == (byte)'{' || character == (byte)'}' ||
                    character == (byte)'[' || character == (byte)']';
@@ -269,6 +292,22 @@ namespace Cle.Parser
                         return TokenType.Equals;
                     case (byte)'/':
                         return TokenType.ForwardSlash;
+                    case (byte)'%':
+                        return TokenType.Percent;
+                    case (byte)'<':
+                        return TokenType.LessThan;
+                    case (byte)'>':
+                        return TokenType.GreaterThan;
+                    case (byte)'!':
+                        return TokenType.Exclamation;
+                    case (byte)'~':
+                        return TokenType.Tilde;
+                    case (byte)'^':
+                        return TokenType.Circumflex;
+                    case (byte)'&':
+                        return TokenType.Ampersand;
+                    case (byte)'|':
+                        return TokenType.Bar;
                     case (byte)';':
                         return TokenType.Semicolon;
                     case (byte)'(':
@@ -286,7 +325,7 @@ namespace Cle.Parser
                 }
             }
 
-            // Keywords are collected in a list of (keyword bytes, token type) tuples
+            // Keywords and two-character symbols are collected in a list of (keyword bytes, token type) tuples
             foreach (var (bytes, tokenType) in s_keywords)
             {
                 if (token.SequenceEqual(bytes.AsSpan()))
@@ -302,6 +341,14 @@ namespace Cle.Parser
             // TODO: As the list is traversed in order, the most common tokens could be put first.
             return new List<(byte[], TokenType)>
             {
+                (Encoding.UTF8.GetBytes("=="), TokenType.DoubleEquals),
+                (Encoding.UTF8.GetBytes("!="), TokenType.NotEquals),
+                (Encoding.UTF8.GetBytes("<="), TokenType.LessThanOrEquals),
+                (Encoding.UTF8.GetBytes(">="), TokenType.GreaterThanOrEquals),
+                (Encoding.UTF8.GetBytes("<<"), TokenType.DoubleLessThan),
+                (Encoding.UTF8.GetBytes(">>"), TokenType.DoubleGreaterThan),
+                (Encoding.UTF8.GetBytes("&&"), TokenType.DoubleAmpersand),
+                (Encoding.UTF8.GetBytes("||"), TokenType.DoubleBar),
                 (Encoding.UTF8.GetBytes("else"), TokenType.Else),
                 (Encoding.UTF8.GetBytes("false"), TokenType.False),
                 (Encoding.UTF8.GetBytes("if"), TokenType.If),

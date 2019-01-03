@@ -9,7 +9,9 @@ namespace Cle.Parser.SyntaxTree
     public enum UnaryOperation
     {
         Invalid,
-        Minus
+        Minus,
+        Negation,
+        Complement
     }
 
     /// <summary>

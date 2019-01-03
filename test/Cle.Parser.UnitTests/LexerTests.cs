@@ -76,7 +76,7 @@ namespace Cle.Parser.UnitTests
         [Test]
         public void GetTokenType_classifies_tokens_correctly()
         {
-            var source = StringToMemory("namespace NS; \"literal\"(){name 123}");
+            var source = StringToMemory("namespace NS; \"literal\"(){name == 123}");
             var lexer = new Lexer(source);
 
             Assert.That(lexer.GetTokenType(), Is.EqualTo(TokenType.Namespace));
@@ -87,9 +87,28 @@ namespace Cle.Parser.UnitTests
             Assert.That(lexer.GetTokenType(), Is.EqualTo(TokenType.CloseParen));
             Assert.That(lexer.GetTokenType(), Is.EqualTo(TokenType.OpenBrace));
             Assert.That(lexer.GetTokenType(), Is.EqualTo(TokenType.Identifier));
+            Assert.That(lexer.GetTokenType(), Is.EqualTo(TokenType.DoubleEquals));
             Assert.That(lexer.GetTokenType(), Is.EqualTo(TokenType.Number));
             Assert.That(lexer.GetTokenType(), Is.EqualTo(TokenType.CloseBrace));
             Assert.That(lexer.GetTokenType(), Is.EqualTo(TokenType.EndOfFile));
+        }
+
+        [TestCase("===", TokenType.DoubleEquals, TokenType.Equals)]
+        [TestCase("====", TokenType.DoubleEquals, TokenType.DoubleEquals)]
+        [TestCase("<<<", TokenType.DoubleLessThan, TokenType.LessThan)]
+        [TestCase(">>>", TokenType.DoubleGreaterThan, TokenType.GreaterThan)]
+        [TestCase("<==", TokenType.LessThanOrEquals, TokenType.Equals)]
+        [TestCase("<===", TokenType.LessThanOrEquals, TokenType.DoubleEquals)]
+        [TestCase("<<=", TokenType.DoubleLessThan, TokenType.Equals)]
+        [TestCase("!==", TokenType.NotEquals, TokenType.Equals)]
+        [TestCase("&&&", TokenType.DoubleAmpersand, TokenType.Ampersand)]
+        [TestCase("|||", TokenType.DoubleBar, TokenType.Bar)]
+        public void Tokens_are_read_greedily(string source, TokenType firstToken, TokenType secondToken)
+        {
+            var lexer = new Lexer(StringToMemory(source));
+
+            Assert.That(lexer.GetTokenType(), Is.EqualTo(firstToken));
+            Assert.That(lexer.GetTokenType(), Is.EqualTo(secondToken));
         }
 
         [Test]
