@@ -210,6 +210,10 @@ namespace Cle.SemanticAnalysis
                     return "|";
                 case BinaryOperation.Xor:
                     return "^";
+                case BinaryOperation.ShortCircuitAnd:
+                    return "&&";
+                case BinaryOperation.ShortCircuitOr:
+                    return "||";
                 default:
                     throw new NotImplementedException("Unimplemented binary expression");
             }
