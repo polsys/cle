@@ -73,12 +73,12 @@ namespace Cle.Compiler.UnitTests
             logger.WriteHeader("This is a header");
             logger.WriteLine("This is a line");
 
-            Assert.That(writer.ToString(), Is.EqualTo(@"
+            Assert.That(writer.ToString().Replace("\r\n", "\n"), Is.EqualTo(@"
 
 ## This is a header
 
 This is a line
-"));
+".Replace("\r\n", "\n")));
         }
 
         [Test]
