@@ -99,6 +99,8 @@ namespace Cle.Frontend
                     return $"Integer expression typed as {diagnostic.Expected} overflows at compile time.";
                 case DiagnosticCode.DivisionByConstantZero:
                     return "Division by constant zero.";
+                case DiagnosticCode.OperatorNotDefined:
+                    return $"The operator '{diagnostic.Actual}' is not defined for type {diagnostic.Expected}.";
                 case DiagnosticCode.VariableAlreadyDefined:
                     return $"Variable '{diagnostic.Actual}' is already defined in this or enclosing scope.";
                 case DiagnosticCode.VariableNotFound:

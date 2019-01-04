@@ -55,6 +55,7 @@
         TypeMismatch,
         IntegerConstantOutOfBounds,
         DivisionByConstantZero,
+        OperatorNotDefined,
         VariableAlreadyDefined,
         VariableNotFound,
 
