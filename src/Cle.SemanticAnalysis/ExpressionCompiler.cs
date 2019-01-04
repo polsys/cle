@@ -10,7 +10,7 @@ namespace Cle.SemanticAnalysis
     /// <summary>
     /// Provides static methods for compiling expressions.
     /// </summary>
-    internal static class ExpressionCompiler
+    internal static partial class ExpressionCompiler
     {
         /// <summary>
         /// Compiles the given expression syntax tree and verifies its type.
@@ -139,30 +139,62 @@ namespace Cle.SemanticAnalysis
         private static bool TryCompileUnary(UnaryExpressionSyntax expression, in Temporary innerValue,
             CompiledMethod method, BasicBlockBuilder builder, IDiagnosticSink diagnostics, out Temporary value)
         {
-            // TODO: Support for other types
-            if (!innerValue.Type.Equals(SimpleType.Int32) && !innerValue.Type.Equals(SimpleType.UInt32))
+            if (innerValue.Type is SimpleType simple && simple.IsInteger && IsIntegerUnary(expression.Operation))
             {
+                CompileIntegerUnary(expression, in innerValue, method, builder, out value);
+                return true;
+            }
+            else if (innerValue.Type.Equals(SimpleType.Bool) && expression.Operation == UnaryOperation.Negation)
+            {
+                CompileBooleanUnary(expression, in innerValue, method, builder, out value);
+                return true;
+            }
+            else
+            {
+                // TODO: Support for floating-point types
+                // TODO: Support for user-defined operators
                 diagnostics.Add(DiagnosticCode.OperatorNotDefined, expression.Position, 
                     GetOperatorName(expression.Operation), innerValue.Type.TypeName);
                 value = default;
                 return false;
             }
+        }
 
+        private static void CompileIntegerUnary(UnaryExpressionSyntax expression, in Temporary innerValue,
+            CompiledMethod method, BasicBlockBuilder builder, out Temporary value)
+        {
             if (innerValue.LocalIndex.HasValue)
             {
-                // If the value is stored in a local, emit a negation instruction
+                // If the value is already stored in a local, emit a suitable run-time instruction
                 var destination = method.AddLocal(SimpleType.Int32, ConstantValue.Void());
                 value = Temporary.FromLocal(SimpleType.Int32, destination);
 
                 builder.AppendInstruction(GetUnaryOpcode(expression.Operation), innerValue.LocalIndex.Value, 0, destination);
-                return true;
             }
             else
             {
                 // Else, the expression can be evaluated at compile time
                 var evaluated = EvaluateConstantUnary(expression.Operation, innerValue.ConstantValue.AsSignedInteger);
                 value = Temporary.FromConstant(SimpleType.Int32, ConstantValue.SignedInteger(evaluated));
-                return true;
+            }
+        }
+
+        private static void CompileBooleanUnary(UnaryExpressionSyntax expression, in Temporary innerValue,
+            CompiledMethod method, BasicBlockBuilder builder, out Temporary value)
+        {
+            if (innerValue.LocalIndex.HasValue)
+            {
+                // If the value is already stored in a local, emit a suitable run-time instruction
+                var destination = method.AddLocal(SimpleType.Bool, ConstantValue.Void());
+                value = Temporary.FromLocal(SimpleType.Bool, destination);
+
+                builder.AppendInstruction(GetUnaryOpcode(expression.Operation), innerValue.LocalIndex.Value, 0, destination);
+            }
+            else
+            {
+                // Else, the expression can be evaluated at compile time
+                var evaluated = EvaluateConstantUnary(expression.Operation, innerValue.ConstantValue.AsBool);
+                value = Temporary.FromConstant(SimpleType.Bool, ConstantValue.Bool(evaluated));
             }
         }
 
@@ -171,199 +203,100 @@ namespace Cle.SemanticAnalysis
         {
             value = default;
 
-            // TODO: Support for other numeric types
-            // TODO: Support for non-integer binary expressions
-            if (!left.Type.Equals(SimpleType.Int32))
+            // Currently, all binary operations are symmetric in their parameter types
+            // (This won't be the case with user-defined operators)
+            if (!left.Type.Equals(right.Type))
             {
-                diagnostics.Add(DiagnosticCode.OperatorNotDefined, binary.Position, 
-                    GetOperatorName(binary.Operation), left.Type.TypeName);
-                return false;
-            }
-            else if (!left.Type.Equals(right.Type))
-            {
-                diagnostics.Add(DiagnosticCode.TypeMismatch, binary.Position, right.Type.TypeName, SimpleType.Int32.TypeName);
+                diagnostics.Add(DiagnosticCode.TypeMismatch, binary.Position, right.Type.TypeName, left.Type.TypeName);
                 return false;
             }
 
-            if (left.LocalIndex.HasValue || right.LocalIndex.HasValue)
+            // Check the type of the operation
+            if (left.Type is SimpleType simpleType && simpleType.IsInteger && IsIntegerBinary(binary.Operation))
             {
-                // Evaluate the value at run time
+                // This is an integer expression.
+                // First, check that the operation is valid.
                 if (IsDivisionByZero(binary, right, diagnostics))
                 {
                     return false;
                 }
-
-                var leftIndex = EnsureValueIsStored(left, method);
-                var rightIndex = EnsureValueIsStored(right, method);
-                var opcode = GetBinaryOpcode(binary.Operation);
-
-                var destination = method.AddLocal(SimpleType.Int32, ConstantValue.Void());
-                value = Temporary.FromLocal(SimpleType.Int32, destination);
-                builder.AppendInstruction(opcode, leftIndex, rightIndex, destination);
-                return true;
+                
+                if (left.LocalIndex.HasValue || right.LocalIndex.HasValue)
+                {
+                    // If at least one of the parameters is non-constant, we have to evaluate the expression
+                    // at run time. We know that this can be done due to the IsIntegerBinary check.
+                    CompileRuntimeBinary(binary.Operation, in left, in right, simpleType, method, builder, out value);
+                }
+                else
+                {
+                    // Both parameters are compile time constants: evaluate the expression now.
+                    // One more precondition check: int.MinValue % -1 causes overflow.
+                    if (binary.Operation == BinaryOperation.Modulo &&
+                        left.ConstantValue.AsSignedInteger == int.MinValue &&
+                        right.ConstantValue.AsSignedInteger == -1)
+                    {
+                        diagnostics.Add(DiagnosticCode.IntegerConstantOutOfBounds, binary.Position);
+                        return false;
+                    }
+                    
+                    var evaluated = EvaluateConstantBinary(binary.Operation,
+                        left.ConstantValue.AsSignedInteger, right.ConstantValue.AsSignedInteger);
+                    value = Temporary.FromConstant(SimpleType.Int32, ConstantValue.SignedInteger(evaluated));
+                }
+            }
+            else if (left.Type.Equals(SimpleType.Bool) && IsBooleanBinary(binary.Operation))
+            {
+                // Boolean expression
+                if (left.LocalIndex.HasValue || right.LocalIndex.HasValue)
+                {
+                    // Run time evaluation
+                    CompileRuntimeBinary(binary.Operation, in left, in right, SimpleType.Bool, method, builder, out value);
+                }
+                else
+                {
+                    // Compile time evaluation
+                    var evaluated = EvaluateConstantBinary(binary.Operation,
+                        left.ConstantValue.AsBool, right.ConstantValue.AsBool);
+                    value = Temporary.FromConstant(SimpleType.Bool, ConstantValue.Bool(evaluated));
+                }
             }
             else
             {
-                // Evaluate the value at compile time
-                if (IsDivisionByZero(binary, right, diagnostics))
-                {
-                    return false;
-                }
-                if (binary.Operation == BinaryOperation.Modulo &&
-                    left.ConstantValue.AsSignedInteger == int.MinValue &&
-                    right.ConstantValue.AsSignedInteger == -1)
-                {
-                    // int.MinValue % -1 causes overflow
-                    diagnostics.Add(DiagnosticCode.IntegerConstantOutOfBounds, binary.Position);
-                    return false;
-                }
-
-                var evaluated = EvaluateConstantBinary(binary.Operation,
-                    left.ConstantValue.AsSignedInteger, right.ConstantValue.AsSignedInteger);
-                value = Temporary.FromConstant(SimpleType.Int32, ConstantValue.SignedInteger(evaluated));
-                return true;
+                // TODO: Support for floating-point types
+                // TODO: Support for user-defined operators
+                diagnostics.Add(DiagnosticCode.OperatorNotDefined, binary.Position,
+                    GetOperatorName(binary.Operation), left.Type.TypeName);
+                return false;
             }
+
+            return true;
         }
 
-        private static bool IsDivisionByZero(BinaryExpressionSyntax binary,
-            in Temporary right, IDiagnosticSink diagnostics)
+        private static void CompileRuntimeBinary(BinaryOperation operation, in Temporary left, in Temporary right,
+            SimpleType resultType, CompiledMethod method, BasicBlockBuilder builder, out Temporary value)
         {
-            if ((binary.Operation == BinaryOperation.Divide || binary.Operation == BinaryOperation.Modulo) &&
-                right.ConstantValue.Equals(ConstantValue.SignedInteger(0)))
+            // This method assumes that the operation is valid to do with the given arguments
+
+            var leftIndex = EnsureValueIsStored(left, method);
+            var rightIndex = EnsureValueIsStored(right, method);
+            var opcode = GetBinaryOpcode(operation);
+
+            var destination = method.AddLocal(resultType, ConstantValue.Void());
+            value = Temporary.FromLocal(resultType, destination);
+
+            builder.AppendInstruction(opcode, leftIndex, rightIndex, destination);
+        }
+
+        private static bool IsDivisionByZero(BinaryExpressionSyntax binary, in Temporary right, IDiagnosticSink diagnostics)
+        {
+            if ((binary.Operation == BinaryOperation.Divide || binary.Operation == BinaryOperation.Modulo)
+                && right.ConstantValue.Equals(ConstantValue.SignedInteger(0)))
             {
                 diagnostics.Add(DiagnosticCode.DivisionByConstantZero, binary.Position);
                 return true;
             }
 
             return false;
-        }
-
-        private static Opcode GetUnaryOpcode(UnaryOperation operation)
-        {
-            switch (operation)
-            {
-                case UnaryOperation.Minus:
-                    return Opcode.ArithmeticNegate;
-                case UnaryOperation.Complement:
-                    return Opcode.BitwiseNot;
-                default:
-                    throw new NotImplementedException("Unimplemented unary expression");
-            }
-        }
-
-        private static long EvaluateConstantUnary(UnaryOperation operation, long value)
-        {
-            switch (operation)
-            {
-                case UnaryOperation.Minus:
-                    return -value;
-                case UnaryOperation.Complement:
-                    return ~value;
-                default:
-                    throw new NotImplementedException("Unimplemented binary expression");
-            }
-        }
-
-        private static string GetOperatorName(UnaryOperation operation)
-        {
-            switch (operation)
-            {
-                case UnaryOperation.Minus:
-                    return "-";
-                case UnaryOperation.Complement:
-                    return "~";
-                default:
-                    throw new NotImplementedException("Unimplemented unary expression");
-            }
-        }
-
-        private static Opcode GetBinaryOpcode(BinaryOperation operation)
-        {
-            switch (operation)
-            {
-                case BinaryOperation.Plus:
-                    return Opcode.Add;
-                case BinaryOperation.Minus:
-                    return Opcode.Subtract;
-                case BinaryOperation.Times:
-                    return Opcode.Multiply;
-                case BinaryOperation.Divide:
-                    return Opcode.Divide;
-                case BinaryOperation.Modulo:
-                    return Opcode.Modulo;
-                case BinaryOperation.ShiftLeft:
-                    return Opcode.ShiftLeft;
-                case BinaryOperation.ShiftRight:
-                    return Opcode.ShiftRight;
-                case BinaryOperation.And:
-                    return Opcode.BitwiseAnd;
-                case BinaryOperation.Or:
-                    return Opcode.BitwiseOr;
-                case BinaryOperation.Xor:
-                    return Opcode.BitwiseXor;
-                default:
-                    throw new NotImplementedException("Unimplemented binary expression");
-            }
-        }
-
-        private static long EvaluateConstantBinary(BinaryOperation operation, long left, long right)
-        {
-            switch (operation)
-            {
-                case BinaryOperation.Plus:
-                    return left + right;
-                case BinaryOperation.Minus:
-                    return left - right;
-                case BinaryOperation.Times:
-                    return left * right;
-                case BinaryOperation.Divide:
-                    return left / right;
-                case BinaryOperation.Modulo:
-                    return left % right;
-                case BinaryOperation.ShiftLeft:
-                    // TODO: Support for int64 - the semantics of wrapping around are different
-                    return (int)left << (int)right;
-                case BinaryOperation.ShiftRight:
-                    // TODO: Support for int64
-                    return (int)left >> (int)right;
-                case BinaryOperation.And:
-                    return left & right;
-                case BinaryOperation.Or:
-                    return left | right;
-                case BinaryOperation.Xor:
-                    return left ^ right;
-                default:
-                    throw new NotImplementedException("Unimplemented binary expression");
-            }
-        }
-
-        private static string GetOperatorName(BinaryOperation operation)
-        {
-            switch (operation)
-            {
-                case BinaryOperation.Plus:
-                    return "+";
-                case BinaryOperation.Minus:
-                    return "-";
-                case BinaryOperation.Times:
-                    return "*";
-                case BinaryOperation.Divide:
-                    return "/";
-                case BinaryOperation.Modulo:
-                    return "%";
-                case BinaryOperation.ShiftLeft:
-                    return "<<";
-                case BinaryOperation.ShiftRight:
-                    return ">>";
-                case BinaryOperation.And:
-                    return "&";
-                case BinaryOperation.Or:
-                    return "|";
-                case BinaryOperation.Xor:
-                    return "^";
-                default:
-                    throw new NotImplementedException("Unimplemented binary expression");
-            }
         }
 
         private static int EnsureValueIsStored(in Temporary value, CompiledMethod method)
