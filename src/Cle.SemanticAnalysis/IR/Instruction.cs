@@ -122,18 +122,22 @@ namespace Cle.SemanticAnalysis.IR
         ArithmeticNegate,
         /// <summary>
         /// Performs bitwise AND on the left and right locals and stores the result in the destination index.
+        /// If the arguments are Booleans, this is equivalent to a logical AND.
         /// </summary>
         BitwiseAnd,
         /// <summary>
         /// Performs bitwise NOT on the left and right locals and stores the result in the destination index.
+        /// If the argument is Boolean, this is equivalent to a logical NOT.
         /// </summary>
         BitwiseNot,
         /// <summary>
         /// Performs bitwise OR on the left and right locals and stores the result in the destination index.
+        /// If the arguments are Booleans, this is equivalent to a logical OR.
         /// </summary>
         BitwiseOr,
         /// <summary>
         /// Performs bitwise XOR on the left and right locals and stores the result in the destination index.
+        /// If the arguments are Booleans, this is equivalent to a logical OR.
         /// </summary>
         BitwiseXor,
         /// <summary>

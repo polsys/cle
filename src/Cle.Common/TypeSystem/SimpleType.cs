@@ -8,16 +8,19 @@ namespace Cle.Common.TypeSystem
     /// </summary>
     public class SimpleType : TypeDefinition, IEquatable<SimpleType>
     {
-        public static SimpleType Void { get; } = new SimpleType(SimpleTypeId.Void);
-        public static SimpleType Bool { get; } = new SimpleType(SimpleTypeId.Bool);
-        public static SimpleType Int32 { get; } = new SimpleType(SimpleTypeId.Int32);
-        public static SimpleType UInt32 { get; } = new SimpleType(SimpleTypeId.UInt32);
+        public static SimpleType Void { get; } = new SimpleType(SimpleTypeId.Void, false);
+        public static SimpleType Bool { get; } = new SimpleType(SimpleTypeId.Bool, false);
+        public static SimpleType Int32 { get; } = new SimpleType(SimpleTypeId.Int32, true);
+        public static SimpleType UInt32 { get; } = new SimpleType(SimpleTypeId.UInt32, true);
+
+        public bool IsInteger { get; }
 
         private readonly SimpleTypeId _typeId;
 
-        private SimpleType(SimpleTypeId id)
+        private SimpleType(SimpleTypeId id, bool isInteger)
         {
             _typeId = id;
+            IsInteger = isInteger;
         }
 
         public bool Equals(SimpleType other)
