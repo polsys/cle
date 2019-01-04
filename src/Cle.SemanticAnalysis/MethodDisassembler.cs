@@ -52,10 +52,22 @@ namespace Cle.SemanticAnalysis
                     switch (instruction.Operation)
                     {
                         case Opcode.Add:
-                            outputBuilder.AppendLine($" #{instruction.Left} + #{instruction.Right} -> #{instruction.Destination}");
+                            AppendBinaryParameters(instruction, "+", outputBuilder);
                             break;
                         case Opcode.ArithmeticNegate:
                             outputBuilder.AppendLine($" #{instruction.Left} -> #{instruction.Destination}");
+                            break;
+                        case Opcode.BitwiseAnd:
+                            AppendBinaryParameters(instruction, "&", outputBuilder);
+                            break;
+                        case Opcode.BitwiseNot:
+                            outputBuilder.AppendLine($" #{instruction.Left} -> #{instruction.Destination}");
+                            break;
+                        case Opcode.BitwiseOr:
+                            AppendBinaryParameters(instruction, "|", outputBuilder);
+                            break;
+                        case Opcode.BitwiseXor:
+                            AppendBinaryParameters(instruction, "^", outputBuilder);
                             break;
                         case Opcode.BranchIf:
                             outputBuilder.AppendLine($" #{instruction.Left} ==> BB_{block.AlternativeSuccessor}");
@@ -64,16 +76,25 @@ namespace Cle.SemanticAnalysis
                             outputBuilder.AppendLine($" #{instruction.Left} -> #{instruction.Destination}");
                             break;
                         case Opcode.Divide:
-                            outputBuilder.AppendLine($" #{instruction.Left} / #{instruction.Right} -> #{instruction.Destination}");
+                            AppendBinaryParameters(instruction, "/", outputBuilder);
+                            break;
+                        case Opcode.Modulo:
+                            AppendBinaryParameters(instruction, "%", outputBuilder);
                             break;
                         case Opcode.Multiply:
-                            outputBuilder.AppendLine($" #{instruction.Left} * #{instruction.Right} -> #{instruction.Destination}");
+                            AppendBinaryParameters(instruction, "*", outputBuilder);
                             break;
                         case Opcode.Return:
                             outputBuilder.AppendLine($" #{instruction.Left}");
                             break;
+                        case Opcode.ShiftLeft:
+                            AppendBinaryParameters(instruction, "<<", outputBuilder);
+                            break;
+                        case Opcode.ShiftRight:
+                            AppendBinaryParameters(instruction, ">>", outputBuilder);
+                            break;
                         case Opcode.Subtract:
-                            outputBuilder.AppendLine($" #{instruction.Left} - #{instruction.Right} -> #{instruction.Destination}");
+                            AppendBinaryParameters(instruction, "-", outputBuilder);
                             break;
                         default:
                             outputBuilder.AppendLine();
@@ -91,6 +112,11 @@ namespace Cle.SemanticAnalysis
                 // Empty line between basic blocks and after the last block
                 outputBuilder.AppendLine();
             }
+        }
+
+        private static void AppendBinaryParameters(in Instruction instruction, string op, StringBuilder outputBuilder)
+        {
+            outputBuilder.AppendLine($" #{instruction.Left} {op} #{instruction.Right} -> #{instruction.Destination}");
         }
     }
 }

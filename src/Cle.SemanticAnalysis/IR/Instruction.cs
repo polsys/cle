@@ -113,8 +113,38 @@ namespace Cle.SemanticAnalysis.IR
         /// </summary>
         Divide,
         /// <summary>
+        /// Divides the left local by the right local and stores the remainder in the destination index.
+        /// </summary>
+        Modulo,
+        /// <summary>
         /// Negates the numeric value indexed by the left operand and stores the result in the destination index.
         /// </summary>
         ArithmeticNegate,
+        /// <summary>
+        /// Performs bitwise AND on the left and right locals and stores the result in the destination index.
+        /// </summary>
+        BitwiseAnd,
+        /// <summary>
+        /// Performs bitwise NOT on the left and right locals and stores the result in the destination index.
+        /// </summary>
+        BitwiseNot,
+        /// <summary>
+        /// Performs bitwise OR on the left and right locals and stores the result in the destination index.
+        /// </summary>
+        BitwiseOr,
+        /// <summary>
+        /// Performs bitwise XOR on the left and right locals and stores the result in the destination index.
+        /// </summary>
+        BitwiseXor,
+        /// <summary>
+        /// Shifts left the bits of the left local by the right local and stores the result in the destination index.
+        /// The right local is masked to the operand size.
+        /// </summary>
+        ShiftLeft,
+        /// <summary>
+        /// Shifts right the bits of the left local by the right local and stores the result in the destination index.
+        /// The right local is masked to the operand size.
+        /// </summary>
+        ShiftRight,
     }
 }

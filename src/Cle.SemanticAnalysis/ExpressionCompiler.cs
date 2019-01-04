@@ -22,7 +22,6 @@ namespace Cle.SemanticAnalysis
         /// <param name="builder">Intermediate representation builder.</param>
         /// <param name="variableMap">The map of variable names to local indices.</param>
         /// <param name="diagnostics">Receiver for possible diagnostics.</param>
-        // TODO: Access to local variables and constants
         public static int TryCompileExpression(
             [NotNull] ExpressionSyntax syntax,
             [NotNull] TypeDefinition expectedType,
@@ -140,38 +139,30 @@ namespace Cle.SemanticAnalysis
         private static bool TryCompileUnary(UnaryExpressionSyntax expression, in Temporary innerValue,
             CompiledMethod method, BasicBlockBuilder builder, IDiagnosticSink diagnostics, out Temporary value)
         {
-            if (expression.Operation == UnaryOperation.Minus)
+            // TODO: Support for other types
+            if (!innerValue.Type.Equals(SimpleType.Int32) && !innerValue.Type.Equals(SimpleType.UInt32))
             {
-                // Unary minus is only defined for numeric types
-                // TODO: Support for other numeric types
-                if (!innerValue.Type.Equals(SimpleType.Int32) && !innerValue.Type.Equals(SimpleType.UInt32))
-                {
-                    diagnostics.Add(DiagnosticCode.TypeMismatch, expression.Position, 
-                        innerValue.Type.TypeName, SimpleType.Int32.TypeName);
-                    value = default;
-                    return false;
-                }
+                diagnostics.Add(DiagnosticCode.OperatorNotDefined, expression.Position, 
+                    GetOperatorName(expression.Operation), innerValue.Type.TypeName);
+                value = default;
+                return false;
+            }
 
-                if (innerValue.LocalIndex.HasValue)
-                {
-                    // If the value is stored in a local, emit a negation instruction
-                    var destination = method.AddLocal(SimpleType.Int32, ConstantValue.Void());
-                    value = Temporary.FromLocal(SimpleType.Int32, destination);
+            if (innerValue.LocalIndex.HasValue)
+            {
+                // If the value is stored in a local, emit a negation instruction
+                var destination = method.AddLocal(SimpleType.Int32, ConstantValue.Void());
+                value = Temporary.FromLocal(SimpleType.Int32, destination);
 
-                    builder.AppendInstruction(Opcode.ArithmeticNegate, innerValue.LocalIndex.Value, 0, destination);
-                    return true;
-                }
-                else
-                {
-                    // Else, the expression can be evaluated at compile time
-                    value = Temporary.FromConstant(SimpleType.Int32,
-                        ConstantValue.SignedInteger(-innerValue.ConstantValue.AsSignedInteger));
-                    return true;
-                }
+                builder.AppendInstruction(GetUnaryOpcode(expression.Operation), innerValue.LocalIndex.Value, 0, destination);
+                return true;
             }
             else
             {
-                throw new NotImplementedException("Unimplemented unary operation");
+                // Else, the expression can be evaluated at compile time
+                var evaluated = EvaluateConstantUnary(expression.Operation, innerValue.ConstantValue.AsSignedInteger);
+                value = Temporary.FromConstant(SimpleType.Int32, ConstantValue.SignedInteger(evaluated));
+                return true;
             }
         }
 
@@ -184,7 +175,8 @@ namespace Cle.SemanticAnalysis
             // TODO: Support for non-integer binary expressions
             if (!left.Type.Equals(SimpleType.Int32))
             {
-                diagnostics.Add(DiagnosticCode.TypeMismatch, binary.Position, left.Type.TypeName, SimpleType.Int32.TypeName);
+                diagnostics.Add(DiagnosticCode.OperatorNotDefined, binary.Position, 
+                    GetOperatorName(binary.Operation), left.Type.TypeName);
                 return false;
             }
             else if (!left.Type.Equals(right.Type))
@@ -217,9 +209,18 @@ namespace Cle.SemanticAnalysis
                 {
                     return false;
                 }
+                if (binary.Operation == BinaryOperation.Modulo &&
+                    left.ConstantValue.AsSignedInteger == int.MinValue &&
+                    right.ConstantValue.AsSignedInteger == -1)
+                {
+                    // int.MinValue % -1 causes overflow
+                    diagnostics.Add(DiagnosticCode.IntegerConstantOutOfBounds, binary.Position);
+                    return false;
+                }
 
-                value = Temporary.FromConstant(SimpleType.Int32, ConstantValue.SignedInteger(
-                    EvaluateConstantBinary(binary.Operation, left.ConstantValue.AsSignedInteger, right.ConstantValue.AsSignedInteger)));
+                var evaluated = EvaluateConstantBinary(binary.Operation,
+                    left.ConstantValue.AsSignedInteger, right.ConstantValue.AsSignedInteger);
+                value = Temporary.FromConstant(SimpleType.Int32, ConstantValue.SignedInteger(evaluated));
                 return true;
             }
         }
@@ -227,7 +228,7 @@ namespace Cle.SemanticAnalysis
         private static bool IsDivisionByZero(BinaryExpressionSyntax binary,
             in Temporary right, IDiagnosticSink diagnostics)
         {
-            if (binary.Operation == BinaryOperation.Divide &&
+            if ((binary.Operation == BinaryOperation.Divide || binary.Operation == BinaryOperation.Modulo) &&
                 right.ConstantValue.Equals(ConstantValue.SignedInteger(0)))
             {
                 diagnostics.Add(DiagnosticCode.DivisionByConstantZero, binary.Position);
@@ -235,6 +236,45 @@ namespace Cle.SemanticAnalysis
             }
 
             return false;
+        }
+
+        private static Opcode GetUnaryOpcode(UnaryOperation operation)
+        {
+            switch (operation)
+            {
+                case UnaryOperation.Minus:
+                    return Opcode.ArithmeticNegate;
+                case UnaryOperation.Complement:
+                    return Opcode.BitwiseNot;
+                default:
+                    throw new NotImplementedException("Unimplemented unary expression");
+            }
+        }
+
+        private static long EvaluateConstantUnary(UnaryOperation operation, long value)
+        {
+            switch (operation)
+            {
+                case UnaryOperation.Minus:
+                    return -value;
+                case UnaryOperation.Complement:
+                    return ~value;
+                default:
+                    throw new NotImplementedException("Unimplemented binary expression");
+            }
+        }
+
+        private static string GetOperatorName(UnaryOperation operation)
+        {
+            switch (operation)
+            {
+                case UnaryOperation.Minus:
+                    return "-";
+                case UnaryOperation.Complement:
+                    return "~";
+                default:
+                    throw new NotImplementedException("Unimplemented unary expression");
+            }
         }
 
         private static Opcode GetBinaryOpcode(BinaryOperation operation)
@@ -249,6 +289,18 @@ namespace Cle.SemanticAnalysis
                     return Opcode.Multiply;
                 case BinaryOperation.Divide:
                     return Opcode.Divide;
+                case BinaryOperation.Modulo:
+                    return Opcode.Modulo;
+                case BinaryOperation.ShiftLeft:
+                    return Opcode.ShiftLeft;
+                case BinaryOperation.ShiftRight:
+                    return Opcode.ShiftRight;
+                case BinaryOperation.And:
+                    return Opcode.BitwiseAnd;
+                case BinaryOperation.Or:
+                    return Opcode.BitwiseOr;
+                case BinaryOperation.Xor:
+                    return Opcode.BitwiseXor;
                 default:
                     throw new NotImplementedException("Unimplemented binary expression");
             }
@@ -266,6 +318,49 @@ namespace Cle.SemanticAnalysis
                     return left * right;
                 case BinaryOperation.Divide:
                     return left / right;
+                case BinaryOperation.Modulo:
+                    return left % right;
+                case BinaryOperation.ShiftLeft:
+                    // TODO: Support for int64 - the semantics of wrapping around are different
+                    return (int)left << (int)right;
+                case BinaryOperation.ShiftRight:
+                    // TODO: Support for int64
+                    return (int)left >> (int)right;
+                case BinaryOperation.And:
+                    return left & right;
+                case BinaryOperation.Or:
+                    return left | right;
+                case BinaryOperation.Xor:
+                    return left ^ right;
+                default:
+                    throw new NotImplementedException("Unimplemented binary expression");
+            }
+        }
+
+        private static string GetOperatorName(BinaryOperation operation)
+        {
+            switch (operation)
+            {
+                case BinaryOperation.Plus:
+                    return "+";
+                case BinaryOperation.Minus:
+                    return "-";
+                case BinaryOperation.Times:
+                    return "*";
+                case BinaryOperation.Divide:
+                    return "/";
+                case BinaryOperation.Modulo:
+                    return "%";
+                case BinaryOperation.ShiftLeft:
+                    return "<<";
+                case BinaryOperation.ShiftRight:
+                    return ">>";
+                case BinaryOperation.And:
+                    return "&";
+                case BinaryOperation.Or:
+                    return "|";
+                case BinaryOperation.Xor:
+                    return "^";
                 default:
                     throw new NotImplementedException("Unimplemented binary expression");
             }

@@ -161,6 +161,17 @@ namespace Cle.SemanticAnalysis.UnitTests
         [TestCase("-41 / 2", -20)] // Rounded towards zero
         [TestCase("-40", -40)]
         [TestCase("-2147483648", -2147483648)] // Smallest expressible int32
+        [TestCase("40 % 3", 1)]
+        [TestCase("-40 % 3", -1)]
+        [TestCase("40 % -3", 1)]
+        [TestCase("5 & 9", 1)]
+        [TestCase("5 | 9", 13)]
+        [TestCase("5 ^ 9", 12)]
+        [TestCase("5 << 1", 10)]
+        [TestCase("5 >> 1", 2)]
+        [TestCase("5 << 32", 5)] // Shift amount is masked
+        [TestCase("5 << -1", -2147483648)] // Shift amount is masked (-1 & 0x1F = 31, so the result is 0x80000000)
+        [TestCase("~1", -2)]
         public void Int32_constant_expression_compiled_successfully(string expressionString, int expectedValue)
         {
             var expressionSyntax = ParseExpression(expressionString);
@@ -182,6 +193,12 @@ namespace Cle.SemanticAnalysis.UnitTests
         [TestCase("10 - a", Opcode.Subtract)]
         [TestCase("10 * a", Opcode.Multiply)]
         [TestCase("10 / a", Opcode.Divide)]
+        [TestCase("10 % a", Opcode.Modulo)]
+        [TestCase("10 & a", Opcode.BitwiseAnd)]
+        [TestCase("10 | a", Opcode.BitwiseOr)]
+        [TestCase("10 ^ a", Opcode.BitwiseXor)]
+        [TestCase("10 << a", Opcode.ShiftLeft)]
+        [TestCase("10 >> a", Opcode.ShiftRight)]
         public void Int32_non_constant_binary_expression_compiled_successfully(string expressionString, Opcode expectedOp)
         {
             var expressionSyntax = ParseExpression(expressionString);
@@ -208,6 +225,7 @@ namespace Cle.SemanticAnalysis.UnitTests
         }
 
         [TestCase("-a", Opcode.ArithmeticNegate)]
+        [TestCase("~a", Opcode.BitwiseNot)]
         public void Int32_non_constant_unary_expression_compiled_successfully(string expressionString, Opcode expectedOp)
         {
             var expressionSyntax = ParseExpression(expressionString);
@@ -236,8 +254,12 @@ namespace Cle.SemanticAnalysis.UnitTests
         [TestCase("1 - true")]
         [TestCase("1 * true")]
         [TestCase("1 / true")]
-        [TestCase("true + true")]
-        [TestCase("-true")]
+        [TestCase("1 % true")]
+        [TestCase("1 & true")]
+        [TestCase("1 | true")]
+        [TestCase("1 ^ true")]
+        [TestCase("1 << true")]
+        [TestCase("1 >> true")]
         public void Type_error_in_constant_expression(string expressionString)
         {
             var expressionSyntax = ParseExpression(expressionString);
@@ -252,6 +274,25 @@ namespace Cle.SemanticAnalysis.UnitTests
             Assert.That(localIndex, Is.EqualTo(-1));
             diagnostics.AssertDiagnosticAt(DiagnosticCode.TypeMismatch, expressionSyntax.Position)
                 .WithActual("bool").WithExpected("int32");
+        }
+
+        [TestCase("true + true", "+")]
+        [TestCase("-true", "-")]
+        [TestCase("~true", "~")]
+        public void Operator_not_defined_for_type(string expressionString, string expectedActual)
+        {
+            var expressionSyntax = ParseExpression(expressionString);
+            var method = new CompiledMethod("Test::Method");
+            var builder = new BasicBlockGraphBuilder().GetInitialBlockBuilder();
+            var diagnostics = new TestingDiagnosticSink();
+            var variableMap = new ScopedVariableMap();
+
+            var localIndex = ExpressionCompiler.TryCompileExpression(
+                expressionSyntax, SimpleType.Int32, method, builder, variableMap, diagnostics);
+
+            Assert.That(localIndex, Is.EqualTo(-1));
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.OperatorNotDefined, expressionSyntax.Position)
+                .WithActual(expectedActual).WithExpected("bool");
         }
 
         [TestCase("-(1 + true)")]
@@ -271,11 +312,12 @@ namespace Cle.SemanticAnalysis.UnitTests
             Assert.That(localIndex, Is.EqualTo(-1));
         }
 
-        [Test]
-        public void Int32_division_by_zero_in_constant_expression_fails()
+        [TestCase(BinaryOperation.Divide)]
+        [TestCase(BinaryOperation.Modulo)]
+        public void Int32_division_by_zero_in_constant_expression_fails(BinaryOperation op)
         {
             var position = new TextPosition(10, 3, 4);
-            var syntax = new BinaryExpressionSyntax(BinaryOperation.Divide, 
+            var syntax = new BinaryExpressionSyntax(op, 
                 new IntegerLiteralSyntax(2ul, default), 
                 new IntegerLiteralSyntax(0, default), 
                 position);
@@ -292,10 +334,32 @@ namespace Cle.SemanticAnalysis.UnitTests
         }
 
         [Test]
-        public void Int32_division_by_constant_zero_in_non_constant_expression_fails()
+        public void Invalid_remainder_in_constant_expression_fails()
+        {
+            // int.MinValue % -1 throws OverflowException in C#
+            var position = new TextPosition(10, 3, 4);
+            var syntax = new BinaryExpressionSyntax(BinaryOperation.Modulo, 
+                new UnaryExpressionSyntax(UnaryOperation.Minus, new IntegerLiteralSyntax(int.MaxValue + 1ul, default), default),
+                new UnaryExpressionSyntax(UnaryOperation.Minus, new IntegerLiteralSyntax(1, default), default),
+                position);
+            var method = new CompiledMethod("Test::Method");
+            var builder = new BasicBlockGraphBuilder().GetInitialBlockBuilder();
+            var diagnostics = new TestingDiagnosticSink();
+            var variableMap = new ScopedVariableMap();
+
+            var localIndex = ExpressionCompiler.TryCompileExpression(
+                syntax, SimpleType.Int32, method, builder, variableMap, diagnostics);
+
+            Assert.That(localIndex, Is.EqualTo(-1));
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.IntegerConstantOutOfBounds, position);
+        }
+
+        [TestCase(BinaryOperation.Divide)]
+        [TestCase(BinaryOperation.Modulo)]
+        public void Int32_division_by_constant_zero_in_non_constant_expression_fails(BinaryOperation op)
         {
             var position = new TextPosition(10, 3, 4);
-            var syntax = new BinaryExpressionSyntax(BinaryOperation.Divide,
+            var syntax = new BinaryExpressionSyntax(op,
                 new NamedValueSyntax("a", default), 
                 new IntegerLiteralSyntax(0, default),
                 position);

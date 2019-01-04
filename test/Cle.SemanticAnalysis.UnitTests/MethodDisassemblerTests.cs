@@ -52,7 +52,14 @@ namespace Cle.SemanticAnalysis.UnitTests
             blockBuilder.AppendInstruction(Opcode.Subtract, 1, 0, 2);
             blockBuilder.AppendInstruction(Opcode.Multiply, 1, 0, 2);
             blockBuilder.AppendInstruction(Opcode.Divide, 1, 0, 2);
+            blockBuilder.AppendInstruction(Opcode.Modulo, 1, 0, 2);
             blockBuilder.AppendInstruction(Opcode.ArithmeticNegate, 1, 0, 2);
+            blockBuilder.AppendInstruction(Opcode.ShiftLeft, 1, 0, 2);
+            blockBuilder.AppendInstruction(Opcode.ShiftRight, 1, 0, 2);
+            blockBuilder.AppendInstruction(Opcode.BitwiseAnd, 1, 0, 2);
+            blockBuilder.AppendInstruction(Opcode.BitwiseNot, 1, 0, 2);
+            blockBuilder.AppendInstruction(Opcode.BitwiseOr, 1, 0, 2);
+            blockBuilder.AppendInstruction(Opcode.BitwiseXor, 1, 0, 2);
             blockBuilder.AppendInstruction(Opcode.Return, 2, 0, 0);
             var method = new CompiledMethod("Test::Method") { Body = graphBuilder.Build() };
 
@@ -62,7 +69,14 @@ namespace Cle.SemanticAnalysis.UnitTests
                                     "    Subtract #1 - #0 -> #2\n" +
                                     "    Multiply #1 * #0 -> #2\n" +
                                     "    Divide #1 / #0 -> #2\n" +
+                                    "    Modulo #1 % #0 -> #2\n" +
                                     "    ArithmeticNegate #1 -> #2\n" +
+                                    "    ShiftLeft #1 << #0 -> #2\n" +
+                                    "    ShiftRight #1 >> #0 -> #2\n" +
+                                    "    BitwiseAnd #1 & #0 -> #2\n" +
+                                    "    BitwiseNot #1 -> #2\n" +
+                                    "    BitwiseOr #1 | #0 -> #2\n" +
+                                    "    BitwiseXor #1 ^ #0 -> #2\n" +
                                     "    Return #2\n\n";
 
             var builder = new StringBuilder();
