@@ -340,17 +340,11 @@ namespace Cle.SemanticAnalysis.UnitTests
         [TestCase("1 >> true")]
         public void Type_error_in_constant_expression(string expressionString)
         {
-            var expressionSyntax = ParseExpression(expressionString);
-            var method = new CompiledMethod("Test::Method");
-            var builder = new BasicBlockGraphBuilder().GetInitialBlockBuilder();
-            var diagnostics = new TestingDiagnosticSink();
-            var variableMap = new ScopedVariableMap();
-
-            var localIndex = ExpressionCompiler.TryCompileExpression(
-                expressionSyntax, SimpleType.Int32, method, builder, variableMap, diagnostics);
+            var localIndex = TryCompileConstantExpression(expressionString, SimpleType.Int32,
+                out var diagnostics, out var position);
 
             Assert.That(localIndex, Is.EqualTo(-1));
-            diagnostics.AssertDiagnosticAt(DiagnosticCode.TypeMismatch, expressionSyntax.Position)
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.TypeMismatch, position)
                 .WithActual("bool").WithExpected("int32");
         }
 
@@ -360,17 +354,11 @@ namespace Cle.SemanticAnalysis.UnitTests
         [TestCase("!2", "!", "int32")]
         public void Operator_not_defined_for_type_in_constant(string expressionString, string operatorName, string typeName)
         {
-            var expressionSyntax = ParseExpression(expressionString);
-            var method = new CompiledMethod("Test::Method");
-            var builder = new BasicBlockGraphBuilder().GetInitialBlockBuilder();
-            var diagnostics = new TestingDiagnosticSink();
-            var variableMap = new ScopedVariableMap();
-
-            var localIndex = ExpressionCompiler.TryCompileExpression(
-                expressionSyntax, SimpleType.Void, method, builder, variableMap, diagnostics);
+            var localIndex = TryCompileConstantExpression(expressionString, SimpleType.Int32,
+                out var diagnostics, out var position);
 
             Assert.That(localIndex, Is.EqualTo(-1));
-            diagnostics.AssertDiagnosticAt(DiagnosticCode.OperatorNotDefined, expressionSyntax.Position)
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.OperatorNotDefined, position)
                 .WithActual(operatorName).WithExpected(typeName);
         }
 
@@ -401,17 +389,21 @@ namespace Cle.SemanticAnalysis.UnitTests
         [TestCase("(-true) + 2")]
         public void Failure_in_inner_expression_is_bubbled_up(string expressionString)
         {
-            var expressionSyntax = ParseExpression(expressionString);
-            var method = new CompiledMethod("Test::Method");
-            var builder = new BasicBlockGraphBuilder().GetInitialBlockBuilder();
-            var diagnostics = new TestingDiagnosticSink();
-            var variableMap = new ScopedVariableMap();
-
-            var localIndex = ExpressionCompiler.TryCompileExpression(
-                expressionSyntax, SimpleType.Int32, method, builder, variableMap, diagnostics);
+            var localIndex = TryCompileConstantExpression(expressionString, SimpleType.Int32, out var diagnostics, out _);
 
             Assert.That(diagnostics.Diagnostics, Is.Not.Empty);
             Assert.That(localIndex, Is.EqualTo(-1));
+        }
+
+        [TestCase("true && true", "&&")]
+        [TestCase("true || true", "||")]
+        public void Short_circuiting_boolean_operators_are_disabled(string source, string operatorName)
+        {
+            var localIndex = TryCompileConstantExpression(source, SimpleType.Bool, out var diagnostics, out var position);
+
+            Assert.That(localIndex, Is.EqualTo(-1));
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.OperatorNotDefined, position)
+                .WithActual(operatorName).WithExpected(SimpleType.Bool.TypeName);
         }
 
         [TestCase(BinaryOperation.Divide)]
@@ -496,6 +488,20 @@ namespace Cle.SemanticAnalysis.UnitTests
 
             Assert.That(localIndex, Is.EqualTo(-1));
             diagnostics.AssertDiagnosticAt(DiagnosticCode.IntegerConstantOutOfBounds, position);
+        }
+
+        private static int TryCompileConstantExpression(string source, SimpleType expectedType,
+            out TestingDiagnosticSink diagnostics, out TextPosition expressionPosition)
+        {
+            var expressionSyntax = ParseExpression(source);
+            var method = new CompiledMethod("Test::Method");
+            var builder = new BasicBlockGraphBuilder().GetInitialBlockBuilder();
+            diagnostics = new TestingDiagnosticSink();
+            var variableMap = new ScopedVariableMap();
+
+            expressionPosition = expressionSyntax.Position;
+            return ExpressionCompiler.TryCompileExpression(expressionSyntax, 
+                expectedType, method, builder, variableMap, diagnostics);
         }
 
         private static ExpressionSyntax ParseExpression(string expressionString)
