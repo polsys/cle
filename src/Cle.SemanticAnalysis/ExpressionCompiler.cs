@@ -225,7 +225,8 @@ namespace Cle.SemanticAnalysis
                 {
                     // If at least one of the parameters is non-constant, we have to evaluate the expression
                     // at run time. We know that this can be done due to the IsIntegerBinary check.
-                    CompileRuntimeBinary(binary.Operation, in left, in right, simpleType, method, builder, out value);
+                    var resultType = IsComparison(binary.Operation) ? SimpleType.Bool : simpleType;
+                    CompileRuntimeBinary(binary.Operation, in left, in right, resultType, method, builder, out value);
                 }
                 else
                 {
@@ -239,9 +240,19 @@ namespace Cle.SemanticAnalysis
                         return false;
                     }
                     
-                    var evaluated = EvaluateConstantBinary(binary.Operation,
-                        left.ConstantValue.AsSignedInteger, right.ConstantValue.AsSignedInteger);
-                    value = Temporary.FromConstant(SimpleType.Int32, ConstantValue.SignedInteger(evaluated));
+                    // Comparisons produce booleans, the remaining operators integers
+                    if (IsComparison(binary.Operation))
+                    {
+                        var evaluated = EvaluateConstantComparison(binary.Operation,
+                            left.ConstantValue.AsSignedInteger, right.ConstantValue.AsSignedInteger);
+                        value = Temporary.FromConstant(SimpleType.Bool, ConstantValue.Bool(evaluated));
+                    }
+                    else
+                    {
+                        var evaluated = EvaluateConstantBinary(binary.Operation,
+                            left.ConstantValue.AsSignedInteger, right.ConstantValue.AsSignedInteger);
+                        value = Temporary.FromConstant(SimpleType.Int32, ConstantValue.SignedInteger(evaluated));
+                    }
                 }
             }
             else if (left.Type.Equals(SimpleType.Bool) && IsBooleanBinary(binary.Operation))
@@ -279,12 +290,34 @@ namespace Cle.SemanticAnalysis
 
             var leftIndex = EnsureValueIsStored(left, method);
             var rightIndex = EnsureValueIsStored(right, method);
-            var opcode = GetBinaryOpcode(operation);
 
             var destination = method.AddLocal(resultType, ConstantValue.Void());
             value = Temporary.FromLocal(resultType, destination);
 
-            builder.AppendInstruction(opcode, leftIndex, rightIndex, destination);
+            // There are no >, >= or != instructions in the IL, so we have to emulate them
+            switch (operation)
+            {
+                case BinaryOperation.GreaterThan:
+                    // Swap the operands
+                    builder.AppendInstruction(Opcode.Less, rightIndex, leftIndex, destination);
+                    break;
+                case BinaryOperation.GreaterThanOrEqual:
+                    // As above
+                    builder.AppendInstruction(Opcode.LessOrEqual, rightIndex, leftIndex, destination);
+                    break;
+                case BinaryOperation.NotEqual:
+                    // This is a bit more complicated: we have to emit !(a == b).
+                    // This means creating another temporary, which will be the final destination
+                    var finalDestination = method.AddLocal(resultType, ConstantValue.Void());
+                    value = Temporary.FromLocal(resultType, finalDestination);
+
+                    builder.AppendInstruction(Opcode.Equal, leftIndex, rightIndex, destination);
+                    builder.AppendInstruction(Opcode.BitwiseNot, destination, 0, finalDestination);
+                    break;
+                default:
+                    builder.AppendInstruction(GetBinaryOpcode(operation), leftIndex, rightIndex, destination);
+                    break;
+            }
         }
 
         private static bool IsDivisionByZero(BinaryExpressionSyntax binary, in Temporary right, IDiagnosticSink diagnostics)

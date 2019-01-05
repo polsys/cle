@@ -214,6 +214,39 @@ namespace Cle.SemanticAnalysis.UnitTests
             Assert.That(method.Values[localIndex].InitialValue, Is.EqualTo(ConstantValue.Bool(expectedValue)));
         }
 
+        [TestCase("1 < 2", true)]
+        [TestCase("1 <= 2", true)]
+        [TestCase("2 <= 2", true)]
+        [TestCase("2 < 2", false)]
+        [TestCase("2 > 2", false)]
+        [TestCase("2 >= 2", true)]
+        [TestCase("3 >= 2", true)]
+        [TestCase("3 > 2", true)]
+        [TestCase("-3 == 2", false)]
+        [TestCase("-3 != 2", true)]
+        [TestCase("2 == 2", true)]
+        [TestCase("2 != 2", false)]
+        [TestCase("true == true", true)]
+        [TestCase("true == false", false)]
+        [TestCase("true != true", false)]
+        [TestCase("true != false", true)]
+        public void Constant_comparison_compiled_successfully(string expressionString, bool expectedValue)
+        {
+            var expressionSyntax = ParseExpression(expressionString);
+            var method = new CompiledMethod("Test::Method");
+            var builder = new BasicBlockGraphBuilder().GetInitialBlockBuilder();
+            var diagnostics = new TestingDiagnosticSink();
+            var variableMap = new ScopedVariableMap();
+
+            var localIndex = ExpressionCompiler.TryCompileExpression(expressionSyntax,
+                SimpleType.Bool, method, builder, variableMap, diagnostics);
+
+            Assert.That(diagnostics.Diagnostics, Is.Empty);
+            Assert.That(localIndex, Is.EqualTo(0));
+            Assert.That(method.Values[localIndex].Type, Is.EqualTo(SimpleType.Bool));
+            Assert.That(method.Values[localIndex].InitialValue, Is.EqualTo(ConstantValue.Bool(expectedValue)));
+        }
+
         [TestCase("10 + a", Opcode.Add)]
         [TestCase("10 - a", Opcode.Subtract)]
         [TestCase("10 * a", Opcode.Multiply)]
@@ -277,6 +310,71 @@ namespace Cle.SemanticAnalysis.UnitTests
             Assert.That(instruction.Destination, Is.EqualTo(2));
         }
 
+        [TestCase("a < b", Opcode.Less, false)]
+        [TestCase("a > b", Opcode.Less, true)]
+        [TestCase("a <= b", Opcode.LessOrEqual, false)]
+        [TestCase("a >= b", Opcode.LessOrEqual, true)]
+        [TestCase("a == b", Opcode.Equal, false)]
+        public void Non_constant_comparison_compiled_successfully(string expressionString,
+            Opcode expectedOp, bool shouldBeFlipped)
+        {
+            var expressionSyntax = ParseExpression(expressionString);
+            var method = new CompiledMethod("Test::Method");
+            var builder = new BasicBlockGraphBuilder().GetInitialBlockBuilder();
+            var diagnostics = new TestingDiagnosticSink();
+            var variableMap = new ScopedVariableMap();
+            variableMap.PushScope();
+            variableMap.TryAddVariable("a", method.AddLocal(SimpleType.Int32, ConstantValue.Void()));
+            variableMap.TryAddVariable("b", method.AddLocal(SimpleType.Int32, ConstantValue.Void()));
+
+            var localIndex = ExpressionCompiler.TryCompileExpression(expressionSyntax,
+                SimpleType.Bool, method, builder, variableMap, diagnostics);
+
+            Assert.That(diagnostics.Diagnostics, Is.Empty);
+            Assert.That(localIndex, Is.EqualTo(2));
+            Assert.That(method.Values[localIndex].Type, Is.EqualTo(SimpleType.Bool));
+            Assert.That(builder.Instructions, Has.Exactly(1).Items);
+
+            var instruction = builder.Instructions[0];
+            Assert.That(instruction.Operation, Is.EqualTo(expectedOp));
+            if (shouldBeFlipped)
+            {
+                Assert.That(instruction.Left, Is.EqualTo(1));
+                Assert.That(instruction.Right, Is.EqualTo(0));
+            }
+            else
+            {
+                Assert.That(instruction.Left, Is.EqualTo(0));
+                Assert.That(instruction.Right, Is.EqualTo(1));
+            }
+            Assert.That(instruction.Destination, Is.EqualTo(2));
+        }
+
+        [Test]
+        public void Non_constant_inequality_compiled_successfully()
+        {
+            var expressionSyntax = ParseExpression("a != b");
+            var method = new CompiledMethod("Test::Method");
+            var builder = new BasicBlockGraphBuilder().GetInitialBlockBuilder();
+            var diagnostics = new TestingDiagnosticSink();
+            var variableMap = new ScopedVariableMap();
+            variableMap.PushScope();
+            variableMap.TryAddVariable("a", method.AddLocal(SimpleType.Int32, ConstantValue.Void()));
+            variableMap.TryAddVariable("b", method.AddLocal(SimpleType.Int32, ConstantValue.Void()));
+
+            var localIndex = ExpressionCompiler.TryCompileExpression(expressionSyntax,
+                SimpleType.Bool, method, builder, variableMap, diagnostics);
+
+            Assert.That(diagnostics.Diagnostics, Is.Empty);
+            Assert.That(localIndex, Is.EqualTo(3));
+            Assert.That(method.Values[localIndex].Type, Is.EqualTo(SimpleType.Bool));
+            Assert.That(builder.Instructions, Has.Exactly(2).Items);
+            
+            // a != b is compiled as !(a == b)
+            Assert.That(builder.Instructions[0], Is.EqualTo(new Instruction(Opcode.Equal, 0, 1, 2)));
+            Assert.That(builder.Instructions[1], Is.EqualTo(new Instruction(Opcode.BitwiseNot, 2, 0, 3)));
+        }
+
         [TestCase("-a", Opcode.ArithmeticNegate)]
         [TestCase("~a", Opcode.BitwiseNot)]
         public void Int32_non_constant_unary_expression_compiled_successfully(string expressionString, Opcode expectedOp)
@@ -338,6 +436,12 @@ namespace Cle.SemanticAnalysis.UnitTests
         [TestCase("1 ^ true")]
         [TestCase("1 << true")]
         [TestCase("1 >> true")]
+        [TestCase("1 < true")]
+        [TestCase("1 <= true")]
+        [TestCase("1 > true")]
+        [TestCase("1 >= true")]
+        [TestCase("1 == true")]
+        [TestCase("1 != true")]
         public void Type_error_in_constant_expression(string expressionString)
         {
             var localIndex = TryCompileConstantExpression(expressionString, SimpleType.Int32,
@@ -352,6 +456,10 @@ namespace Cle.SemanticAnalysis.UnitTests
         [TestCase("-true", "-", "bool")]
         [TestCase("~true", "~", "bool")]
         [TestCase("!2", "!", "int32")]
+        [TestCase("true < false", "<", "bool")]
+        [TestCase("true <= false", "<=", "bool")]
+        [TestCase("true >= false", ">=", "bool")]
+        [TestCase("true > false", ">", "bool")]
         public void Operator_not_defined_for_type_in_constant(string expressionString, string operatorName, string typeName)
         {
             var localIndex = TryCompileConstantExpression(expressionString, SimpleType.Int32,
@@ -366,6 +474,10 @@ namespace Cle.SemanticAnalysis.UnitTests
         [TestCase("-b", "-", "bool")]
         [TestCase("~b", "~", "bool")]
         [TestCase("!i", "!", "int32")]
+        [TestCase("b < b", "<", "bool")]
+        [TestCase("b <= b", "<=", "bool")]
+        [TestCase("b >= b", ">=", "bool")]
+        [TestCase("b > b", ">", "bool")]
         public void Operator_not_defined_for_type_in_non_constant(string expressionString, string operatorName, string typeName)
         {
             var expressionSyntax = ParseExpression(expressionString);

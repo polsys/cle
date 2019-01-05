@@ -78,11 +78,20 @@ namespace Cle.SemanticAnalysis
                         case Opcode.Divide:
                             AppendBinaryParameters(instruction, "/", outputBuilder);
                             break;
+                        case Opcode.Equal:
+                            AppendBinaryParameters(instruction, "==", outputBuilder);
+                            break;
                         case Opcode.Modulo:
                             AppendBinaryParameters(instruction, "%", outputBuilder);
                             break;
                         case Opcode.Multiply:
                             AppendBinaryParameters(instruction, "*", outputBuilder);
+                            break;
+                        case Opcode.Less:
+                            AppendBinaryParameters(instruction, "<", outputBuilder);
+                            break;
+                        case Opcode.LessOrEqual:
+                            AppendBinaryParameters(instruction, "<=", outputBuilder);
                             break;
                         case Opcode.Return:
                             outputBuilder.AppendLine($" #{instruction.Left}");

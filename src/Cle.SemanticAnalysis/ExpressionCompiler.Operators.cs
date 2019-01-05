@@ -102,6 +102,12 @@ namespace Cle.SemanticAnalysis
                     return Opcode.BitwiseOr;
                 case BinaryOperation.Xor:
                     return Opcode.BitwiseXor;
+                case BinaryOperation.LessThan:
+                    return Opcode.Less;
+                case BinaryOperation.LessThanOrEqual:
+                    return Opcode.LessOrEqual;
+                case BinaryOperation.Equal:
+                    return Opcode.Equal;
                 default:
                     throw new NotImplementedException("Unimplemented binary expression");
             }
@@ -148,6 +154,10 @@ namespace Cle.SemanticAnalysis
                     return left | right;
                 case BinaryOperation.Xor:
                     return left ^ right;
+                case BinaryOperation.Equal:
+                    return left == right;
+                case BinaryOperation.NotEqual:
+                    return left != right;
                 default:
                     throw new NotImplementedException("Unimplemented binary Boolean expression");
             }
@@ -167,6 +177,12 @@ namespace Cle.SemanticAnalysis
                 case BinaryOperation.And:
                 case BinaryOperation.Or:
                 case BinaryOperation.Xor:
+                case BinaryOperation.LessThan:
+                case BinaryOperation.LessThanOrEqual:
+                case BinaryOperation.GreaterThan:
+                case BinaryOperation.GreaterThanOrEqual:
+                case BinaryOperation.Equal:
+                case BinaryOperation.NotEqual:
                     return true;
                 default:
                     return false;
@@ -180,9 +196,48 @@ namespace Cle.SemanticAnalysis
                 case BinaryOperation.And:
                 case BinaryOperation.Or:
                 case BinaryOperation.Xor:
+                case BinaryOperation.Equal:
+                case BinaryOperation.NotEqual:
                     return true;
                 default:
                     return false;
+            }
+        }
+
+        private static bool IsComparison(BinaryOperation operation)
+        {
+            switch (operation)
+            {
+                case BinaryOperation.LessThan:
+                case BinaryOperation.LessThanOrEqual:
+                case BinaryOperation.GreaterThan:
+                case BinaryOperation.GreaterThanOrEqual:
+                case BinaryOperation.Equal:
+                case BinaryOperation.NotEqual:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        private static bool EvaluateConstantComparison(BinaryOperation operation, long left, long right)
+        {
+            switch (operation)
+            {
+                case BinaryOperation.LessThan:
+                    return left < right;
+                case BinaryOperation.LessThanOrEqual:
+                    return left <= right;
+                case BinaryOperation.GreaterThan:
+                    return left > right;
+                case BinaryOperation.GreaterThanOrEqual:
+                    return left >= right;
+                case BinaryOperation.Equal:
+                    return left == right;
+                case BinaryOperation.NotEqual:
+                    return left != right;
+                default:
+                    throw new NotImplementedException("Unimplemented comparison expression");
             }
         }
 
@@ -214,6 +269,18 @@ namespace Cle.SemanticAnalysis
                     return "&&";
                 case BinaryOperation.ShortCircuitOr:
                     return "||";
+                case BinaryOperation.LessThan:
+                    return "<";
+                case BinaryOperation.LessThanOrEqual:
+                    return "<=";
+                case BinaryOperation.GreaterThan:
+                    return ">";
+                case BinaryOperation.GreaterThanOrEqual:
+                    return ">=";
+                case BinaryOperation.Equal:
+                    return "==";
+                case BinaryOperation.NotEqual:
+                    return "!=";
                 default:
                     throw new NotImplementedException("Unimplemented binary expression");
             }

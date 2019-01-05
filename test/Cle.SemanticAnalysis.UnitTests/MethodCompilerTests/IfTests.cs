@@ -67,6 +67,40 @@ BB_2:
         }
 
         [Test]
+        public void If_with_complex_condition()
+        {
+            const string source = @"namespace Test;
+public bool Comparison() {
+    int32 a = 42;
+    if (a < 100) {
+        return true;
+    }
+    return false;
+}";
+            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+
+            Assert.That(compiledMethod, Is.Not.Null);
+            Assert.That(diagnostics.Diagnostics, Is.Empty);
+            
+            AssertDisassembly(compiledMethod, @"
+; #0   int32 = 42
+; #1   int32 = 100
+; #2   bool = void
+; #3   bool = true
+; #4   bool = false
+BB_0:
+    Less #0 < #1 -> #2
+    BranchIf #2 ==> BB_1
+    ==> BB_2
+
+BB_1:
+    Return #3
+
+BB_2:
+    Return #4");
+        }
+
+        [Test]
         public void If_assigns_to_variable()
         {
             const string source = @"namespace Test;

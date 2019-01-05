@@ -60,6 +60,9 @@ namespace Cle.SemanticAnalysis.UnitTests
             blockBuilder.AppendInstruction(Opcode.BitwiseNot, 1, 0, 2);
             blockBuilder.AppendInstruction(Opcode.BitwiseOr, 1, 0, 2);
             blockBuilder.AppendInstruction(Opcode.BitwiseXor, 1, 0, 2);
+            blockBuilder.AppendInstruction(Opcode.Less, 1, 0, 2);
+            blockBuilder.AppendInstruction(Opcode.LessOrEqual, 1, 0, 2);
+            blockBuilder.AppendInstruction(Opcode.Equal, 1, 0, 2);
             blockBuilder.AppendInstruction(Opcode.Return, 2, 0, 0);
             var method = new CompiledMethod("Test::Method") { Body = graphBuilder.Build() };
 
@@ -77,6 +80,9 @@ namespace Cle.SemanticAnalysis.UnitTests
                                     "    BitwiseNot #1 -> #2\n" +
                                     "    BitwiseOr #1 | #0 -> #2\n" +
                                     "    BitwiseXor #1 ^ #0 -> #2\n" +
+                                    "    Less #1 < #0 -> #2\n" +
+                                    "    LessOrEqual #1 <= #0 -> #2\n" +
+                                    "    Equal #1 == #0 -> #2\n" +
                                     "    Return #2\n\n";
 
             var builder = new StringBuilder();
