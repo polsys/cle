@@ -150,5 +150,17 @@ namespace Cle.SemanticAnalysis.IR
         /// The right local is masked to the operand size.
         /// </summary>
         ShiftRight,
+        /// <summary>
+        /// Stores the result of (left local) &lt; (right local) to the destination index.
+        /// </summary>
+        Less,
+        /// <summary>
+        /// Stores the result of (left local) &lt;= (right local) to the destination index.
+        /// </summary>
+        LessOrEqual,
+        /// <summary>
+        /// Stores the result of (left local) == (right local) to the destination index.
+        /// </summary>
+        Equal,
     }
 }
