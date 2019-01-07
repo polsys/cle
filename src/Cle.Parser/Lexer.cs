@@ -338,6 +338,7 @@ namespace Cle.Parser
             table[(byte)'&'] = (byte)TokenType.Ampersand;
             table[(byte)'|'] = (byte)TokenType.Bar;
             table[(byte)';'] = (byte)TokenType.Semicolon;
+            table[(byte)','] = (byte)TokenType.Comma;
             table[(byte)'('] = (byte)TokenType.OpenParen;
             table[(byte)')'] = (byte)TokenType.CloseParen;
             table[(byte)'{'] = (byte)TokenType.OpenBrace;

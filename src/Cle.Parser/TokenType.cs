@@ -48,6 +48,7 @@
         Bar,
         DoubleBar,
         Semicolon,
+        Comma,
         OpenParen,
         CloseParen,
         OpenBrace,
