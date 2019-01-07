@@ -512,5 +512,77 @@ namespace Cle.Parser.UnitTests.SyntaxParserTests
             Assert.That(expression, Is.Null);
             diagnostics.AssertDiagnosticAt(DiagnosticCode.ExpectedExpression, 1, 26).WithActual("if");
         }
+
+        [Test]
+        public void Function_call_without_parameters()
+        {
+            var parser = GetParserInstance("Namespace::Function()", out var diagnostics);
+            Assert.That(parser.TryParseExpression(out var expression), Is.True);
+
+            Assert.That(diagnostics.Diagnostics, Is.Empty);
+            Assert.That(expression, Is.Not.Null);
+
+            var call = (FunctionCallSyntax)expression;
+            Assert.That(call.Function, Is.EqualTo("Namespace::Function"));
+            Assert.That(call.Parameters, Is.Empty);
+        }
+
+        [Test]
+        public void Function_call_with_parameters()
+        {
+            var parser = GetParserInstance("Fun(1, true)", out var diagnostics);
+
+            Assert.That(parser.TryParseExpression(out var expression), Is.True);
+            Assert.That(diagnostics.Diagnostics, Is.Empty);
+            Assert.That(expression, Is.Not.Null);
+
+            var call = (FunctionCallSyntax)expression;
+            Assert.That(call.Function, Is.EqualTo("Fun"));
+            Assert.That(call.Parameters, Has.Exactly(2).Items);
+            Assert.That(call.Parameters[0], Is.InstanceOf<IntegerLiteralSyntax>());
+            Assert.That(((IntegerLiteralSyntax)call.Parameters[0]).Value, Is.EqualTo(1ul));
+            Assert.That(call.Parameters[1], Is.InstanceOf<BooleanLiteralSyntax>());
+            Assert.That(((BooleanLiteralSyntax)call.Parameters[1]).Value, Is.EqualTo(true));
+        }
+
+        [Test]
+        public void Function_call_parameter_must_be_valid()
+        {
+            var parser = GetParserInstance("Func(if", out var diagnostics);
+
+            Assert.That(parser.TryParseExpression(out var expression), Is.False);
+            Assert.That(expression, Is.Null);
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.ExpectedExpression, 1, 5).WithActual("if");
+        }
+
+        [Test]
+        public void Function_call_must_have_close_paren()
+        {
+            var parser = GetParserInstance("Func(1;", out var diagnostics);
+
+            Assert.That(parser.TryParseExpression(out var expression), Is.False);
+            Assert.That(expression, Is.Null);
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.ExpectedClosingParen, 1, 6).WithActual(";");
+        }
+
+        [Test]
+        public void Call_parameter_list_may_not_have_trailing_comma()
+        {
+            var parser = GetParserInstance("Func(1,)", out var diagnostics);
+
+            Assert.That(parser.TryParseExpression(out var expression), Is.False);
+            Assert.That(expression, Is.Null);
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.ExpectedExpression, 1, 7).WithActual(")");
+        }
+
+        [Test]
+        public void Called_function_must_have_valid_name()
+        {
+            var parser = GetParserInstance("Namespace::123()", out var diagnostics);
+
+            Assert.That(parser.TryParseExpression(out var expression), Is.False);
+            Assert.That(expression, Is.Null);
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.InvalidFunctionName, 1, 0).WithActual("Namespace::123");
+        }
     }
 }

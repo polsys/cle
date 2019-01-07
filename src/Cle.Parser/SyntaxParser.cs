@@ -516,6 +516,19 @@ namespace Cle.Parser
                     statement = new AssignmentSyntax(firstIdentifier, newValue, startPosition);
                     break;
 
+                case TokenType.OpenParen:
+                    // A standalone function call
+                    if (!TryParseFunctionCall(firstIdentifier, out var callExpression))
+                    {
+                        return false;
+                    }
+                    else
+                    {
+                        Debug.Assert(callExpression != null);
+                        statement = new FunctionCallStatementSyntax(callExpression, startPosition);
+                        break;
+                    }
+
                 default:
                     // Note: the diagnostic is intentionally emitted at expected statement start position
                     _diagnosticSink.Add(DiagnosticCode.ExpectedStatement, startPosition, ReadTokenIntoString());
@@ -873,17 +886,36 @@ namespace Cle.Parser
                     expressionSyntax = new BooleanLiteralSyntax(true, _lexer.LastPosition);
                     return true;
                 case TokenType.Identifier:
-                    var variableName = ReadTokenIntoString();
+                    var identifier = ReadTokenIntoString();
 
-                    if (!NameParsing.IsValidFullName(variableName) || NameParsing.IsReservedTypeName(variableName))
+                    // This may be either a function call or a variable reference
+                    if (_lexer.PeekTokenType() == TokenType.OpenParen)
                     {
-                        _diagnosticSink.Add(DiagnosticCode.InvalidVariableName, _lexer.LastPosition, variableName);
-                        return false;
+                        // Function call
+                        if (!TryParseFunctionCall(identifier, out var callSyntax))
+                        {
+                            return false;
+                        }
+                        else
+                        {
+                            Debug.Assert(callSyntax != null);
+                            expressionSyntax = callSyntax;
+                            return true;
+                        }
                     }
                     else
                     {
-                        expressionSyntax = new NamedValueSyntax(variableName, _lexer.LastPosition);
-                        return true;
+                        // Variable reference
+                        if (!NameParsing.IsValidFullName(identifier) || NameParsing.IsReservedTypeName(identifier))
+                        {
+                            _diagnosticSink.Add(DiagnosticCode.InvalidVariableName, _lexer.LastPosition, identifier);
+                            return false;
+                        }
+                        else
+                        {
+                            expressionSyntax = new NamedValueSyntax(identifier, _lexer.LastPosition);
+                            return true;
+                        }
                     }
                 default:
                     return TryParseNumber(out expressionSyntax);
@@ -935,6 +967,60 @@ namespace Cle.Parser
                 _diagnosticSink.Add(DiagnosticCode.ExpectedExpression, _lexer.Position, ReadTokenIntoString());
                 return false;
             }
+        }
+
+        /// <summary>
+        /// This function assumes that the function name, passed in <paramref name="functionName"/>,
+        /// has already been read from the lexer, and the next token is known to be "(".
+        /// </summary>
+        private bool TryParseFunctionCall([NotNull] string functionName, [CanBeNull] out FunctionCallSyntax callSyntax)
+        {
+            callSyntax = null;
+            var callPosition = _lexer.LastPosition;
+
+            // Eat the open paren
+            _lexer.GetToken();
+
+            // Validate the function name
+            if (!NameParsing.IsValidFullName(functionName))
+            {
+                _diagnosticSink.Add(DiagnosticCode.InvalidFunctionName, callPosition, functionName);
+                return false;
+            }
+
+            // Read parameters unless the parameter list is empty
+            var parameters = ImmutableList<ExpressionSyntax>.Empty;
+            if (_lexer.PeekTokenType() != TokenType.CloseParen)
+            {
+                while (true)
+                {
+                    // Read the expression
+                    if (!TryParseExpression(out var param))
+                    {
+                        return false;
+                    }
+                    parameters = parameters.Add(param);
+
+                    // If the next token is a comma, there is another parameter to parse
+                    if (_lexer.PeekTokenType() == TokenType.Comma)
+                    {
+                        _lexer.GetToken();
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+            }
+
+            // Eat the closing paren
+            if (!ExpectToken(TokenType.CloseParen, DiagnosticCode.ExpectedClosingParen))
+            {
+                return false;
+            }
+
+            callSyntax = new FunctionCallSyntax(functionName, parameters, callPosition);
+            return true;
         }
 
         /// <summary>

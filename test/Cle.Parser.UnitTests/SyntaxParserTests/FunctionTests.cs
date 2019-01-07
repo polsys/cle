@@ -189,6 +189,29 @@ internal void DoNothing()
         }
 
         [Test]
+        public void Standalone_function_call_is_parsed_correctly()
+        {
+            const string source = @"namespace Test;
+
+internal void DoSomething()
+{
+    DoSomethingInternal(42, GetParameter());
+}";
+            var syntaxTree = ParseSourceWithoutDiagnostics(source);
+            Assert.That(syntaxTree.Functions, Has.Exactly(1).Items);
+
+            var function = syntaxTree.Functions[0];
+            Assert.That(function.Block, Is.Not.Null);
+            Assert.That(function.Block.Statements, Has.Exactly(1).Items);
+
+            var call = (FunctionCallStatementSyntax)function.Block.Statements[0];
+            Assert.That(call.Call.Function, Is.EqualTo("DoSomethingInternal"));
+            Assert.That(call.Call.Parameters, Has.Exactly(2).Items);
+            Assert.That(call.Call.Parameters[0], Is.InstanceOf<IntegerLiteralSyntax>());
+            Assert.That(call.Call.Parameters[1], Is.InstanceOf<FunctionCallSyntax>());
+        }
+
+        [Test]
         public void Empty_global_function_without_visibility_fails()
         {
             const string source = @"namespace Test;
@@ -220,9 +243,9 @@ public int32()
         [TestCase("Test::Function")]
         public void Empty_global_function_with_invalid_name_fails(string name)
         {
-            var source = string.Format(@"namespace Test;
+            var source = $@"namespace Test;
 
-public int32 {0}(){{}}", name);
+public int32 {name}(){{}}";
             var syntaxTree = ParseSource(source, out var diagnostics);
             
             diagnostics.AssertDiagnosticAt(DiagnosticCode.InvalidFunctionName, 3, 13).WithNonNullActual();
@@ -232,7 +255,7 @@ public int32 {0}(){{}}", name);
         [Test]
         public void Empty_global_function_with_invalid_type_name_fails()
         {
-            var source = @"namespace Test;
+            const string source = @"namespace Test;
 
 public ::Test::Type function()
 {
@@ -382,6 +405,36 @@ internal void DoNothing()
             var syntaxTree = ParseSource(source, out var diagnostics);
 
             diagnostics.AssertDiagnosticAt(DiagnosticCode.ExpectedExpression, 5, 11).WithActual("{");
+            Assert.That(syntaxTree, Is.Null);
+        }
+
+        [Test]
+        public void Function_call_with_invalid_parameter_fails()
+        {
+            const string source = @"namespace Test;
+
+internal void DoNothing()
+{
+    DoNothing(if)
+}";
+            var syntaxTree = ParseSource(source, out var diagnostics);
+
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.ExpectedExpression, 5, 14).WithActual("if");
+            Assert.That(syntaxTree, Is.Null);
+        }
+        
+        [Test]
+        public void Function_call_without_semicolon_fails()
+        {
+            const string source = @"namespace Test;
+
+internal void DoNothing()
+{
+    DoNothing()
+}";
+            var syntaxTree = ParseSource(source, out var diagnostics);
+
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.ExpectedSemicolon, 6, 0).WithActual("}");
             Assert.That(syntaxTree, Is.Null);
         }
     }
