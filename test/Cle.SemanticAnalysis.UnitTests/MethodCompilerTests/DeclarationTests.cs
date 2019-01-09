@@ -14,7 +14,7 @@ namespace Cle.SemanticAnalysis.UnitTests.MethodCompilerTests
         {
             var position = new TextPosition(13, 3, 4);
             var syntax = new FunctionSyntax("MethodName", "bool",
-                Visibility.Public, ImmutableList<AttributeSyntax>.Empty,
+                Visibility.Public, ImmutableList<ParameterDeclarationSyntax>.Empty, ImmutableList<AttributeSyntax>.Empty,
                 new BlockSyntax(ImmutableList<StatementSyntax>.Empty, default), position);
             var diagnostics = new TestingDiagnosticSink();
             var declarationProvider = new TestingSingleFileDeclarationProvider();
@@ -36,7 +36,7 @@ namespace Cle.SemanticAnalysis.UnitTests.MethodCompilerTests
         {
             var position = new TextPosition(280, 14, 8);
             var syntax = new FunctionSyntax("MethodName", "int32",
-                Visibility.Private, ImmutableList<AttributeSyntax>.Empty,
+                Visibility.Private, ImmutableList<ParameterDeclarationSyntax>.Empty, ImmutableList<AttributeSyntax>.Empty,
                 new BlockSyntax(ImmutableList<StatementSyntax>.Empty, default), position);
             var diagnostics = new TestingDiagnosticSink();
             var declarationProvider = new TestingSingleFileDeclarationProvider();
@@ -57,7 +57,7 @@ namespace Cle.SemanticAnalysis.UnitTests.MethodCompilerTests
         public void CompileDeclaration_parameterless_method_with_unknown_type_fails()
         {
             var syntax = new FunctionSyntax("MethodName", "UltimateBool", 
-                Visibility.Public, ImmutableList<AttributeSyntax>.Empty,
+                Visibility.Public, ImmutableList<ParameterDeclarationSyntax>.Empty, ImmutableList<AttributeSyntax>.Empty,
                 new BlockSyntax(ImmutableList<StatementSyntax>.Empty, default), new TextPosition(3, 1, 3));
             var diagnostics = new TestingDiagnosticSink();
             var declarationProvider = new TestingSingleFileDeclarationProvider();
@@ -74,7 +74,8 @@ namespace Cle.SemanticAnalysis.UnitTests.MethodCompilerTests
             var position = new TextPosition(140, 13, 4);
             var attribute = new AttributeSyntax("TotallyNonexistentAttribute", position);
             var syntax = new FunctionSyntax("MethodName", "bool",
-                Visibility.Public, ImmutableList<AttributeSyntax>.Empty.Add(attribute),
+                Visibility.Public, ImmutableList<ParameterDeclarationSyntax>.Empty,
+                ImmutableList<AttributeSyntax>.Empty.Add(attribute),
                 new BlockSyntax(ImmutableList<StatementSyntax>.Empty, default), default);
             var diagnostics = new TestingDiagnosticSink();
             var declarationProvider = new TestingSingleFileDeclarationProvider();
@@ -91,7 +92,8 @@ namespace Cle.SemanticAnalysis.UnitTests.MethodCompilerTests
         {
             var entryPointAttribute = new AttributeSyntax("EntryPoint", default);
             var syntax = new FunctionSyntax("Main", "int32",
-                Visibility.Private, ImmutableList<AttributeSyntax>.Empty.Add(entryPointAttribute),
+                Visibility.Private, ImmutableList<ParameterDeclarationSyntax>.Empty,
+                ImmutableList<AttributeSyntax>.Empty.Add(entryPointAttribute),
                 new BlockSyntax(ImmutableList<StatementSyntax>.Empty, default), default);
             var diagnostics = new TestingDiagnosticSink();
             var declarationProvider = new TestingSingleFileDeclarationProvider();
@@ -108,7 +110,8 @@ namespace Cle.SemanticAnalysis.UnitTests.MethodCompilerTests
         {
             var entryPointAttribute = new AttributeSyntax("EntryPoint", default);
             var syntax = new FunctionSyntax("Main", "bool",
-                Visibility.Public, ImmutableList<AttributeSyntax>.Empty.Add(entryPointAttribute),
+                Visibility.Public, ImmutableList<ParameterDeclarationSyntax>.Empty,
+                ImmutableList<AttributeSyntax>.Empty.Add(entryPointAttribute),
                 new BlockSyntax(ImmutableList<StatementSyntax>.Empty, default), new TextPosition(3, 1, 3));
             var diagnostics = new TestingDiagnosticSink();
             var declarationProvider = new TestingSingleFileDeclarationProvider();

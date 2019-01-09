@@ -21,6 +21,7 @@ private void Function()
             Assert.That(function.Visibility, Is.EqualTo(Visibility.Private));
             Assert.That(function.Name, Is.EqualTo("Function"));
             Assert.That(function.ReturnTypeName, Is.EqualTo("void"));
+            Assert.That(function.Parameters, Is.Empty);
 
             Assert.That(function.Block, Is.Not.Null);
             Assert.That(function.Block.Position.Line, Is.EqualTo(4));
@@ -60,6 +61,27 @@ internal Other::Namespace::Type _fun()
             Assert.That(function.Visibility, Is.EqualTo(Visibility.Internal));
             Assert.That(function.Name, Is.EqualTo("_fun"));
             Assert.That(function.ReturnTypeName, Is.EqualTo("Other::Namespace::Type"));
+        }
+
+        [Test]
+        public void Parameter_list_is_correctly_read()
+        {
+            const string source = @"namespace Test;
+
+private int32 Function(int32 a, Custom::Type _second_param)
+{
+}";
+            var syntaxTree = ParseSourceWithoutDiagnostics(source);
+            Assert.That(syntaxTree.Functions, Has.Exactly(1).Items);
+
+            var function = syntaxTree.Functions[0];
+            Assert.That(function.Parameters, Has.Exactly(2).Items);
+            Assert.That(function.Parameters[0].Name, Is.EqualTo("a"));
+            Assert.That(function.Parameters[0].TypeName, Is.EqualTo("int32"));
+            Assert.That(function.Parameters[0].Position.ByteInLine, Is.EqualTo(23));
+            Assert.That(function.Parameters[1].Name, Is.EqualTo("_second_param"));
+            Assert.That(function.Parameters[1].TypeName, Is.EqualTo("Custom::Type"));
+            Assert.That(function.Parameters[1].Position.ByteInLine, Is.EqualTo(32));
         }
 
         [Test]
@@ -304,7 +326,105 @@ public int32 Fun(
 }";
             var syntaxTree = ParseSource(source, out var diagnostics);
             
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.ExpectedParameterDeclaration, 4, 0).WithActual("{");
+            Assert.That(syntaxTree, Is.Null);
+        }
+
+        [Test]
+        public void Empty_global_function_without_close_paren_after_parameter_fails()
+        {
+            const string source = @"namespace Test;
+
+public int32 Fun(int32 param1
+{
+}";
+            var syntaxTree = ParseSource(source, out var diagnostics);
+            
             diagnostics.AssertDiagnosticAt(DiagnosticCode.ExpectedClosingParen, 4, 0).WithActual("{");
+            Assert.That(syntaxTree, Is.Null);
+        }
+
+        [Test]
+        public void Empty_global_function_with_leading_comma_in_parameter_list_fails()
+        {
+            const string source = @"namespace Test;
+
+public int32 Fun(,int32 second)
+{
+}";
+            var syntaxTree = ParseSource(source, out var diagnostics);
+            
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.ExpectedParameterDeclaration, 3, 17).WithActual(",");
+            Assert.That(syntaxTree, Is.Null);
+        }
+
+        [Test]
+        public void Empty_global_function_with_extra_comma_in_parameter_list_fails()
+        {
+            const string source = @"namespace Test;
+
+public int32 Fun(int32 a,)
+{
+}";
+            var syntaxTree = ParseSource(source, out var diagnostics);
+            
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.ExpectedParameterDeclaration, 3, 25).WithActual(")");
+            Assert.That(syntaxTree, Is.Null);
+        }
+
+        [Test]
+        public void Empty_global_function_with_no_parameter_name_fails()
+        {
+            const string source = @"namespace Test;
+
+public int32 Fun(int32)
+{
+}";
+            var syntaxTree = ParseSource(source, out var diagnostics);
+            
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.ExpectedParameterName, 3, 22).WithActual(")");
+            Assert.That(syntaxTree, Is.Null);
+        }
+
+        [Test]
+        public void Empty_global_function_with_reserved_parameter_name_fails()
+        {
+            const string source = @"namespace Test;
+
+public int32 Fun(int32 int32)
+{
+}";
+            var syntaxTree = ParseSource(source, out var diagnostics);
+            
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.InvalidVariableName, 3, 23).WithActual("int32");
+            Assert.That(syntaxTree, Is.Null);
+        }
+
+        [Test]
+        public void Empty_global_function_with_invalid_parameter_name_fails()
+        {
+            const string source = @"namespace Test;
+
+public int32 Fun(int32 no::namespaces)
+{
+}";
+            var syntaxTree = ParseSource(source, out var diagnostics);
+            
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.InvalidVariableName, 3, 23).WithActual("no::namespaces");
+            Assert.That(syntaxTree, Is.Null);
+        }
+
+        [Test]
+        public void Empty_global_function_with_invalid_parameter_type_fails()
+        {
+            const string source = @"namespace Test;
+
+public int32 Fun(Invalid::123 a)
+{
+}";
+            var syntaxTree = ParseSource(source, out var diagnostics);
+            
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.InvalidTypeName, 3, 17).WithActual("Invalid::123");
             Assert.That(syntaxTree, Is.Null);
         }
 

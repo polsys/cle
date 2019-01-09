@@ -22,6 +22,8 @@
         ExpectedType,
         ExpectedFunctionName,
         ExpectedParameterList,
+        ExpectedParameterDeclaration,
+        ExpectedParameterName,
         ExpectedMethodBody,
         InvalidTypeName,
         InvalidFunctionName,
