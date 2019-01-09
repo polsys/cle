@@ -41,6 +41,10 @@ namespace Cle.Frontend
                     return $"Expected method name, read '{diagnostic.Actual}'.";
                 case DiagnosticCode.ExpectedParameterList:
                     return $"Expected parameter list, read '{diagnostic.Actual}'.";
+                case DiagnosticCode.ExpectedParameterDeclaration:
+                    return $"Expected parameter declaration, read '{diagnostic.Actual}'.";
+                case DiagnosticCode.ExpectedParameterName:
+                    return $"Expected parameter name, read '{diagnostic.Actual}'.";
                 case DiagnosticCode.ExpectedMethodBody:
                     return $"Expected method body, read '{diagnostic.Actual}'.";
                 case DiagnosticCode.InvalidTypeName:

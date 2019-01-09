@@ -112,13 +112,10 @@ namespace Cle.Parser
                     // TODO: Class definitions
 
                     // Parse the function definition: type
-                    if (_lexer.PeekTokenType() != TokenType.Identifier)
+                    if (!ExpectIdentifier(DiagnosticCode.ExpectedType, out var typeName))
                     {
-                        _diagnosticSink.Add(DiagnosticCode.ExpectedType, _lexer.Position, ReadTokenIntoString());
-                        return null; // TODO: Try to recover from the error
+                        return null;
                     }
-
-                    var typeName = ReadTokenIntoString();
                     if (!NameParsing.IsValidFullName(typeName))
                     {
                         _diagnosticSink.Add(DiagnosticCode.InvalidTypeName, _lexer.LastPosition, typeName);
@@ -126,13 +123,10 @@ namespace Cle.Parser
                     }
 
                     // Name
-                    if (_lexer.PeekTokenType() != TokenType.Identifier)
+                    if (!ExpectIdentifier(DiagnosticCode.ExpectedFunctionName, out var functionName))
                     {
-                        _diagnosticSink.Add(DiagnosticCode.ExpectedFunctionName, _lexer.Position, ReadTokenIntoString());
-                        return null; // TODO: Try to recover from the error
+                        return null;
                     }
-
-                    var functionName = ReadTokenIntoString();
                     if (!NameParsing.IsValidSimpleName(functionName))
                     {
                         _diagnosticSink.Add(DiagnosticCode.InvalidFunctionName, _lexer.LastPosition, functionName);
@@ -140,12 +134,7 @@ namespace Cle.Parser
                     }
 
                     // Parameter list
-                    // TODO: Actually parse the parameter list
-                    if (!ExpectToken(TokenType.OpenParen, DiagnosticCode.ExpectedParameterList))
-                    {
-                        return null; // TODO: Recovery
-                    }
-                    if (!ExpectToken(TokenType.CloseParen, DiagnosticCode.ExpectedClosingParen))
+                    if (!TryParseParameterList(out var parameters))
                     {
                         return null;
                     }
@@ -164,7 +153,7 @@ namespace Cle.Parser
                     // Add the parsed function to the syntax tree
                     Debug.Assert(methodBody != null);
                     functionListBuilder.Add(new FunctionSyntax(functionName, typeName, visibility, 
-                        attributes, methodBody, itemPosition));
+                        parameters, attributes, methodBody, itemPosition));
                 }
                 else
                 {
@@ -184,12 +173,10 @@ namespace Cle.Parser
             var startPosition = EatAndAssertToken(TokenType.OpenBracket);
 
             // Read the attribute name
-            if (_lexer.PeekTokenType() != TokenType.Identifier)
+            if (!ExpectIdentifier(DiagnosticCode.ExpectedAttributeName, out var attributeName))
             {
-                _diagnosticSink.Add(DiagnosticCode.ExpectedAttributeName, _lexer.Position, ReadTokenIntoString());
                 return false;
             }
-            var attributeName = ReadTokenIntoString();
 
             // TODO: Parameter lists
 
@@ -211,13 +198,10 @@ namespace Cle.Parser
             EatAndAssertToken(TokenType.Namespace);
 
             // Read and validate the namespace name
-            if (_lexer.PeekTokenType() != TokenType.Identifier)
+            if (!ExpectIdentifier(DiagnosticCode.ExpectedNamespaceName, out namespaceName))
             {
-                _diagnosticSink.Add(DiagnosticCode.ExpectedNamespaceName, _lexer.Position, ReadTokenIntoString());
                 return false;
             }
-
-            namespaceName = ReadTokenIntoString();
             if (!NameParsing.IsValidNamespaceName(namespaceName))
             {
                 _diagnosticSink.Add(DiagnosticCode.InvalidNamespaceName, _lexer.LastPosition, namespaceName);
@@ -228,6 +212,67 @@ namespace Cle.Parser
             if (!ExpectToken(TokenType.Semicolon, DiagnosticCode.ExpectedSemicolon))
             {
                 return false; // TODO: Think about error recovery
+            }
+
+            return true;
+        }
+
+        private bool TryParseParameterList([NotNull, ItemNotNull] out ImmutableList<ParameterDeclarationSyntax> parameters)
+        {
+            parameters = ImmutableList<ParameterDeclarationSyntax>.Empty;
+
+            if (!ExpectToken(TokenType.OpenParen, DiagnosticCode.ExpectedParameterList))
+            {
+                return false;
+            }
+
+            // Read parameters unless the parameter list is empty
+            if (_lexer.PeekTokenType() != TokenType.CloseParen)
+            {
+                while (true)
+                {
+                    var paramPosition = _lexer.Position;
+
+                    // Read the type name
+                    if (!ExpectIdentifier(DiagnosticCode.ExpectedParameterDeclaration, out var typeName))
+                    {
+                        return false;
+                    }
+                    if (!NameParsing.IsValidFullName(typeName))
+                    {
+                        _diagnosticSink.Add(DiagnosticCode.InvalidTypeName, _lexer.LastPosition, typeName);
+                        return false;
+                    }
+
+                    // Read the parameter name
+                    if (!ExpectIdentifier(DiagnosticCode.ExpectedParameterName, out var paramName))
+                    {
+                        return false;
+                    }
+                    if (!NameParsing.IsValidSimpleName(paramName) || NameParsing.IsReservedTypeName(paramName))
+                    {
+                        _diagnosticSink.Add(DiagnosticCode.InvalidVariableName, _lexer.LastPosition, paramName);
+                        return false;
+                    }
+
+                    // Add it to the list
+                    parameters = parameters.Add(new ParameterDeclarationSyntax(typeName, paramName, paramPosition));
+
+                    // If the next token is a comma, there is another parameter to parse
+                    if (_lexer.PeekTokenType() == TokenType.Comma)
+                    {
+                        _lexer.GetToken();
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+            }
+
+            if (!ExpectToken(TokenType.CloseParen, DiagnosticCode.ExpectedClosingParen))
+            {
+                return false;
             }
 
             return true;
@@ -1065,7 +1110,6 @@ namespace Cle.Parser
         /// </summary>
         /// <param name="expectedType">The expected token type.</param>
         /// <param name="errorCode">The error code to log if the token is not of the expected type.</param>
-        /// <returns></returns>
         private bool ExpectToken(TokenType expectedType, DiagnosticCode errorCode)
         {
             if (_lexer.PeekTokenType() == expectedType)
@@ -1076,6 +1120,27 @@ namespace Cle.Parser
             else
             {
                 _diagnosticSink.Add(errorCode, _lexer.Position, ReadTokenIntoString());
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Eats a token and returns whether it is an identifier.
+        /// If it is not, additionally logs an error.
+        /// </summary>
+        /// <param name="errorCode">The error code to log if the token is not an identifier.</param>
+        /// <param name="identifier">The read identifier.</param>
+        private bool ExpectIdentifier(DiagnosticCode errorCode, [NotNull] out string identifier)
+        {
+            if (_lexer.PeekTokenType() == TokenType.Identifier)
+            {
+                identifier = ReadTokenIntoString();
+                return true;
+            }
+            else
+            {
+                _diagnosticSink.Add(errorCode, _lexer.Position, ReadTokenIntoString());
+                identifier = string.Empty;
                 return false;
             }
         }

@@ -29,6 +29,13 @@ namespace Cle.Parser.SyntaxTree
         public string ReturnTypeName { get; }
 
         /// <summary>
+        /// Gets the parameter list of this function.
+        /// </summary>
+        [NotNull]
+        [ItemNotNull]
+        public ImmutableList<ParameterDeclarationSyntax> Parameters { get; }
+
+        /// <summary>
         /// Gets the list of attributes applied to this function.
         /// The list may be empty.
         /// </summary>
@@ -46,6 +53,7 @@ namespace Cle.Parser.SyntaxTree
             [NotNull] string name,
             [NotNull] string returnType,
             Visibility visibility,
+            [NotNull, ItemNotNull] ImmutableList<ParameterDeclarationSyntax> parameters,
             [NotNull, ItemNotNull] ImmutableList<AttributeSyntax> attributes,
             [NotNull] BlockSyntax block,
             TextPosition position)
@@ -54,6 +62,7 @@ namespace Cle.Parser.SyntaxTree
             Name = name;
             ReturnTypeName = returnType;
             Visibility = visibility;
+            Parameters = parameters;
             Attributes = attributes;
             Block = block;
         }
