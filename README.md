@@ -7,7 +7,7 @@ It is a hobby project of [@polsys](https://github.com/polsys), and as such not s
 
 
 ## Building
-This is a .NET Core 2.1 project. Install the SDK, then execute
+This is a .NET Core 2.2 project. Install the SDK, then execute
 ```
 dotnet build
 ```
