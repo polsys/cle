@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Text;
 using Cle.Common;
 using Cle.Common.TypeSystem;
@@ -12,17 +13,20 @@ namespace Cle.SemanticAnalysis.UnitTests
 {
     public class ExpressionCompilerTests
     {
+        // NOTE: Method calls, even in expression context, are tested in MethodCompilerTests.CallTests.
+        // This is because of the more complex IR emitted.
+
         [Test]
         public void Integer_literal_stored_in_int32_succeeds()
         {
             var syntax = new IntegerLiteralSyntax(1234, default);
             var method = new CompiledMethod("Test::Method");
             var builder = new BasicBlockGraphBuilder().GetInitialBlockBuilder();
-            var variableMap = new ScopedVariableMap();
+            var nameResolver = new TestingResolver(new ScopedVariableMap());
             var diagnostics = new TestingDiagnosticSink();
 
             var localIndex = ExpressionCompiler.TryCompileExpression(
-                syntax, SimpleType.Int32, method, builder, variableMap, diagnostics);
+                syntax, SimpleType.Int32, method, builder, nameResolver, diagnostics);
 
             Assert.That(localIndex, Is.EqualTo(0));
             Assert.That(diagnostics.Diagnostics, Is.Empty);
@@ -40,11 +44,11 @@ namespace Cle.SemanticAnalysis.UnitTests
             var syntax = new IntegerLiteralSyntax(1234, position);
             var method = new CompiledMethod("Test::Method");
             var builder = new BasicBlockGraphBuilder().GetInitialBlockBuilder();
-            var variableMap = new ScopedVariableMap();
+            var nameResolver = new TestingResolver(new ScopedVariableMap());
             var diagnostics = new TestingDiagnosticSink();
 
             var localIndex = ExpressionCompiler.TryCompileExpression(
-                syntax, SimpleType.Bool, method, builder, variableMap, diagnostics);
+                syntax, SimpleType.Bool, method, builder, nameResolver, diagnostics);
 
             Assert.That(localIndex, Is.EqualTo(-1));
             diagnostics.AssertDiagnosticAt(DiagnosticCode.TypeMismatch, position)
@@ -59,11 +63,11 @@ namespace Cle.SemanticAnalysis.UnitTests
             var syntax = new IntegerLiteralSyntax((ulong)int.MaxValue + 1, position);
             var method = new CompiledMethod("Test::Method");
             var builder = new BasicBlockGraphBuilder().GetInitialBlockBuilder();
-            var variableMap = new ScopedVariableMap();
+            var nameResolver = new TestingResolver(new ScopedVariableMap());
             var diagnostics = new TestingDiagnosticSink();
 
             var localIndex = ExpressionCompiler.TryCompileExpression(
-                syntax, SimpleType.Int32, method, builder, variableMap, diagnostics);
+                syntax, SimpleType.Int32, method, builder, nameResolver, diagnostics);
 
             Assert.That(localIndex, Is.EqualTo(-1));
             diagnostics.AssertDiagnosticAt(DiagnosticCode.TypeMismatch, position)
@@ -76,11 +80,11 @@ namespace Cle.SemanticAnalysis.UnitTests
             var syntax = new BooleanLiteralSyntax(true, default);
             var method = new CompiledMethod("Test::Method");
             var builder = new BasicBlockGraphBuilder().GetInitialBlockBuilder();
-            var variableMap = new ScopedVariableMap();
+            var nameResolver = new TestingResolver(new ScopedVariableMap());
             var diagnostics = new TestingDiagnosticSink();
 
             var localIndex = ExpressionCompiler.TryCompileExpression(
-                syntax, SimpleType.Bool, method, builder, variableMap, diagnostics);
+                syntax, SimpleType.Bool, method, builder, nameResolver, diagnostics);
 
             Assert.That(localIndex, Is.EqualTo(0));
             Assert.That(diagnostics.Diagnostics, Is.Empty);
@@ -105,7 +109,7 @@ namespace Cle.SemanticAnalysis.UnitTests
             method.AddLocal(SimpleType.Bool, ConstantValue.Bool(true));
 
             var localIndex = ExpressionCompiler.TryCompileExpression(
-                syntax, SimpleType.Bool, method, builder, variableMap, diagnostics);
+                syntax, SimpleType.Bool, method, builder, new TestingResolver(variableMap), diagnostics);
 
             Assert.That(localIndex, Is.EqualTo(0));
             Assert.That(diagnostics.Diagnostics, Is.Empty);
@@ -126,7 +130,7 @@ namespace Cle.SemanticAnalysis.UnitTests
             method.AddLocal(SimpleType.Bool, ConstantValue.Bool(true));
 
             var localIndex = ExpressionCompiler.TryCompileExpression(
-                syntax, SimpleType.Int32, method, builder, variableMap, diagnostics);
+                syntax, SimpleType.Int32, method, builder, new TestingResolver(variableMap), diagnostics);
 
             Assert.That(localIndex, Is.EqualTo(-1));
             diagnostics.AssertDiagnosticAt(DiagnosticCode.TypeMismatch, position)
@@ -145,7 +149,7 @@ namespace Cle.SemanticAnalysis.UnitTests
             variableMap.PushScope();
 
             var localIndex = ExpressionCompiler.TryCompileExpression(
-                syntax, SimpleType.Int32, method, builder, variableMap, diagnostics);
+                syntax, SimpleType.Int32, method, builder, new TestingResolver(variableMap), diagnostics);
 
             Assert.That(localIndex, Is.EqualTo(-1));
             diagnostics.AssertDiagnosticAt(DiagnosticCode.VariableNotFound, position).WithActual("a");
@@ -178,10 +182,10 @@ namespace Cle.SemanticAnalysis.UnitTests
             var method = new CompiledMethod("Test::Method");
             var builder = new BasicBlockGraphBuilder().GetInitialBlockBuilder();
             var diagnostics = new TestingDiagnosticSink();
-            var variableMap = new ScopedVariableMap();
+            var nameResolver = new TestingResolver(new ScopedVariableMap());
 
             var localIndex = ExpressionCompiler.TryCompileExpression(expressionSyntax,
-                SimpleType.Int32, method, builder, variableMap, diagnostics);
+                SimpleType.Int32, method, builder, nameResolver, diagnostics);
 
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             Assert.That(localIndex, Is.EqualTo(0));
@@ -203,10 +207,10 @@ namespace Cle.SemanticAnalysis.UnitTests
             var method = new CompiledMethod("Test::Method");
             var builder = new BasicBlockGraphBuilder().GetInitialBlockBuilder();
             var diagnostics = new TestingDiagnosticSink();
-            var variableMap = new ScopedVariableMap();
+            var nameResolver = new TestingResolver(new ScopedVariableMap());
 
             var localIndex = ExpressionCompiler.TryCompileExpression(expressionSyntax,
-                SimpleType.Bool, method, builder, variableMap, diagnostics);
+                SimpleType.Bool, method, builder, nameResolver, diagnostics);
 
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             Assert.That(localIndex, Is.EqualTo(0));
@@ -236,10 +240,10 @@ namespace Cle.SemanticAnalysis.UnitTests
             var method = new CompiledMethod("Test::Method");
             var builder = new BasicBlockGraphBuilder().GetInitialBlockBuilder();
             var diagnostics = new TestingDiagnosticSink();
-            var variableMap = new ScopedVariableMap();
+            var nameResolver = new TestingResolver(new ScopedVariableMap());
 
             var localIndex = ExpressionCompiler.TryCompileExpression(expressionSyntax,
-                SimpleType.Bool, method, builder, variableMap, diagnostics);
+                SimpleType.Bool, method, builder, nameResolver, diagnostics);
 
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             Assert.That(localIndex, Is.EqualTo(0));
@@ -268,7 +272,7 @@ namespace Cle.SemanticAnalysis.UnitTests
             variableMap.TryAddVariable("a", method.AddLocal(SimpleType.Int32, ConstantValue.Void()));
 
             var localIndex = ExpressionCompiler.TryCompileExpression(expressionSyntax,
-                SimpleType.Int32, method, builder, variableMap, diagnostics);
+                SimpleType.Int32, method, builder, new TestingResolver(variableMap), diagnostics);
 
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             Assert.That(localIndex, Is.EqualTo(2));
@@ -296,7 +300,7 @@ namespace Cle.SemanticAnalysis.UnitTests
             variableMap.TryAddVariable("a", method.AddLocal(SimpleType.Bool, ConstantValue.Void()));
 
             var localIndex = ExpressionCompiler.TryCompileExpression(expressionSyntax,
-                SimpleType.Bool, method, builder, variableMap, diagnostics);
+                SimpleType.Bool, method, builder, new TestingResolver(variableMap), diagnostics);
 
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             Assert.That(localIndex, Is.EqualTo(2));
@@ -328,7 +332,7 @@ namespace Cle.SemanticAnalysis.UnitTests
             variableMap.TryAddVariable("b", method.AddLocal(SimpleType.Int32, ConstantValue.Void()));
 
             var localIndex = ExpressionCompiler.TryCompileExpression(expressionSyntax,
-                SimpleType.Bool, method, builder, variableMap, diagnostics);
+                SimpleType.Bool, method, builder, new TestingResolver(variableMap), diagnostics);
 
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             Assert.That(localIndex, Is.EqualTo(2));
@@ -363,7 +367,7 @@ namespace Cle.SemanticAnalysis.UnitTests
             variableMap.TryAddVariable("b", method.AddLocal(SimpleType.Int32, ConstantValue.Void()));
 
             var localIndex = ExpressionCompiler.TryCompileExpression(expressionSyntax,
-                SimpleType.Bool, method, builder, variableMap, diagnostics);
+                SimpleType.Bool, method, builder, new TestingResolver(variableMap), diagnostics);
 
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             Assert.That(localIndex, Is.EqualTo(3));
@@ -388,7 +392,7 @@ namespace Cle.SemanticAnalysis.UnitTests
             variableMap.TryAddVariable("a", method.AddLocal(SimpleType.Int32, ConstantValue.Void()));
 
             var localIndex = ExpressionCompiler.TryCompileExpression(expressionSyntax,
-                SimpleType.Int32, method, builder, variableMap, diagnostics);
+                SimpleType.Int32, method, builder, new TestingResolver(variableMap), diagnostics);
             
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             Assert.That(localIndex, Is.EqualTo(1));
@@ -413,7 +417,7 @@ namespace Cle.SemanticAnalysis.UnitTests
             variableMap.TryAddVariable("a", method.AddLocal(SimpleType.Bool, ConstantValue.Void()));
 
             var localIndex = ExpressionCompiler.TryCompileExpression(expressionSyntax,
-                SimpleType.Bool, method, builder, variableMap, diagnostics);
+                SimpleType.Bool, method, builder, new TestingResolver(variableMap), diagnostics);
             
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             Assert.That(localIndex, Is.EqualTo(1));
@@ -490,7 +494,7 @@ namespace Cle.SemanticAnalysis.UnitTests
             variableMap.TryAddVariable("i", method.AddLocal(SimpleType.Int32, ConstantValue.Void()));
 
             var localIndex = ExpressionCompiler.TryCompileExpression(
-                expressionSyntax, SimpleType.Void, method, builder, variableMap, diagnostics);
+                expressionSyntax, SimpleType.Void, method, builder, new TestingResolver(variableMap), diagnostics);
 
             Assert.That(localIndex, Is.EqualTo(-1));
             diagnostics.AssertDiagnosticAt(DiagnosticCode.OperatorNotDefined, expressionSyntax.Position)
@@ -530,10 +534,10 @@ namespace Cle.SemanticAnalysis.UnitTests
             var method = new CompiledMethod("Test::Method");
             var builder = new BasicBlockGraphBuilder().GetInitialBlockBuilder();
             var diagnostics = new TestingDiagnosticSink();
-            var variableMap = new ScopedVariableMap();
+            var nameResolver = new TestingResolver(new ScopedVariableMap());
 
             var localIndex = ExpressionCompiler.TryCompileExpression(
-                syntax, SimpleType.Int32, method, builder, variableMap, diagnostics);
+                syntax, SimpleType.Int32, method, builder, nameResolver, diagnostics);
 
             Assert.That(localIndex, Is.EqualTo(-1));
             diagnostics.AssertDiagnosticAt(DiagnosticCode.DivisionByConstantZero, position);
@@ -551,10 +555,10 @@ namespace Cle.SemanticAnalysis.UnitTests
             var method = new CompiledMethod("Test::Method");
             var builder = new BasicBlockGraphBuilder().GetInitialBlockBuilder();
             var diagnostics = new TestingDiagnosticSink();
-            var variableMap = new ScopedVariableMap();
+            var nameResolver = new TestingResolver(new ScopedVariableMap());
 
             var localIndex = ExpressionCompiler.TryCompileExpression(
-                syntax, SimpleType.Int32, method, builder, variableMap, diagnostics);
+                syntax, SimpleType.Int32, method, builder, nameResolver, diagnostics);
 
             Assert.That(localIndex, Is.EqualTo(-1));
             diagnostics.AssertDiagnosticAt(DiagnosticCode.IntegerConstantOutOfBounds, position);
@@ -577,7 +581,7 @@ namespace Cle.SemanticAnalysis.UnitTests
             variableMap.TryAddVariable("a", method.AddLocal(SimpleType.Int32, ConstantValue.Void()));
 
             var localIndex = ExpressionCompiler.TryCompileExpression(
-                syntax, SimpleType.Int32, method, builder, variableMap, diagnostics);
+                syntax, SimpleType.Int32, method, builder, new TestingResolver(variableMap), diagnostics);
 
             Assert.That(localIndex, Is.EqualTo(-1));
             diagnostics.AssertDiagnosticAt(DiagnosticCode.DivisionByConstantZero, position);
@@ -593,10 +597,10 @@ namespace Cle.SemanticAnalysis.UnitTests
             var method = new CompiledMethod("Test::Method");
             var builder = new BasicBlockGraphBuilder().GetInitialBlockBuilder();
             var diagnostics = new TestingDiagnosticSink();
-            var variableMap = new ScopedVariableMap();
+            var nameResolver = new TestingResolver(new ScopedVariableMap());
 
             var localIndex = ExpressionCompiler.TryCompileExpression(
-                syntax, SimpleType.Int32, method, builder, variableMap, diagnostics);
+                syntax, SimpleType.Int32, method, builder, nameResolver, diagnostics);
 
             Assert.That(localIndex, Is.EqualTo(-1));
             diagnostics.AssertDiagnosticAt(DiagnosticCode.IntegerConstantOutOfBounds, position);
@@ -609,11 +613,11 @@ namespace Cle.SemanticAnalysis.UnitTests
             var method = new CompiledMethod("Test::Method");
             var builder = new BasicBlockGraphBuilder().GetInitialBlockBuilder();
             diagnostics = new TestingDiagnosticSink();
-            var variableMap = new ScopedVariableMap();
+            var nameResolver = new TestingResolver(new ScopedVariableMap());
 
             expressionPosition = expressionSyntax.Position;
             return ExpressionCompiler.TryCompileExpression(expressionSyntax, 
-                expectedType, method, builder, variableMap, diagnostics);
+                expectedType, method, builder, nameResolver, diagnostics);
         }
 
         private static ExpressionSyntax ParseExpression(string expressionString)
@@ -629,6 +633,26 @@ namespace Cle.SemanticAnalysis.UnitTests
             Assert.That(expressionSyntax, Is.Not.Null);
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             return expressionSyntax;
+        }
+
+        private class TestingResolver : INameResolver
+        {
+            private readonly ScopedVariableMap _variableMap;
+
+            public TestingResolver(ScopedVariableMap variableMap)
+            {
+                _variableMap = variableMap;
+            }
+
+            public IReadOnlyList<MethodDeclaration> ResolveMethod(string name)
+            {
+                throw new NotImplementedException();
+            }
+
+            public bool TryResolveVariable(string name, out int localIndex)
+            {
+                return _variableMap.TryGetVariable(name, out localIndex);
+            }
         }
     }
 }

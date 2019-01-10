@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using Cle.Common;
 using Cle.Common.TypeSystem;
@@ -13,7 +15,7 @@ namespace Cle.SemanticAnalysis
     /// In the first pass, declarations can be compiled using the static <see cref="CompileDeclaration"/> method.
     /// Then, method bodies can be compiled using a reusable instance.
     /// </summary>
-    public class MethodCompiler
+    public class MethodCompiler : INameResolver
     {
         // These fields never change during the lifetime of the instance
         [NotNull] private readonly IDiagnosticSink _diagnostics;
@@ -35,6 +37,7 @@ namespace Cle.SemanticAnalysis
         /// The name is not checked for duplication in this method.
         /// </summary>
         /// <param name="syntax">The syntax tree for the method.</param>
+        /// <param name="definingNamespace">The name of the namespace this method is in.</param>
         /// <param name="definingFilename">The name of the file that contains the method.</param>
         /// <param name="methodBodyIndex">The index associated with the compiled method body.</param>
         /// <param name="declarationProvider">The type provider to use for resolving custom types.</param>
@@ -42,6 +45,7 @@ namespace Cle.SemanticAnalysis
         [CanBeNull]
         public static MethodDeclaration CompileDeclaration(
             [NotNull] FunctionSyntax syntax,
+            [NotNull] string definingNamespace,
             [NotNull] string definingFilename,
             int methodBodyIndex,
             [NotNull] IDeclarationProvider declarationProvider,
@@ -54,7 +58,17 @@ namespace Cle.SemanticAnalysis
             }
             Debug.Assert(returnType != null);
 
-            // TODO: Resolve parameter types
+            // Resolve parameter types
+            // The parameter names are checked in InternalCompile()
+            var parameterTypes = ImmutableList<TypeDefinition>.Empty;
+            foreach (var param in syntax.Parameters)
+            {
+                if (!TryResolveType(param.TypeName, diagnosticSink, param.Position, out var paramType))
+                {
+                    return null;
+                }
+                parameterTypes = parameterTypes.Add(paramType);
+            }
 
             // Apply the attributes
             var isEntryPoint = false;
@@ -78,8 +92,8 @@ namespace Cle.SemanticAnalysis
                 }
             }
 
-            return new MethodDeclaration(methodBodyIndex, returnType, syntax.Visibility,
-                definingFilename, syntax.Position, isEntryPoint);
+            return new MethodDeclaration(methodBodyIndex, returnType, parameterTypes, syntax.Visibility,
+                definingNamespace + "::" + syntax.Name, definingFilename, syntax.Position, isEntryPoint);
         }
 
         /// <summary>
@@ -117,8 +131,7 @@ namespace Cle.SemanticAnalysis
             _declaration = declaration;
             _definingNamespace = definingNamespace;
             _sourceFilename = sourceFilename;
-            
-            // Variable map does not need to be reset if scope pushes/pops are balanced.
+            _variableMap.Reset();
 
             return InternalCompile();
         }
@@ -128,10 +141,23 @@ namespace Cle.SemanticAnalysis
         {
             Debug.Assert(_syntaxTree != null);
             Debug.Assert(_sourceFilename != null);
+            Debug.Assert(_declaration != null);
 
-            _methodInProgress = new CompiledMethod(_definingNamespace + "::" + _syntaxTree.Name);
+            _methodInProgress = new CompiledMethod(_declaration.FullName);
 
-            // TODO: Create locals for the parameters
+            // Create locals for the parameters
+            _variableMap.PushScope();
+            for (var i = 0; i < _declaration.ParameterTypes.Count; i++)
+            {
+                var paramSyntax = _syntaxTree.Parameters[i];
+                var paramIndex = _methodInProgress.AddLocal(_declaration.ParameterTypes[i], ConstantValue.Void());
+
+                if (!_variableMap.TryAddVariable(paramSyntax.Name, paramIndex))
+                {
+                    _diagnostics.Add(DiagnosticCode.VariableAlreadyDefined, paramSyntax.Position, paramSyntax.Name);
+                    return null;
+                }
+            }
 
             // Compile the body
             var graphBuilder = new BasicBlockGraphBuilder();
@@ -198,6 +224,15 @@ namespace Cle.SemanticAnalysis
                         builder = newBuilder;
                         returnGuaranteed |= blockReturns;
                         break;
+                    case FunctionCallStatementSyntax call:
+                        // Call statements are call expressions with the result ignored
+                        Debug.Assert(_methodInProgress != null);
+                        if (ExpressionCompiler.TryCompileExpression(call.Call, null, _methodInProgress, builder,
+                            this, _diagnostics) == -1)
+                        {
+                            return false;
+                        }
+                        break;
                     case IfStatementSyntax ifStatement:
                         if (!TryCompileIf(ifStatement, builder, out newBuilder, out var ifReturns))
                             return false;
@@ -244,7 +279,7 @@ namespace Cle.SemanticAnalysis
 
             // Compile the expression
             var sourceIndex = ExpressionCompiler.TryCompileExpression(assignment.Value,
-                expectedType, _methodInProgress, builder, _variableMap, _diagnostics);
+                expectedType, _methodInProgress, builder, this, _diagnostics);
 
             if (sourceIndex == -1)
                 return false;
@@ -263,7 +298,7 @@ namespace Cle.SemanticAnalysis
 
             // Compile the condition expression
             var conditionValue = ExpressionCompiler.TryCompileExpression(ifSyntax.ConditionSyntax,
-                SimpleType.Bool, _methodInProgress, builder, _variableMap, _diagnostics);
+                SimpleType.Bool, _methodInProgress, builder, this, _diagnostics);
             if (conditionValue == -1)
             {
                 return false;
@@ -332,7 +367,7 @@ namespace Cle.SemanticAnalysis
 
             // Compile the condition
             var conditionValue = ExpressionCompiler.TryCompileExpression(whileSyntax.ConditionSyntax,
-                SimpleType.Bool, _methodInProgress, conditionBuilder, _variableMap, _diagnostics);
+                SimpleType.Bool, _methodInProgress, conditionBuilder, this, _diagnostics);
             if (conditionValue == -1)
             {
                 return false;
@@ -379,7 +414,7 @@ namespace Cle.SemanticAnalysis
             {
                 // Non-void return: parse the expression, verifying the type
                 returnValueNumber = ExpressionCompiler.TryCompileExpression(syntax.ResultExpression,
-                    _declaration.ReturnType, _methodInProgress, builder, _variableMap, _diagnostics);
+                    _declaration.ReturnType, _methodInProgress, builder, this, _diagnostics);
             }
             
             // At this point, a diagnostic should already be logged
@@ -403,7 +438,7 @@ namespace Cle.SemanticAnalysis
             }
             Debug.Assert(type != null);
             var localIndex = ExpressionCompiler.TryCompileExpression(declaration.InitialValueExpression, 
-                type, _methodInProgress, builder, _variableMap, _diagnostics);
+                type, _methodInProgress, builder, this, _diagnostics);
 
             if (localIndex == -1)
                 return false;
@@ -456,6 +491,36 @@ namespace Cle.SemanticAnalysis
             }
 
             return true;
+        }
+
+        //
+        // Name resolution for ExpressionCompiler
+        //
+
+        IReadOnlyList<MethodDeclaration> INameResolver.ResolveMethod(string name)
+        {
+            Debug.Assert(_sourceFilename != null);
+
+            var separatorPos = name.LastIndexOf("::", StringComparison.InvariantCulture);
+            if (separatorPos == -1)
+            {
+                // This is a simple name - search in all visible namespaces
+                // TODO: Support for multiple visible namespaces
+                return _declarationProvider.GetMethodDeclarations(name, new[] { _definingNamespace }, _sourceFilename);
+            }
+            else
+            {
+                // This is a full name - search only in the specified namespace
+                var namespaceName = name.Substring(0, separatorPos);
+                var simpleName = name.Substring(separatorPos + 2);
+
+                return _declarationProvider.GetMethodDeclarations(simpleName, new[] { namespaceName }, _sourceFilename);
+            }
+        }
+
+        bool INameResolver.TryResolveVariable(string name, out int localIndex)
+        {
+            return _variableMap.TryGetVariable(name, out localIndex);
         }
     }
 }

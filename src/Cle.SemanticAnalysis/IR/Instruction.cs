@@ -162,5 +162,10 @@ namespace Cle.SemanticAnalysis.IR
         /// Stores the result of (left local) == (right local) to the destination index.
         /// </summary>
         Equal,
+        /// <summary>
+        /// Performs the method call described by the call info indexed by the left operand
+        /// and stores the result in the destination local.
+        /// </summary>
+        Call,
     }
 }

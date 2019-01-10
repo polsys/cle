@@ -134,5 +134,19 @@ namespace Cle.SemanticAnalysis.UnitTests
                 map.PopScope();
             }
         }
+
+        [Test]
+        public void Reset_clears_stack()
+        {
+            var map = new ScopedVariableMap();
+            map.PushScope();
+            map.PushScope();
+            map.TryAddVariable("a", 1);
+            map.PushScope();
+
+            map.Reset();
+
+            Assert.That(() => map.TryGetVariable("a", out _), Throws.InvalidOperationException);
+        }
     }
 }

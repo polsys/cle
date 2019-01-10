@@ -277,7 +277,8 @@ namespace Cle.Compiler.UnitTests
             var methodSyntax = new FunctionSyntax(methodName, "bool",
                 visibility, ImmutableList<ParameterDeclarationSyntax>.Empty, ImmutableList<AttributeSyntax>.Empty,
                 new BlockSyntax(ImmutableList<StatementSyntax>.Empty, default), default);
-            var declaration = MethodCompiler.CompileDeclaration(methodSyntax, filename, 0, compilation, diagnostics);
+            var declaration = MethodCompiler.CompileDeclaration(methodSyntax,
+                "Namespace", filename, 0, compilation, diagnostics);
 
             // Sanity check
             Assert.That(declaration, Is.Not.Null);
