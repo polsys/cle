@@ -14,7 +14,7 @@ public void DoNothing() {
     a = a;
     return;
 }";
-            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+            var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
 
             Assert.That(compiledMethod, Is.Not.Null);
             Assert.That(diagnostics.Diagnostics, Is.Empty);
@@ -36,7 +36,7 @@ public void DoNothing() {
     a = 8;
     return;
 }";
-            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+            var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
 
             Assert.That(compiledMethod, Is.Not.Null);
             Assert.That(diagnostics.Diagnostics, Is.Empty);
@@ -59,7 +59,7 @@ public void DoNothing() {
     int32 b = a;
     return;
 }";
-            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+            var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
 
             Assert.That(compiledMethod, Is.Not.Null);
             Assert.That(diagnostics.Diagnostics, Is.Empty);
@@ -82,7 +82,7 @@ public void NotFound() {
     notFound = 404;
     return;
 }";
-            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+            var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
 
             Assert.That(compiledMethod, Is.Null);
             diagnostics.AssertDiagnosticAt(DiagnosticCode.VariableNotFound, 3, 4).WithActual("notFound");
@@ -97,7 +97,7 @@ public void NotFound() {
     target = notFound;
     return;
 }";
-            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+            var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
 
             Assert.That(compiledMethod, Is.Null);
             diagnostics.AssertDiagnosticAt(DiagnosticCode.VariableNotFound, 4, 13).WithActual("notFound");
@@ -113,7 +113,7 @@ public void WrongType() {
     target = value;
     return;
 }";
-            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+            var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
 
             Assert.That(compiledMethod, Is.Null);
             diagnostics.AssertDiagnosticAt(DiagnosticCode.TypeMismatch, 5, 13)
@@ -128,7 +128,7 @@ public void WrongType() {
     int32 target = true;
     return;
 }";
-            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+            var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
 
             Assert.That(compiledMethod, Is.Null);
             diagnostics.AssertDiagnosticAt(DiagnosticCode.TypeMismatch, 3, 19)
@@ -143,7 +143,7 @@ public void SelfReference() {
     int32 cyclic = cyclic;
     return;
 }";
-            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+            var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
 
             Assert.That(compiledMethod, Is.Null);
             diagnostics.AssertDiagnosticAt(DiagnosticCode.VariableNotFound, 3, 19).WithActual("cyclic");
@@ -157,7 +157,7 @@ public void Huh() {
     Whatever value = 42;
     return;
 }";
-            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+            var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
 
             Assert.That(compiledMethod, Is.Null);
             diagnostics.AssertDiagnosticAt(DiagnosticCode.TypeNotFound, 3, 4).WithActual("Whatever");
@@ -172,7 +172,7 @@ public void NameAlreadyDefined() {
     int32 conflict = 8;
     return;
 }";
-            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+            var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
 
             Assert.That(compiledMethod, Is.Null);
             diagnostics.AssertDiagnosticAt(DiagnosticCode.VariableAlreadyDefined, 4, 4).WithActual("conflict");
@@ -189,7 +189,7 @@ public void NameAlreadyDefined() {
     }
     return;
 }";
-            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+            var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
 
             Assert.That(compiledMethod, Is.Null);
             diagnostics.AssertDiagnosticAt(DiagnosticCode.VariableAlreadyDefined, 5, 8).WithActual("conflict");
@@ -208,7 +208,7 @@ public void NameAppearsTwice() {
     }
     return;
 }";
-            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+            var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
 
             Assert.That(compiledMethod, Is.Not.Null);
             Assert.That(diagnostics.Diagnostics, Is.Empty);
@@ -235,7 +235,7 @@ public void NameAppearsTwice() {
     int32 conflict = 8;
     return;
 }";
-            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+            var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
 
             Assert.That(compiledMethod, Is.Not.Null);
             Assert.That(diagnostics.Diagnostics, Is.Empty);
@@ -256,7 +256,7 @@ public int32 Params(int32 first, bool second) {
     int32 more = 3;
     return first;
 }";
-            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+            var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
 
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             Assert.That(compiledMethod, Is.Not.Null);
@@ -274,7 +274,7 @@ BB_0:
         {
             const string source = @"namespace Test;
 public void NameAlreadyDefined(int32 variable, bool variable) {}";
-            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+            var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
 
             Assert.That(compiledMethod, Is.Null);
             diagnostics.AssertDiagnosticAt(DiagnosticCode.VariableAlreadyDefined, 2, 47).WithActual("variable");
@@ -287,7 +287,7 @@ public void NameAlreadyDefined(int32 variable, bool variable) {}";
 public void NameAlreadyDefined(int32 variable) {
     bool variable = true;
 }";
-            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+            var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
 
             Assert.That(compiledMethod, Is.Null);
             diagnostics.AssertDiagnosticAt(DiagnosticCode.VariableAlreadyDefined, 3, 4).WithActual("variable");

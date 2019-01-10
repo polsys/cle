@@ -11,7 +11,7 @@ namespace Cle.SemanticAnalysis.UnitTests.MethodCompilerTests
             const string source = @"namespace Test;
 public int32 Fail() {
 }";
-            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+            var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
 
             Assert.That(compiledMethod, Is.Null);
             Assert.That(diagnostics.Diagnostics, Has.Exactly(1).Items);
@@ -26,7 +26,7 @@ public int32 Fail() {
     bool shouldReturn = false;
     if (shouldReturn) { return 1; }
 }";
-            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+            var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
 
             Assert.That(compiledMethod, Is.Null);
             Assert.That(diagnostics.Diagnostics, Has.Exactly(1).Items);
@@ -44,7 +44,7 @@ public int32 Fail() {
     else if (shouldReturnInElse) { return 2; }
     else {}
 }";
-            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+            var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
 
             Assert.That(compiledMethod, Is.Null);
             Assert.That(diagnostics.Diagnostics, Has.Exactly(1).Items);
@@ -59,7 +59,7 @@ public int32 Warn() {
     return 1;
     { }
 }";
-            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+            var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
 
             Assert.That(compiledMethod, Is.Not.Null);
             Assert.That(diagnostics.Diagnostics, Has.Exactly(1).Items);
@@ -75,7 +75,7 @@ public int32 Warn() {
     return 2;
     return 3;
 }";
-            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+            var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
 
             Assert.That(compiledMethod, Is.Not.Null);
             Assert.That(diagnostics.Diagnostics, Has.Exactly(1).Items);
@@ -93,7 +93,7 @@ public int32 Warn() {
     }
     return 3;
 }";
-            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+            var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
 
             Assert.That(compiledMethod, Is.Not.Null);
             Assert.That(diagnostics.Diagnostics, Has.Exactly(2).Items);
@@ -111,7 +111,7 @@ public int32 Warn() {
     else { return 2; }
     return 3;
 }";
-            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+            var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
 
             Assert.That(compiledMethod, Is.Not.Null);
             Assert.That(diagnostics.Diagnostics, Has.Exactly(1).Items);
@@ -130,7 +130,7 @@ public int32 Warn() {
     else { return 3; }
     return 4;
 }";
-            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+            var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
 
             Assert.That(compiledMethod, Is.Not.Null);
             Assert.That(diagnostics.Diagnostics, Has.Exactly(1).Items);
@@ -145,7 +145,7 @@ public int32 Fail() {
     bool a = true;
     while (a) { return 1; }
 }";
-            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+            var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
 
             Assert.That(compiledMethod, Is.Null);
             Assert.That(diagnostics.Diagnostics, Has.Exactly(1).Items);
@@ -161,7 +161,7 @@ public int32 Warn() {
     while (a) { return 1; }
     return 4;
 }";
-            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+            var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
 
             Assert.That(compiledMethod, Is.Not.Null);
             Assert.That(diagnostics.Diagnostics, Is.Empty);

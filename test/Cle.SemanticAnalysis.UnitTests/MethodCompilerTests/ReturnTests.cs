@@ -10,7 +10,7 @@ namespace Cle.SemanticAnalysis.UnitTests.MethodCompilerTests
         {
             const string source = @"namespace Test;
 public bool ReturnTrue() { return true; }";
-            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+            var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
 
             Assert.That(compiledMethod, Is.Not.Null);
             Assert.That(diagnostics.Diagnostics, Is.Empty);
@@ -26,7 +26,7 @@ BB_0:
         {
             const string source = @"namespace Test;
 public int32 GetTheAnswer() { return 42; }";
-            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+            var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
 
             Assert.That(compiledMethod, Is.Not.Null);
             Assert.That(diagnostics.Diagnostics, Is.Empty);
@@ -42,7 +42,7 @@ BB_0:
         {
             const string source = @"namespace Test;
 public int32 GetTheAnswer() { return 40 + 2; }";
-            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+            var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
 
             Assert.That(compiledMethod, Is.Not.Null);
             Assert.That(diagnostics.Diagnostics, Is.Empty);
@@ -58,7 +58,7 @@ BB_0:
         {
             const string source = @"namespace Test;
 public int32 GetTheAnswer() { int32 almost = 40; return almost + 2; }";
-            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+            var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
 
             Assert.That(compiledMethod, Is.Not.Null);
             Assert.That(diagnostics.Diagnostics, Is.Empty);
@@ -77,7 +77,7 @@ BB_0:
         {
             const string source = @"namespace Test;
 public void DoNothing() { return; }";
-            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+            var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
 
             Assert.That(compiledMethod, Is.Not.Null);
             Assert.That(diagnostics.Diagnostics, Is.Empty);
@@ -93,7 +93,7 @@ BB_0:
         {
             const string source = @"namespace Test;
 public void DoNothing() { }";
-            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+            var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
 
             Assert.That(compiledMethod, Is.Not.Null);
             Assert.That(diagnostics.Diagnostics, Is.Empty);
@@ -109,7 +109,7 @@ BB_0:
         {
             const string source = @"namespace Test;
 public void DoNothing() { if (true) { return; } }";
-            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+            var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
 
             Assert.That(compiledMethod, Is.Not.Null);
             Assert.That(diagnostics.Diagnostics, Is.Empty);
@@ -134,7 +134,7 @@ BB_2:
         {
             const string source = @"namespace Test;
 public bool Mismatch() { return 42; }";
-            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+            var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
 
             Assert.That(compiledMethod, Is.Null);
             diagnostics.AssertDiagnosticAt(DiagnosticCode.TypeMismatch, 2, 32)
@@ -147,7 +147,7 @@ public bool Mismatch() { return 42; }";
         {
             const string source = @"namespace Test;
 public bool Mismatch() { return; }";
-            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+            var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
 
             Assert.That(compiledMethod, Is.Null);
             diagnostics.AssertDiagnosticAt(DiagnosticCode.TypeMismatch, 2, 25)
@@ -160,7 +160,7 @@ public bool Mismatch() { return; }";
         {
             const string source = @"namespace Test;
 public void Mismatch() { return true; }";
-            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+            var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
 
             Assert.That(compiledMethod, Is.Null);
             diagnostics.AssertDiagnosticAt(DiagnosticCode.TypeMismatch, 2, 32)

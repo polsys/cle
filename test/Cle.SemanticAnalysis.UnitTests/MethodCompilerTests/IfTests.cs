@@ -16,7 +16,7 @@ public bool Contradiction() {
         return true;
     }
 }";
-            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+            var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
 
             Assert.That(compiledMethod, Is.Not.Null);
             Assert.That(diagnostics.Diagnostics, Is.Empty);
@@ -46,7 +46,7 @@ public bool Tautology() {
     }
     return false;
 }";
-            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+            var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
 
             Assert.That(compiledMethod, Is.Not.Null);
             Assert.That(diagnostics.Diagnostics, Is.Empty);
@@ -77,7 +77,7 @@ public bool Comparison() {
     }
     return false;
 }";
-            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+            var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
 
             Assert.That(compiledMethod, Is.Not.Null);
             Assert.That(diagnostics.Diagnostics, Is.Empty);
@@ -111,7 +111,7 @@ public int32 TheAnswer() {
     }
     return result;
 }";
-            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+            var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
 
             Assert.That(compiledMethod, Is.Not.Null);
             Assert.That(diagnostics.Diagnostics, Is.Empty);
@@ -143,7 +143,7 @@ public int32 ComplexAnswer() {
     }
     return result;
 }";
-            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+            var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
 
             Assert.That(compiledMethod, Is.Not.Null);
             Assert.That(diagnostics.Diagnostics, Is.Empty);
@@ -179,7 +179,7 @@ public int32 GetTheAnswer() {
     }
     return 41;
 }";
-            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+            var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
 
             Assert.That(compiledMethod, Is.Not.Null);
             Assert.That(diagnostics.Diagnostics, Is.Empty);
@@ -221,7 +221,7 @@ public int32 GetTheAnswer() {
     }
     return 41;
 }";
-            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+            var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
 
             Assert.That(compiledMethod, Is.Not.Null);
             Assert.That(diagnostics.Diagnostics, Is.Empty);
@@ -267,7 +267,7 @@ public int32 TheAnswer() {
         return 0;
     }
 }";
-            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+            var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
 
             Assert.That(compiledMethod, Is.Not.Null);
             Assert.That(diagnostics.Diagnostics, Is.Empty);
@@ -312,7 +312,7 @@ public int32 TheAnswer() {
     }
     return result;
 }";
-            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+            var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
 
             Assert.That(compiledMethod, Is.Not.Null);
             Assert.That(diagnostics.Diagnostics, Is.Empty);
@@ -359,7 +359,7 @@ public int32 TheAnswer() {
     }
     return 0;
 }";
-            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+            var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
 
             Assert.That(compiledMethod, Is.Not.Null);
             Assert.That(diagnostics.Diagnostics, Is.Empty);
@@ -399,7 +399,7 @@ public bool TypeMismatch() {
         return true;
     }
 }";
-            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+            var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
 
             Assert.That(compiledMethod, Is.Null);
             diagnostics.AssertDiagnosticAt(DiagnosticCode.TypeMismatch, 3, 8).WithExpected("bool").WithActual("int32");
@@ -416,7 +416,7 @@ public bool TypeMismatchInThen() {
         return true;
     }
 }";
-            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+            var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
 
             Assert.That(compiledMethod, Is.Null);
             diagnostics.AssertDiagnosticAt(DiagnosticCode.TypeMismatch, 4, 15).WithExpected("bool").WithActual("int32");
@@ -433,7 +433,7 @@ public bool TypeMismatchInElse() {
         return 42;
     }
 }";
-            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+            var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
 
             Assert.That(compiledMethod, Is.Null);
             diagnostics.AssertDiagnosticAt(DiagnosticCode.TypeMismatch, 6, 15).WithExpected("bool").WithActual("int32");
@@ -450,7 +450,7 @@ public bool TypeMismatchInElseIf() {
         return false;
     }
 }";
-            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+            var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
 
             Assert.That(compiledMethod, Is.Null);
             diagnostics.AssertDiagnosticAt(DiagnosticCode.TypeMismatch, 5, 15).WithExpected("bool").WithActual("int32");
