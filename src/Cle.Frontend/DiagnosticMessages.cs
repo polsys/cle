@@ -109,6 +109,10 @@ namespace Cle.Frontend
                     return $"Variable '{diagnostic.Actual}' is already defined in this or enclosing scope.";
                 case DiagnosticCode.VariableNotFound:
                     return $"Variable '{diagnostic.Actual}' does not exist in this or enclosing scope.";
+                case DiagnosticCode.MethodNotFound:
+                    return $"Method '{diagnostic.Actual}' is not visible in this scope or does not exist.";
+                case DiagnosticCode.ParameterCountMismatch:
+                    return $"Expected {diagnostic.Expected} parameters but there are {diagnostic.Actual}.";
                 case DiagnosticCode.ReturnNotGuaranteed:
                     return $"Not all code paths in method '{diagnostic.Actual}' are guaranteed to return.";
 

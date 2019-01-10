@@ -141,7 +141,7 @@ namespace Cle.Compiler
 
                 foreach (var methodSyntax in sourceFile.Functions)
                 {
-                    var decl = MethodCompiler.CompileDeclaration(methodSyntax, sourceFile.Filename,
+                    var decl = MethodCompiler.CompileDeclaration(methodSyntax, sourceFile.Namespace, sourceFile.Filename,
                         compilation.ReserveMethodSlot(), compilation, diagnosticSink);
 
                     // Declaration is invalid

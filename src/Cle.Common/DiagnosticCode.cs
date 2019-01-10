@@ -60,6 +60,8 @@
         OperatorNotDefined,
         VariableAlreadyDefined,
         VariableNotFound,
+        MethodNotFound,
+        ParameterCountMismatch,
 
         ReturnNotGuaranteed,
 

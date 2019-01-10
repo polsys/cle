@@ -46,6 +46,18 @@ namespace Cle.SemanticAnalysis
         }
 
         /// <summary>
+        /// Removes all scopes on the stack.
+        /// </summary>
+        public void Reset()
+        {
+            // Instead of _scopeStack.Clear(), use PopScope() to cache the popped scopes
+            while (_scopeStack.Count > 0)
+            {
+                PopScope();
+            }
+        }
+
+        /// <summary>
         /// Adds the given variable to the current scope.
         /// Returns false if the name already exists in any scope.
         /// Throws if there is no scope on the stack.

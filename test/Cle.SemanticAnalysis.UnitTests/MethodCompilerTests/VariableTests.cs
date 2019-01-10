@@ -247,5 +247,50 @@ public void NameAppearsTwice() {
 BB_0:
     Return #2");
         }
+
+        [Test]
+        public void Parameters_are_variables()
+        {
+            const string source = @"namespace Test;
+public int32 Params(int32 first, bool second) {
+    int32 more = 3;
+    return first;
+}";
+            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+
+            Assert.That(diagnostics.Diagnostics, Is.Empty);
+            Assert.That(compiledMethod, Is.Not.Null);
+
+            AssertDisassembly(compiledMethod, @"
+; #0   int32 = void
+; #1   bool = void
+; #2   int32 = 3
+BB_0:
+    Return #0");
+        }
+
+        [Test]
+        public void Parameter_name_may_not_be_repeated()
+        {
+            const string source = @"namespace Test;
+public void NameAlreadyDefined(int32 variable, bool variable) {}";
+            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+
+            Assert.That(compiledMethod, Is.Null);
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.VariableAlreadyDefined, 2, 47).WithActual("variable");
+        }
+
+        [Test]
+        public void Variable_may_not_have_same_name_as_parameter()
+        {
+            const string source = @"namespace Test;
+public void NameAlreadyDefined(int32 variable) {
+    bool variable = true;
+}";
+            var compiledMethod = TryCompileSingleMethod(source, out var diagnostics);
+
+            Assert.That(compiledMethod, Is.Null);
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.VariableAlreadyDefined, 3, 4).WithActual("variable");
+        }
     }
 }

@@ -12,33 +12,36 @@ namespace Cle.SemanticAnalysis
     /// </summary>
     internal static partial class ExpressionCompiler
     {
+        // TODO: Benchmark whether it would be beneficial to pass the unchanging parameters to the private methods
+        //       in a readonly struct. We pass a lot of parameters and the call trees run quite deep.
+
         /// <summary>
         /// Compiles the given expression syntax tree and verifies its type.
         /// Returns the local index if successful, returns -1 and logs diagnostics if the compilation fails.
         /// </summary>
         /// <param name="syntax">The root of the expression syntax tree.</param>
-        /// <param name="expectedType">The expected type of the evaluated expression.</param>
+        /// <param name="expectedType">The expected type of the evaluated expression. If null, the type is not checked.</param>
         /// <param name="method">The method to store and get local values from.</param>
         /// <param name="builder">Intermediate representation builder.</param>
-        /// <param name="variableMap">The map of variable names to local indices.</param>
+        /// <param name="nameResolver">The resolver for variable and method names.</param>
         /// <param name="diagnostics">Receiver for possible diagnostics.</param>
         public static int TryCompileExpression(
             [NotNull] ExpressionSyntax syntax,
-            [NotNull] TypeDefinition expectedType,
+            [CanBeNull] TypeDefinition expectedType,
             [NotNull] CompiledMethod method,
             [NotNull] BasicBlockBuilder builder,
-            [NotNull] ScopedVariableMap variableMap,
+            [NotNull] INameResolver nameResolver,
             [NotNull] IDiagnosticSink diagnostics)
         {
             // Compile the expression
-            if (!InternalTryCompileExpression(syntax, method, builder, variableMap, diagnostics, out var value))
+            if (!InternalTryCompileExpression(syntax, method, builder, nameResolver, diagnostics, out var value))
             {
                 return -1;
             }
 
             // Verify the type
             // TODO: Once multiple integer types exist, there must be some notion of conversions
-            if (!value.Type.Equals(expectedType))
+            if (expectedType != null && !value.Type.Equals(expectedType))
             {
                 diagnostics.Add(DiagnosticCode.TypeMismatch, syntax.Position, 
                     value.Type.TypeName, expectedType.TypeName);
@@ -65,7 +68,7 @@ namespace Cle.SemanticAnalysis
             [NotNull] ExpressionSyntax syntax,
             [NotNull] CompiledMethod method,
             [NotNull] BasicBlockBuilder builder,
-            [NotNull] ScopedVariableMap variableMap,
+            [NotNull] INameResolver nameResolver,
             [NotNull] IDiagnosticSink diagnostics,
             out Temporary value)
         {
@@ -101,7 +104,7 @@ namespace Cle.SemanticAnalysis
             }
             else if (syntax is NamedValueSyntax named)
             {
-                if (!variableMap.TryGetVariable(named.Name, out var valueNumber))
+                if (!nameResolver.TryResolveVariable(named.Name, out var valueNumber))
                 {
                     diagnostics.Add(DiagnosticCode.VariableNotFound, named.Position, named.Name);
                     return false;
@@ -112,7 +115,7 @@ namespace Cle.SemanticAnalysis
             }
             else if (syntax is UnaryExpressionSyntax unary)
             {
-                if (!InternalTryCompileExpression(unary.InnerExpression, method, builder, variableMap, diagnostics,
+                if (!InternalTryCompileExpression(unary.InnerExpression, method, builder, nameResolver, diagnostics,
                     out var inner))
                 {
                     return false;
@@ -122,18 +125,73 @@ namespace Cle.SemanticAnalysis
             }
             else if (syntax is BinaryExpressionSyntax binary)
             {
-                if (!InternalTryCompileExpression(binary.Left, method, builder, variableMap, diagnostics, out var left) ||
-                    !InternalTryCompileExpression(binary.Right, method, builder, variableMap, diagnostics, out var right))
+                if (!InternalTryCompileExpression(binary.Left, method, builder, nameResolver, diagnostics, out var left) ||
+                    !InternalTryCompileExpression(binary.Right, method, builder, nameResolver, diagnostics, out var right))
                 {
                     return false;
                 }
 
                 return TryCompileBinary(binary, left, right, method, builder, diagnostics, out value);
             }
+            else if (syntax is FunctionCallSyntax call)
+            {
+                return TryCompileCall(call, method, builder, diagnostics, nameResolver, out value);
+            }
             else
             {
                 throw new NotImplementedException();
             }
+        }
+
+        private static bool TryCompileCall(FunctionCallSyntax call, CompiledMethod method, BasicBlockBuilder builder,
+            IDiagnosticSink diagnostics, INameResolver nameResolver, out Temporary value)
+        {
+            value = default;
+
+            // Get the callee
+            var matchingMethods = nameResolver.ResolveMethod(call.Function);
+            if (matchingMethods.Count == 0)
+            {
+                diagnostics.Add(DiagnosticCode.MethodNotFound, call.Position, call.Function);
+                return false;
+            }
+            else if (matchingMethods.Count > 1)
+            {
+                // TODO: Test this case
+                throw new NotImplementedException("Multiple matching methods");
+            }
+            var declaration = matchingMethods[0];
+
+            // Assert that there is the right number of parameters
+            if (call.Parameters.Count != declaration.ParameterTypes.Count)
+            {
+                diagnostics.Add(DiagnosticCode.ParameterCountMismatch, call.Position,
+                    actual: call.Parameters.Count.ToString(), expected: declaration.ParameterTypes.Count.ToString());
+                return false;
+            }
+
+            // Evaluate the parameters, verifying their types
+            var parameterIndices = new int[declaration.ParameterTypes.Count];
+            for (var i = 0; i < parameterIndices.Length; i++)
+            {
+                var paramIndex = TryCompileExpression(call.Parameters[i], declaration.ParameterTypes[i],
+                    method, builder, nameResolver, diagnostics);
+
+                // If the compilation of the expression failed for some reason, the diagnostic is already logged
+                if (paramIndex == -1)
+                {
+                    return false;
+                }
+                parameterIndices[i] = paramIndex;
+            }
+
+            // Emit a call operation
+            var callInfoIndex = method.AddCallInfo(declaration.BodyIndex, parameterIndices, declaration.FullName);
+            var resultIndex = method.AddLocal(declaration.ReturnType, ConstantValue.Void());
+            builder.AppendInstruction(Opcode.Call, callInfoIndex, 0, resultIndex);
+
+            value = Temporary.FromLocal(declaration.ReturnType, resultIndex);
+            return true;
         }
 
         private static bool TryCompileUnary(UnaryExpressionSyntax expression, in Temporary innerValue,

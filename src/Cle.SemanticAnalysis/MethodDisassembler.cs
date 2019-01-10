@@ -72,6 +72,20 @@ namespace Cle.SemanticAnalysis
                         case Opcode.BranchIf:
                             outputBuilder.AppendLine($" #{instruction.Left} ==> BB_{block.AlternativeSuccessor}");
                             break;
+                        case Opcode.Call:
+                            var callInfo = method.CallInfos[instruction.Left];
+                            outputBuilder.Append($" {callInfo.CalleeFullName}(");
+                            for (var i = 0; i < callInfo.ParameterIndices.Length; i++)
+                            {
+                                if (i != 0)
+                                {
+                                    outputBuilder.Append(", ");
+                                }
+                                outputBuilder.Append("#" + callInfo.ParameterIndices[i]);
+                            }
+                            outputBuilder.AppendLine($") -> #{instruction.Destination}");
+                            break;
+
                         case Opcode.CopyValue:
                             outputBuilder.AppendLine($" #{instruction.Left} -> #{instruction.Destination}");
                             break;
