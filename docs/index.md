@@ -10,7 +10,7 @@ This is an almost rigorous reference for the language.
 * Compilation and modules
 * Types
 * Statements
-* Expressions
+* [Expressions](language-spec/expressions.md)
 * Attributes
 
 More documentation is to be added later.
