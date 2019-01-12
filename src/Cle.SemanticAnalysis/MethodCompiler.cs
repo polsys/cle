@@ -150,7 +150,7 @@ namespace Cle.SemanticAnalysis
             for (var i = 0; i < _declaration.ParameterTypes.Count; i++)
             {
                 var paramSyntax = _syntaxTree.Parameters[i];
-                var paramIndex = _methodInProgress.AddLocal(_declaration.ParameterTypes[i], ConstantValue.Void());
+                var paramIndex = _methodInProgress.AddLocal(_declaration.ParameterTypes[i], ConstantValue.Parameter());
 
                 if (!_variableMap.TryAddVariable(paramSyntax.Name, paramIndex))
                 {

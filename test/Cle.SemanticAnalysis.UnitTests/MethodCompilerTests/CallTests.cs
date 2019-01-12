@@ -96,7 +96,7 @@ private bool IsLarger(int32 left, int32 right) { return left > right; }";
             Assert.That(compiledMethod, Is.Not.Null);
             
             AssertDisassembly(compiledMethod, @"
-; #0   int32 = void
+; #0   int32 = param
 ; #1   int32 = 1
 ; #2   int32 = void
 ; #3   bool = void
