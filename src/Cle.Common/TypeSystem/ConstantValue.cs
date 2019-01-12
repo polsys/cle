@@ -48,11 +48,19 @@ namespace Cle.Common.TypeSystem
         }
 
         /// <summary>
-        /// Creates a new void constant.
+        /// Creates a new void/uninitialized constant that is not a method parameter.
         /// </summary>
         public static ConstantValue Void()
         {
             return new ConstantValue(ConstantType.Void, 0);
+        }
+
+        /// <summary>
+        /// Creates a new constant that signifies a method parameter.
+        /// </summary>
+        public static ConstantValue Parameter()
+        {
+            return new ConstantValue(ConstantType.Parameter, 0);
         }
 
         private ConstantValue(ConstantType type, ulong data)
@@ -85,6 +93,8 @@ namespace Cle.Common.TypeSystem
             {
                 case ConstantType.Void:
                     return "void";
+                case ConstantType.Parameter:
+                    return "param";
                 case ConstantType.Boolean:
                     return _data == 1 ? "true" : "false";
                 case ConstantType.SignedInteger:
@@ -113,6 +123,7 @@ namespace Cle.Common.TypeSystem
     {
         Invalid,
         Void,
+        Parameter,
         Boolean,
         SignedInteger
     }

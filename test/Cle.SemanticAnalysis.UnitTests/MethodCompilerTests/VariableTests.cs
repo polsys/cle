@@ -262,8 +262,8 @@ public int32 Params(int32 first, bool second) {
             Assert.That(compiledMethod, Is.Not.Null);
 
             AssertDisassembly(compiledMethod, @"
-; #0   int32 = void
-; #1   bool = void
+; #0   int32 = param
+; #1   bool = param
 ; #2   int32 = 3
 BB_0:
     Return #0");
