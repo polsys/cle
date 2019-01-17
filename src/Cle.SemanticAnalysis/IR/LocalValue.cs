@@ -13,14 +13,14 @@ namespace Cle.SemanticAnalysis.IR
         public TypeDefinition Type { get; }
 
         /// <summary>
-        /// Gets the initial value of this local.
+        /// Gets additional information about this local.
         /// </summary>
-        public ConstantValue InitialValue { get; }
+        public LocalFlags Flags { get; }
 
-        public LocalValue(TypeDefinition type, ConstantValue initialValue)
+        public LocalValue(TypeDefinition type, LocalFlags flags)
         {
             Type = type;
-            InitialValue = initialValue;
+            Flags = flags;
         }
     }
 }

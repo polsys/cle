@@ -72,9 +72,9 @@ namespace Cle.SemanticAnalysis.UnitTests
 
             // Get the type and initial value
             var type = ResolveType(lineParts[2]);
-            var value = ResolveValue(lineParts[4]);
+            var isParam = lineParts.Length >= 4 && lineParts[3] == "param";
 
-            method.AddLocal(type, value);
+            method.AddLocal(type, isParam ? LocalFlags.Parameter : LocalFlags.None);
         }
 
         private static void ParseInstruction(string line, CompiledMethod method, BasicBlockBuilder builder)
@@ -86,22 +86,29 @@ namespace Cle.SemanticAnalysis.UnitTests
             if (opcode == Opcode.Return)
             {
                 // Remove leading # before parsing the value number
-                var sourceIndex = int.Parse(lineParts[1].Substring(1));
+                var sourceIndex = ushort.Parse(lineParts[1].Substring(1));
 
                 builder.AppendInstruction(Opcode.Return, sourceIndex, 0, 0);
             }
+            else if (opcode == Opcode.Load)
+            {
+                var value = ResolveValue(lineParts[1]);
+                var destIndex = ushort.Parse(lineParts[3].Substring(1));
+                
+                builder.AppendInstruction(Opcode.Load, value, 0, destIndex);
+            }
             else if (IsUnary(opcode))
             {
-                var sourceIndex = int.Parse(lineParts[1].Substring(1));
-                var destIndex = int.Parse(lineParts[3].Substring(1));
+                var sourceIndex = ushort.Parse(lineParts[1].Substring(1));
+                var destIndex = ushort.Parse(lineParts[3].Substring(1));
 
                 builder.AppendInstruction(opcode, sourceIndex, 0, destIndex);
             }
             else if (IsBinary(opcode))
             {
-                var leftIndex = int.Parse(lineParts[1].Substring(1));
-                var rightIndex = int.Parse(lineParts[3].Substring(1));
-                var destIndex = int.Parse(lineParts[5].Substring(1));
+                var leftIndex = ushort.Parse(lineParts[1].Substring(1));
+                var rightIndex = ushort.Parse(lineParts[3].Substring(1));
+                var destIndex = ushort.Parse(lineParts[5].Substring(1));
 
                 builder.AppendInstruction(opcode, leftIndex, rightIndex, destIndex);
             }
@@ -126,27 +133,19 @@ namespace Cle.SemanticAnalysis.UnitTests
             }
         }
 
-        private static ConstantValue ResolveValue(string valueString)
+        private static ulong ResolveValue(string valueString)
         {
-            if (valueString == "void")
+            if (valueString == "false")
             {
-                return ConstantValue.Void();
-            }
-            else if (valueString == "param")
-            {
-                return ConstantValue.Parameter();
-            }
-            else if (valueString == "false")
-            {
-                return ConstantValue.Bool(false);
+                return 0;
             }
             else if (valueString == "true")
             {
-                return ConstantValue.Bool(true);
+                return 1;
             }
             else if (int.TryParse(valueString, out var intValue))
             {
-                return ConstantValue.SignedInteger(intValue);
+                return (ulong)intValue;
             }
             else
             {

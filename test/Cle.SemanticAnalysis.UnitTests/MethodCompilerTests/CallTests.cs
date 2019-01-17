@@ -22,9 +22,9 @@ private void VoidMethod() {}";
             Assert.That(compiledMethod, Is.Not.Null);
             
             AssertDisassembly(compiledMethod, @"
-; #0   void = void
-; #1   void = void
-; #2   void = void
+; #0   void
+; #1   void
+; #2   void
 BB_0:
     Call Test::Namespace::VoidMethod() -> #0
     Call Test::Namespace::VoidMethod() -> #1
@@ -47,11 +47,13 @@ private bool IsLarger(int32 left, int32 right) { return left > right; }";
             Assert.That(compiledMethod, Is.Not.Null);
             
             AssertDisassembly(compiledMethod, @"
-; #0   int32 = 1
-; #1   int32 = 2
-; #2   bool = void
-; #3   void = void
+; #0   int32
+; #1   int32
+; #2   bool
+; #3   void
 BB_0:
+    Load 1 -> #0
+    Load 2 -> #1
     Call Test::IsLarger(#0, #1) -> #2
     Return #3");
         }
@@ -72,10 +74,12 @@ private bool IsLarger(int32 left, int32 right) { return left > right; }";
             Assert.That(compiledMethod, Is.Not.Null);
             
             AssertDisassembly(compiledMethod, @"
-; #0   int32 = 1
-; #1   int32 = 2
-; #2   bool = void
+; #0   int32
+; #1   int32
+; #2   bool
 BB_0:
+    Load 1 -> #0
+    Load 2 -> #1
     Call Test::IsLarger(#0, #1) -> #2
     Return #2");
         }
@@ -96,11 +100,12 @@ private bool IsLarger(int32 left, int32 right) { return left > right; }";
             Assert.That(compiledMethod, Is.Not.Null);
             
             AssertDisassembly(compiledMethod, @"
-; #0   int32 = param
-; #1   int32 = 1
-; #2   int32 = void
-; #3   bool = void
+; #0   int32 param
+; #1   int32
+; #2   int32
+; #3   bool
 BB_0:
+    Load 1 -> #1
     Add #0 + #0 -> #2
     Call Test::IsLarger(#1, #2) -> #3
     Return #3");

@@ -9,28 +9,28 @@ namespace Cle.SemanticAnalysis.IR
     public readonly struct Instruction : IEquatable<Instruction>
     {
         /// <summary>
-        /// The operation code.
-        /// </summary>
-        public readonly Opcode Operation;
-
-        /// <summary>
         /// The first parameter to the operation.
         /// The interpretation of this field depends on the operation.
         /// </summary>
-        public readonly int Left;
+        public readonly ulong Left;
 
         /// <summary>
         /// The second parameter to the operation.
         /// The interpretation of this field depends on the operation.
         /// </summary>
-        public readonly int Right;
+        public readonly ushort Right;
 
         /// <summary>
         /// The destination local index of the operation.
         /// </summary>
-        public readonly int Destination;
+        public readonly ushort Destination;
 
-        public Instruction(Opcode operation, int left, int right, int destination)
+        /// <summary>
+        /// The operation code.
+        /// </summary>
+        public readonly Opcode Operation;
+
+        public Instruction(Opcode operation, ulong left, ushort right, ushort destination)
         {
             Operation = operation;
             Left = left;
@@ -83,6 +83,11 @@ namespace Cle.SemanticAnalysis.IR
         /// The source and destination operands are ignored.
         /// </summary>
         Nop,
+        /// <summary>
+        /// Loads the constant stored in the left operand to the local indexed by destination.
+        /// The constant bits are interpreted according to the local type.
+        /// </summary>
+        Load,
         /// <summary>
         /// Exit the method and return the value indexed by the left operand.
         /// </summary>

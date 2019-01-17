@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Cle.Common.TypeSystem;
 using JetBrains.Annotations;
 
@@ -46,13 +47,17 @@ namespace Cle.SemanticAnalysis.IR
         }
 
         /// <summary>
-        /// Creates a new local value with the specified type and initial value, and returns its value index.
-        /// The type of <paramref name="initialValue"/> is not checked against <paramref name="type"/>.
+        /// Creates a new local value of the specified type and returns its value index.
         /// </summary>
-        public int AddLocal([NotNull] TypeDefinition type, ConstantValue initialValue)
+        public ushort AddLocal([NotNull] TypeDefinition type, LocalFlags flags)
         {
-            _values.Add(new LocalValue(type, initialValue));
-            return _values.Count - 1;
+            if (_values.Count == ushort.MaxValue)
+            {
+                throw new IndexOutOfRangeException("Out of local indices");
+            }
+
+            _values.Add(new LocalValue(type, flags));
+            return (ushort)(_values.Count - 1);
         }
 
         /// <summary>
@@ -61,10 +66,10 @@ namespace Cle.SemanticAnalysis.IR
         /// <param name="calleeIndex">The body index of the called method.</param>
         /// <param name="parameterLocals">Local indices for the parameters.</param>
         /// <param name="calleeName">The full name of the called method, used for debugging.</param>
-        public int AddCallInfo(int calleeIndex, [NotNull] int[] parameterLocals, [NotNull] string calleeName)
+        public uint AddCallInfo(int calleeIndex, [NotNull] int[] parameterLocals, [NotNull] string calleeName)
         {
             _callInfos.Add(new MethodCallInfo(calleeIndex, parameterLocals, calleeName));
-            return _callInfos.Count - 1;
+            return (uint)(_callInfos.Count - 1);
         }
     }
 }

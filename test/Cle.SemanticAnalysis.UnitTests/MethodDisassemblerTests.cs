@@ -13,11 +13,11 @@ namespace Cle.SemanticAnalysis.UnitTests
             var graphBuilder = new BasicBlockGraphBuilder();
             graphBuilder.GetInitialBlockBuilder().AppendInstruction(Opcode.Return, 0, 0, 0);
             var method = new CompiledMethod("Test::Method") { Body = graphBuilder.Build() };
-            method.AddLocal(SimpleType.Int32, ConstantValue.SignedInteger(17));
-            method.AddLocal(SimpleType.Bool, ConstantValue.Bool(true));
+            method.AddLocal(SimpleType.Int32, LocalFlags.None);
+            method.AddLocal(SimpleType.Bool, LocalFlags.Parameter);
 
-            const string expected = "; #0   int32 = 17\n" +
-                                    "; #1   bool = true\n" +
+            const string expected = "; #0   int32\n" +
+                                    "; #1   bool param\n" +
                                     "BB_0:\n" +
                                     "    Return #0\n\n";
 
@@ -66,6 +66,8 @@ namespace Cle.SemanticAnalysis.UnitTests
 
             var graphBuilder = new BasicBlockGraphBuilder();
             var blockBuilder = graphBuilder.GetInitialBlockBuilder();
+            blockBuilder.AppendInstruction(Opcode.Load, unchecked((ulong)-17), 0, 0);
+            blockBuilder.AppendInstruction(Opcode.Load, 1, 0, 1);
             blockBuilder.AppendInstruction(Opcode.CopyValue, 1, 0, 2);
             blockBuilder.AppendInstruction(Opcode.Add, 1, 0, 2);
             blockBuilder.AppendInstruction(Opcode.Subtract, 1, 0, 2);
@@ -84,8 +86,12 @@ namespace Cle.SemanticAnalysis.UnitTests
             blockBuilder.AppendInstruction(Opcode.Equal, 1, 0, 2);
             blockBuilder.AppendInstruction(Opcode.Return, 2, 0, 0);
             var method = new CompiledMethod("Test::Method") { Body = graphBuilder.Build() };
+            method.AddLocal(SimpleType.Int32, LocalFlags.None);
+            method.AddLocal(SimpleType.Bool, LocalFlags.None);
 
             const string expected = "BB_0:\n" +
+                                    "    Load -17 -> #0\n" +
+                                    "    Load true -> #1\n" +
                                     "    CopyValue #1 -> #2\n" +
                                     "    Add #1 + #0 -> #2\n" +
                                     "    Subtract #1 - #0 -> #2\n" +

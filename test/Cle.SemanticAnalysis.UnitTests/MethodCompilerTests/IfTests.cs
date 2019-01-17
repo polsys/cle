@@ -22,17 +22,20 @@ public bool Contradiction() {
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             
             AssertDisassembly(compiledMethod, @"
-; #0   bool = true
-; #1   bool = false
-; #2   bool = true
+; #0   bool
+; #1   bool
+; #2   bool
 BB_0:
+    Load true -> #0
     BranchIf #0 ==> BB_1
     ==> BB_2
 
 BB_1:
+    Load false -> #1
     Return #1
 
 BB_2:
+    Load true -> #2
     Return #2");
         }
 
@@ -52,17 +55,20 @@ public bool Tautology() {
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             
             AssertDisassembly(compiledMethod, @"
-; #0   bool = true
-; #1   bool = true
-; #2   bool = false
+; #0   bool
+; #1   bool
+; #2   bool
 BB_0:
+    Load true -> #0
     BranchIf #0 ==> BB_1
     ==> BB_2
 
 BB_1:
+    Load true -> #1
     Return #1
 
 BB_2:
+    Load false -> #2
     Return #2");
         }
 
@@ -83,20 +89,24 @@ public bool Comparison() {
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             
             AssertDisassembly(compiledMethod, @"
-; #0   int32 = 42
-; #1   int32 = 100
-; #2   bool = void
-; #3   bool = true
-; #4   bool = false
+; #0   int32
+; #1   int32
+; #2   bool
+; #3   bool
+; #4   bool
 BB_0:
+    Load 42 -> #0
+    Load 100 -> #1
     Less #0 < #1 -> #2
     BranchIf #2 ==> BB_1
     ==> BB_2
 
 BB_1:
+    Load true -> #3
     Return #3
 
 BB_2:
+    Load false -> #4
     Return #4");
         }
 
@@ -117,14 +127,17 @@ public int32 TheAnswer() {
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             
             AssertDisassembly(compiledMethod, @"
-; #0   int32 = 42
-; #1   bool = false
-; #2   int32 = 1
+; #0   int32
+; #1   bool
+; #2   int32
 BB_0:
+    Load 42 -> #0
+    Load false -> #1
     BranchIf #1 ==> BB_1
     ==> BB_2
 
 BB_1:
+    Load 1 -> #2
     CopyValue #2 -> #0
 
 BB_2:
@@ -149,19 +162,23 @@ public int32 ComplexAnswer() {
             Assert.That(diagnostics.Diagnostics, Is.Empty);
 
             AssertDisassembly(compiledMethod, @"
-; #0   int32 = 0
-; #1   bool = true
-; #2   int32 = 42
-; #3   int32 = 41
+; #0   int32
+; #1   bool
+; #2   int32
+; #3   int32
 BB_0:
+    Load 0 -> #0
+    Load true -> #1
     BranchIf #1 ==> BB_1
     ==> BB_2
 
 BB_1:
+    Load 42 -> #2
     CopyValue #2 -> #0
     ==> BB_3
 
 BB_2:
+    Load 41 -> #3
     CopyValue #3 -> #0
 
 BB_3:
@@ -185,26 +202,31 @@ public int32 GetTheAnswer() {
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             
             AssertDisassembly(compiledMethod, @"
-; #0   bool = true
-; #1   bool = false
-; #2   int32 = 0
-; #3   int32 = 42
-; #4   int32 = 41
+; #0   bool
+; #1   bool
+; #2   int32
+; #3   int32
+; #4   int32
 BB_0:
+    Load true -> #0
     BranchIf #0 ==> BB_1
     ==> BB_5
 
 BB_1:
+    Load false -> #1
     BranchIf #1 ==> BB_2
     ==> BB_3
 
 BB_2:
+    Load 0 -> #2
     Return #2
 
 BB_3:
+    Load 42 -> #3
     Return #3
 
 BB_5:
+    Load 41 -> #4
     Return #4");
         }
 
@@ -227,12 +249,13 @@ public int32 GetTheAnswer() {
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             
             AssertDisassembly(compiledMethod, @"
-; #0   bool = false
-; #1   bool = false
-; #2   int32 = 0
-; #3   int32 = 42
-; #4   int32 = 41
+; #0   bool
+; #1   bool
+; #2   int32
+; #3   int32
+; #4   int32
 BB_0:
+    Load false -> #0
     BranchIf #0 ==> BB_1
     ==> BB_2
 
@@ -240,16 +263,20 @@ BB_1:
     ==> BB_6
 
 BB_2:
+    Load false -> #1
     BranchIf #1 ==> BB_3
     ==> BB_4
 
 BB_3:
+    Load 0 -> #2
     Return #2
 
 BB_4:
+    Load 42 -> #3
     Return #3
 
 BB_6:
+    Load 41 -> #4
     Return #4");
         }
 
@@ -273,26 +300,31 @@ public int32 TheAnswer() {
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             
             AssertDisassembly(compiledMethod, @"
-; #0   bool = true
-; #1   int32 = 42
-; #2   bool = false
-; #3   int32 = 41
-; #4   int32 = 0
+; #0   bool
+; #1   int32
+; #2   bool
+; #3   int32
+; #4   int32
 BB_0:
+    Load true -> #0
     BranchIf #0 ==> BB_1
     ==> BB_2
 
 BB_1:
+    Load 42 -> #1
     Return #1
 
 BB_2:
+    Load false -> #2
     BranchIf #2 ==> BB_3
     ==> BB_4
 
 BB_3:
+    Load 41 -> #3
     Return #3
 
 BB_4:
+    Load 0 -> #4
     Return #4");
         }
 
@@ -318,29 +350,35 @@ public int32 TheAnswer() {
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             
             AssertDisassembly(compiledMethod, @"
-; #0   int32 = 0
-; #1   bool = true
-; #2   int32 = 42
-; #3   bool = false
-; #4   int32 = 41
-; #5   int32 = 1
+; #0   int32
+; #1   bool
+; #2   int32
+; #3   bool
+; #4   int32
+; #5   int32
 BB_0:
+    Load 0 -> #0
+    Load true -> #1
     BranchIf #1 ==> BB_1
     ==> BB_2
 
 BB_1:
+    Load 42 -> #2
     CopyValue #2 -> #0
     ==> BB_5
 
 BB_2:
+    Load false -> #3
     BranchIf #3 ==> BB_3
     ==> BB_4
 
 BB_3:
+    Load 41 -> #4
     CopyValue #4 -> #0
     ==> BB_5
 
 BB_4:
+    Load 1 -> #5
     CopyValue #5 -> #0
 
 BB_5:
@@ -365,26 +403,31 @@ public int32 TheAnswer() {
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             
             AssertDisassembly(compiledMethod, @"
-; #0   bool = true
-; #1   int32 = 42
-; #2   bool = false
-; #3   int32 = 41
-; #4   int32 = 0
+; #0   bool
+; #1   int32
+; #2   bool
+; #3   int32
+; #4   int32
 BB_0:
+    Load true -> #0
     BranchIf #0 ==> BB_1
     ==> BB_2
 
 BB_1:
+    Load 42 -> #1
     Return #1
 
 BB_2:
+    Load false -> #2
     BranchIf #2 ==> BB_3
     ==> BB_4
 
 BB_3:
+    Load 41 -> #3
     Return #3
 
 BB_4:
+    Load 0 -> #4
     Return #4");
         }
 

@@ -16,8 +16,9 @@ public bool ReturnTrue() { return true; }";
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             
             AssertDisassembly(compiledMethod, @"
-; #0   bool = true
+; #0   bool
 BB_0:
+    Load true -> #0
     Return #0");
         }
 
@@ -32,8 +33,9 @@ public int32 GetTheAnswer() { return 42; }";
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             
             AssertDisassembly(compiledMethod, @"
-; #0   int32 = 42
+; #0   int32
 BB_0:
+    Load 42 -> #0
     Return #0");
         }
 
@@ -48,8 +50,9 @@ public int32 GetTheAnswer() { return 40 + 2; }";
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             
             AssertDisassembly(compiledMethod, @"
-; #0   int32 = 42
+; #0   int32
 BB_0:
+    Load 42 -> #0
     Return #0");
         }
 
@@ -64,10 +67,12 @@ public int32 GetTheAnswer() { int32 almost = 40; return almost + 2; }";
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             
             AssertDisassembly(compiledMethod, @"
-; #0   int32 = 40
-; #1   int32 = 2
-; #2   int32 = void
+; #0   int32
+; #1   int32
+; #2   int32
 BB_0:
+    Load 40 -> #0
+    Load 2 -> #1
     Add #0 + #1 -> #2
     Return #2");
         }
@@ -83,7 +88,7 @@ public void DoNothing() { return; }";
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             
             AssertDisassembly(compiledMethod, @"
-; #0   void = void
+; #0   void
 BB_0:
     Return #0");
         }
@@ -99,7 +104,7 @@ public void DoNothing() { }";
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             
             AssertDisassembly(compiledMethod, @"
-; #0   void = void
+; #0   void
 BB_0:
     Return #0");
         }
@@ -115,10 +120,11 @@ public void DoNothing() { if (true) { return; } }";
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             
             AssertDisassembly(compiledMethod, @"
-; #0   bool = true
-; #1   void = void
-; #2   void = void
+; #0   bool
+; #1   void
+; #2   void
 BB_0:
+    Load true -> #0
     BranchIf #0 ==> BB_1
     ==> BB_2
 
