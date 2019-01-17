@@ -61,7 +61,7 @@ namespace Cle.SemanticAnalysis
             }
 
             // Store the value in a local
-            return EnsureValueIsStored(value, method);
+            return EnsureValueIsStored(value, method, builder);
         }
 
         private static bool InternalTryCompileExpression(
@@ -110,7 +110,7 @@ namespace Cle.SemanticAnalysis
                     return false;
                 }
 
-                value = Temporary.FromLocal(method.Values[valueNumber].Type, valueNumber);
+                value = Temporary.FromLocal(method.Values[valueNumber].Type, (ushort)valueNumber);
                 return true;
             }
             else if (syntax is UnaryExpressionSyntax unary)
@@ -187,7 +187,7 @@ namespace Cle.SemanticAnalysis
 
             // Emit a call operation
             var callInfoIndex = method.AddCallInfo(declaration.BodyIndex, parameterIndices, declaration.FullName);
-            var resultIndex = method.AddLocal(declaration.ReturnType, ConstantValue.Void());
+            var resultIndex = method.AddLocal(declaration.ReturnType, LocalFlags.None);
             builder.AppendInstruction(Opcode.Call, callInfoIndex, 0, resultIndex);
 
             value = Temporary.FromLocal(declaration.ReturnType, resultIndex);
@@ -224,7 +224,7 @@ namespace Cle.SemanticAnalysis
             if (innerValue.LocalIndex.HasValue)
             {
                 // If the value is already stored in a local, emit a suitable run-time instruction
-                var destination = method.AddLocal(SimpleType.Int32, ConstantValue.Void());
+                var destination = method.AddLocal(SimpleType.Int32, LocalFlags.None);
                 value = Temporary.FromLocal(SimpleType.Int32, destination);
 
                 builder.AppendInstruction(GetUnaryOpcode(expression.Operation), innerValue.LocalIndex.Value, 0, destination);
@@ -243,7 +243,7 @@ namespace Cle.SemanticAnalysis
             if (innerValue.LocalIndex.HasValue)
             {
                 // If the value is already stored in a local, emit a suitable run-time instruction
-                var destination = method.AddLocal(SimpleType.Bool, ConstantValue.Void());
+                var destination = method.AddLocal(SimpleType.Bool, LocalFlags.None);
                 value = Temporary.FromLocal(SimpleType.Bool, destination);
 
                 builder.AppendInstruction(GetUnaryOpcode(expression.Operation), innerValue.LocalIndex.Value, 0, destination);
@@ -346,10 +346,10 @@ namespace Cle.SemanticAnalysis
         {
             // This method assumes that the operation is valid to do with the given arguments
 
-            var leftIndex = EnsureValueIsStored(left, method);
-            var rightIndex = EnsureValueIsStored(right, method);
+            var leftIndex = EnsureValueIsStored(left, method, builder);
+            var rightIndex = EnsureValueIsStored(right, method, builder);
 
-            var destination = method.AddLocal(resultType, ConstantValue.Void());
+            var destination = method.AddLocal(resultType, LocalFlags.None);
             value = Temporary.FromLocal(resultType, destination);
 
             // There are no >, >= or != instructions in the IL, so we have to emulate them
@@ -366,7 +366,7 @@ namespace Cle.SemanticAnalysis
                 case BinaryOperation.NotEqual:
                     // This is a bit more complicated: we have to emit !(a == b).
                     // This means creating another temporary, which will be the final destination
-                    var finalDestination = method.AddLocal(resultType, ConstantValue.Void());
+                    var finalDestination = method.AddLocal(resultType, LocalFlags.None);
                     value = Temporary.FromLocal(resultType, finalDestination);
 
                     builder.AppendInstruction(Opcode.Equal, leftIndex, rightIndex, destination);
@@ -390,9 +390,18 @@ namespace Cle.SemanticAnalysis
             return false;
         }
 
-        private static int EnsureValueIsStored(in Temporary value, CompiledMethod method)
+        private static ushort EnsureValueIsStored(in Temporary value, CompiledMethod method, BasicBlockBuilder builder)
         {
-            return value.LocalIndex ?? method.AddLocal(value.Type, value.ConstantValue);
+            if (value.LocalIndex.HasValue)
+            {
+                return value.LocalIndex.Value;
+            }
+            else
+            {
+                var local = method.AddLocal(value.Type, LocalFlags.None);
+                builder.AppendInstruction(Opcode.Load, value.ConstantValue.AsUnsignedInteger, 0, local);
+                return local;
+            }
         }
 
         /// <summary>
@@ -400,11 +409,11 @@ namespace Cle.SemanticAnalysis
         /// </summary>
         private readonly struct Temporary
         {
-            public readonly int? LocalIndex;
+            public readonly ushort? LocalIndex;
             public readonly TypeDefinition Type;
             public readonly ConstantValue ConstantValue;
 
-            private Temporary(int? localIndex, TypeDefinition type, ConstantValue constantValue)
+            private Temporary(ushort? localIndex, TypeDefinition type, ConstantValue constantValue)
             {
                 LocalIndex = localIndex;
                 Type = type;
@@ -416,7 +425,7 @@ namespace Cle.SemanticAnalysis
                 return new Temporary(null, type, value);
             }
 
-            public static Temporary FromLocal(TypeDefinition type, int localIndex)
+            public static Temporary FromLocal(TypeDefinition type, ushort localIndex)
             {
                 return new Temporary(localIndex, type, ConstantValue.Void());
             }

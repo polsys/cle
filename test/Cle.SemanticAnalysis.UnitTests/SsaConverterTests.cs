@@ -14,11 +14,14 @@ namespace Cle.SemanticAnalysis.UnitTests
             // a = 2;
             // return a;
             const string source = @"
-; #0   int32 = 0
-; #1   int32 = 1
-; #2   int32 = 2
+; #0   int32
+; #1   int32
+; #2   int32
 BB_0:
+    Load 0 -> #0
+    Load 1 -> #1
     CopyValue #1 -> #0
+    Load 2 -> #2
     CopyValue #2 -> #0
     Return #0
 ";
@@ -26,10 +29,13 @@ BB_0:
             var result = new SsaConverter().ConvertToSsa(original);
 
             const string expected = @"
-; #0   int32 = 0
-; #1   int32 = 1
-; #2   int32 = 2
+; #0   int32
+; #1   int32
+; #2   int32
 BB_0:
+    Load 0 -> #0
+    Load 1 -> #1
+    Load 2 -> #2
     Return #2
 ";
             AssertDisassembly(result, expected);
@@ -44,10 +50,10 @@ BB_0:
             //     return c - a;
             // }
             const string source = @"
-; #0   int32 = param
-; #1   int32 = param
-; #2   int32 = void
-; #3   int32 = void
+; #0   int32 param
+; #1   int32 param
+; #2   int32
+; #3   int32
 BB_0:
     Add #0 + #1 -> #2
     Subtract #2 - #0 -> #3
@@ -70,7 +76,7 @@ BB_0:
             //     return a;
             // }
             const string source = @"
-; #0   int32 = param
+; #0   int32 param
 BB_0:
     Multiply #0 * #0 -> #0
     Add #0 + #0 -> #0
@@ -80,9 +86,9 @@ BB_0:
             var result = new SsaConverter().ConvertToSsa(original);
 
             const string expected = @"
-; #0   int32 = param
-; #1   int32 = void
-; #2   int32 = void
+; #0   int32 param
+; #1   int32
+; #2   int32
 BB_0:
     Multiply #0 * #0 -> #1
     Add #1 + #1 -> #2

@@ -11,14 +11,14 @@ namespace Cle.SemanticAnalysis.UnitTests
         {
             var method = new CompiledMethod("Test::Method");
 
-            Assert.That(method.AddLocal(SimpleType.Int32, ConstantValue.SignedInteger(1)), Is.EqualTo(0));
-            Assert.That(method.AddLocal(SimpleType.Int32, ConstantValue.SignedInteger(-17)), Is.EqualTo(1));
+            Assert.That(method.AddLocal(SimpleType.Int32, LocalFlags.None), Is.EqualTo(0));
+            Assert.That(method.AddLocal(SimpleType.Int32, LocalFlags.Parameter), Is.EqualTo(1));
 
             Assert.That(method.Values, Has.Exactly(2).Items);
             Assert.That(method.Values[0].Type, Is.EqualTo(SimpleType.Int32));
-            Assert.That(method.Values[0].InitialValue.AsSignedInteger, Is.EqualTo(1));
+            Assert.That(method.Values[0].Flags, Is.EqualTo(LocalFlags.None));
             Assert.That(method.Values[1].Type, Is.EqualTo(SimpleType.Int32));
-            Assert.That(method.Values[1].InitialValue.AsSignedInteger, Is.EqualTo(-17));
+            Assert.That(method.Values[1].Flags, Is.EqualTo(LocalFlags.Parameter));
         }
 
         [Test]
@@ -26,14 +26,14 @@ namespace Cle.SemanticAnalysis.UnitTests
         {
             var method = new CompiledMethod("Test::Method");
 
-            Assert.That(method.AddLocal(SimpleType.Bool, ConstantValue.Bool(true)), Is.EqualTo(0));
-            Assert.That(method.AddLocal(SimpleType.Bool, ConstantValue.Bool(false)), Is.EqualTo(1));
+            Assert.That(method.AddLocal(SimpleType.Bool, LocalFlags.None), Is.EqualTo(0));
+            Assert.That(method.AddLocal(SimpleType.Bool, LocalFlags.Parameter), Is.EqualTo(1));
 
             Assert.That(method.Values, Has.Exactly(2).Items);
             Assert.That(method.Values[0].Type, Is.EqualTo(SimpleType.Bool));
-            Assert.That(method.Values[0].InitialValue.AsBool, Is.EqualTo(true));
+            Assert.That(method.Values[0].Flags, Is.EqualTo(LocalFlags.None));
             Assert.That(method.Values[1].Type, Is.EqualTo(SimpleType.Bool));
-            Assert.That(method.Values[1].InitialValue.AsBool, Is.EqualTo(false));
+            Assert.That(method.Values[1].Flags, Is.EqualTo(LocalFlags.Parameter));
         }
     }
 }

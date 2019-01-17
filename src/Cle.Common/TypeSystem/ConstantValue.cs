@@ -32,6 +32,12 @@ namespace Cle.Common.TypeSystem
         public long AsSignedInteger => (long)_data;
 
         /// <summary>
+        /// Gets the value of this constant as an unsigned integer.
+        /// <see cref="Type"/> is not checked.
+        /// </summary>
+        public ulong AsUnsignedInteger => _data;
+
+        /// <summary>
         /// Creates a new boolean constant with the specified value.
         /// </summary>
         public static ConstantValue Bool(bool value)

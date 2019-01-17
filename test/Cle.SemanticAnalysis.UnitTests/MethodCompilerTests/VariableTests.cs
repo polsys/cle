@@ -20,9 +20,10 @@ public void DoNothing() {
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             
             AssertDisassembly(compiledMethod, @"
-; #0   int32 = 7
-; #1   void = void
+; #0   int32
+; #1   void
 BB_0:
+    Load 7 -> #0
     CopyValue #0 -> #0
     Return #1");
         }
@@ -42,10 +43,12 @@ public void DoNothing() {
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             
             AssertDisassembly(compiledMethod, @"
-; #0   int32 = 7
-; #1   int32 = 8
-; #2   void = void
+; #0   int32
+; #1   int32
+; #2   void
 BB_0:
+    Load 7 -> #0
+    Load 8 -> #1
     CopyValue #1 -> #0
     Return #2");
         }
@@ -66,10 +69,11 @@ public void DoNothing() {
             
             // void will be used for the initial value
             AssertDisassembly(compiledMethod, @"
-; #0   int32 = 7
-; #1   int32 = void
-; #2   void = void
+; #0   int32
+; #1   int32
+; #2   void
 BB_0:
+    Load 7 -> #0
     CopyValue #0 -> #1
     Return #2");
         }
@@ -214,10 +218,12 @@ public void NameAppearsTwice() {
             Assert.That(diagnostics.Diagnostics, Is.Empty);
 
             AssertDisassembly(compiledMethod, @"
-; #0   int32 = 7
-; #1   int32 = 8
-; #2   void = void
+; #0   int32
+; #1   int32
+; #2   void
 BB_0:
+    Load 7 -> #0
+    Load 8 -> #1
     Return #2");
         }
 
@@ -241,10 +247,12 @@ public void NameAppearsTwice() {
             Assert.That(diagnostics.Diagnostics, Is.Empty);
 
             AssertDisassembly(compiledMethod, @"
-; #0   int32 = 7
-; #1   int32 = 8
-; #2   void = void
+; #0   int32
+; #1   int32
+; #2   void
 BB_0:
+    Load 7 -> #0
+    Load 8 -> #1
     Return #2");
         }
 
@@ -262,10 +270,11 @@ public int32 Params(int32 first, bool second) {
             Assert.That(compiledMethod, Is.Not.Null);
 
             AssertDisassembly(compiledMethod, @"
-; #0   int32 = param
-; #1   bool = param
-; #2   int32 = 3
+; #0   int32 param
+; #1   bool param
+; #2   int32
 BB_0:
+    Load 3 -> #2
     Return #0");
         }
 

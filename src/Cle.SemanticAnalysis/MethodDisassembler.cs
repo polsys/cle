@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using Cle.Common.TypeSystem;
 using Cle.SemanticAnalysis.IR;
 using JetBrains.Annotations;
 
@@ -20,7 +21,8 @@ namespace Cle.SemanticAnalysis
             for (var i = 0; i < method.Values.Count; i++)
             {
                 var local = method.Values[i];
-                outputBuilder.AppendLine($"; #{i,-3} {local.Type.TypeName} = {local.InitialValue}");
+                var flags = local.Flags.HasFlag(LocalFlags.Parameter) ? " param" : string.Empty;
+                outputBuilder.AppendLine($"; #{i,-3} {local.Type.TypeName}{flags}");
             }
 
             // Then write the basic block graph
@@ -73,7 +75,7 @@ namespace Cle.SemanticAnalysis
                             outputBuilder.AppendLine($" #{instruction.Left} ==> BB_{block.AlternativeSuccessor}");
                             break;
                         case Opcode.Call:
-                            var callInfo = method.CallInfos[instruction.Left];
+                            var callInfo = method.CallInfos[(int)instruction.Left];
                             outputBuilder.Append($" {callInfo.CalleeFullName}(");
                             for (var i = 0; i < callInfo.ParameterIndices.Length; i++)
                             {
@@ -106,6 +108,9 @@ namespace Cle.SemanticAnalysis
                             break;
                         case Opcode.LessOrEqual:
                             AppendBinaryParameters(instruction, "<=", outputBuilder);
+                            break;
+                        case Opcode.Load:
+                            AppendLoadParameters(instruction, method, outputBuilder);
                             break;
                         case Opcode.Return:
                             outputBuilder.AppendLine($" #{instruction.Left}");
@@ -140,6 +145,27 @@ namespace Cle.SemanticAnalysis
         private static void AppendBinaryParameters(in Instruction instruction, string op, StringBuilder outputBuilder)
         {
             outputBuilder.AppendLine($" #{instruction.Left} {op} #{instruction.Right} -> #{instruction.Destination}");
+        }
+
+        private static void AppendLoadParameters(in Instruction instruction, CompiledMethod method, StringBuilder outputBuilder)
+        {
+            var type = method.Values[instruction.Destination].Type;
+
+            outputBuilder.Append(" ");
+            if (type.Equals(SimpleType.Bool))
+            {
+                outputBuilder.Append(instruction.Left == 0 ? "false" : "true");
+            }
+            else if (type.Equals(SimpleType.Int32))
+            {
+                outputBuilder.Append((int)instruction.Left);
+            }
+            else
+            {
+                outputBuilder.Append("???");
+            }
+
+            outputBuilder.AppendLine(" -> #" + instruction.Destination);
         }
     }
 }

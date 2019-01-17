@@ -150,7 +150,7 @@ namespace Cle.SemanticAnalysis
             for (var i = 0; i < _declaration.ParameterTypes.Count; i++)
             {
                 var paramSyntax = _syntaxTree.Parameters[i];
-                var paramIndex = _methodInProgress.AddLocal(_declaration.ParameterTypes[i], ConstantValue.Parameter());
+                var paramIndex = _methodInProgress.AddLocal(_declaration.ParameterTypes[i], LocalFlags.Parameter);
 
                 if (!_variableMap.TryAddVariable(paramSyntax.Name, paramIndex))
                 {
@@ -177,7 +177,7 @@ namespace Cle.SemanticAnalysis
                 // Others should fail
                 if (_declaration.ReturnType.Equals(SimpleType.Void))
                 {
-                    var voidIndex = _methodInProgress.AddLocal(SimpleType.Void, ConstantValue.Void());
+                    var voidIndex = _methodInProgress.AddLocal(SimpleType.Void, LocalFlags.None);
                     finalBlockBuilder.AppendInstruction(Opcode.Return, voidIndex, 0, 0);
                 }
                 else
@@ -285,7 +285,7 @@ namespace Cle.SemanticAnalysis
                 return false;
 
             // Emit a copy operation
-            builder.AppendInstruction(Opcode.CopyValue, sourceIndex, 0, targetIndex);
+            builder.AppendInstruction(Opcode.CopyValue, (ushort)sourceIndex, 0, (ushort)targetIndex);
             return true;
         }
 
@@ -305,7 +305,7 @@ namespace Cle.SemanticAnalysis
             }
 
             // Compile the 'then' branch
-            var thenBuilder = builder.CreateBranch(conditionValue);
+            var thenBuilder = builder.CreateBranch((ushort)conditionValue);
             if (!TryCompileBlock(ifSyntax.ThenBlockSyntax, thenBuilder, out thenBuilder, out var thenReturns))
             {
                 return false;
@@ -376,7 +376,7 @@ namespace Cle.SemanticAnalysis
             // Then compile the body.
             // The return guarantee is not propagated up as we don't know whether the loop will ever be entered.
             // TODO: Recognizing compile-time constant condition
-            var bodyBuilder = conditionBuilder.CreateBranch(conditionValue);
+            var bodyBuilder = conditionBuilder.CreateBranch((ushort)conditionValue);
             if (!TryCompileBlock(whileSyntax.BodySyntax, bodyBuilder, out bodyBuilder, out var _))
             {
                 return false;
@@ -402,7 +402,7 @@ namespace Cle.SemanticAnalysis
                 // Void return: verify that the method really returns void, then add a void local to return
                 if (_declaration.ReturnType.Equals(SimpleType.Void))
                 {
-                    returnValueNumber = _methodInProgress.AddLocal(SimpleType.Void, ConstantValue.Void());
+                    returnValueNumber = _methodInProgress.AddLocal(SimpleType.Void, LocalFlags.None);
                 }
                 else
                 {
@@ -421,7 +421,7 @@ namespace Cle.SemanticAnalysis
             if (returnValueNumber == -1)
                 return false;
 
-            builder.AppendInstruction(Opcode.Return, returnValueNumber, 0, 0);
+            builder.AppendInstruction(Opcode.Return, (ushort)returnValueNumber, 0, 0);
             return true;
         }
 
@@ -452,8 +452,8 @@ namespace Cle.SemanticAnalysis
                 var source = localIndex;
 
                 // Don't bother figuring out a correct initial value, it won't be used anyways
-                localIndex = _methodInProgress.AddLocal(type, ConstantValue.Void());
-                builder.AppendInstruction(Opcode.CopyValue, source, 0, localIndex);
+                localIndex = _methodInProgress.AddLocal(type, LocalFlags.None);
+                builder.AppendInstruction(Opcode.CopyValue, (ushort)source, 0, (ushort)localIndex);
             }
 
             // Add it to the variable map (unless the name is already in use)

@@ -73,7 +73,7 @@ namespace Cle.SemanticAnalysis.IR
         /// Appends an instruction with the given parameters.
         /// If this block already has a defined exit, does nothing.
         /// </summary>
-        public void AppendInstruction(Opcode opcode, int left, int right, int destination)
+        public void AppendInstruction(Opcode opcode, ulong left, ushort right, ushort destination)
         {
             if (HasDefinedExitBehavior)
                 return;
@@ -104,7 +104,7 @@ namespace Cle.SemanticAnalysis.IR
         /// This method may be called if a successor is set, but not if the block already ends in a return or a branch.
         /// </summary>
         /// <param name="conditionValueIndex">The value index of the branch condition.</param>
-        public BasicBlockBuilder CreateBranch(int conditionValueIndex)
+        public BasicBlockBuilder CreateBranch(ushort conditionValueIndex)
         {
             if (Instructions.Count > 0 && (Instructions[Instructions.Count - 1].Operation == Opcode.Return ||
                                            Instructions[Instructions.Count - 1].Operation == Opcode.BranchIf))

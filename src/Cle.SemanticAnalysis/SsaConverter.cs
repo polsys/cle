@@ -31,7 +31,7 @@ namespace Cle.SemanticAnalysis
         private CompiledMethod _newMethod;
 
         // Indexed by [original variable index, basic block index], values are offset by 1 so that 0 == undefined
-        private int[][] _ssaValues;
+        private ushort[][] _ssaValues;
 
         /// <summary>
         /// Returns a new <see cref="CompiledMethod"/> instance equivalent to the original
@@ -47,15 +47,15 @@ namespace Cle.SemanticAnalysis
             // Reset the per-conversion data structures
             _originalMethod = method;
             _newMethod = new CompiledMethod(_originalMethod.FullName);
-            _ssaValues = new int[method.Values.Count][];
+            _ssaValues = new ushort[method.Values.Count][];
 
-            // Create value numbers for parameters and other locals with initial value
-            for (var localIndex = 0; localIndex < method.Values.Count; localIndex++)
+            // Create value numbers for parameters
+            for (var localIndex = (ushort)0; localIndex < method.Values.Count; localIndex++)
             {
                 var local = method.Values[localIndex];
-                if (!local.InitialValue.Equals(ConstantValue.Void()))
+                if (local.Flags.HasFlag(LocalFlags.Parameter))
                 {
-                    WriteVariable(localIndex, 0, CreateValueNumber(local.Type, local.InitialValue));
+                    WriteVariable(localIndex, 0, CreateValueNumber(local.Type, local.Flags));
                 }
             }
             
@@ -93,9 +93,19 @@ namespace Cle.SemanticAnalysis
                     throw new NotImplementedException("Calls");
                 }
 
+                // Loads must be handled separately as Left is a constant value, not a value number
+                if (inst.Operation == Opcode.Load)
+                {
+                    var dest = CreateValueNumber(_originalMethod.Values[inst.Destination].Type, LocalFlags.None);
+                    WriteVariable(inst.Destination, blockIndex, dest);
+                    builder.AppendInstruction(Opcode.Load, inst.Left, 0, dest);
+
+                    continue;
+                }
+
                 // Get SSA values for the operands
-                var left = ReadVariable(inst.Left, blockIndex);
-                var right = HasRightOperand(inst.Operation) ? ReadVariable(inst.Right, blockIndex) : 0;
+                var left = ReadVariable((ushort)inst.Left, blockIndex);
+                var right = HasRightOperand(inst.Operation) ? ReadVariable(inst.Right, blockIndex) : (ushort)0;
 
                 // CopyValue instructions now become simple SSA name updates, while others are still emitted
                 if (inst.Operation == Opcode.CopyValue)
@@ -105,10 +115,10 @@ namespace Cle.SemanticAnalysis
                 else
                 {
                     // If the instruction produces a new value, we need an SSA number for it
-                    var dest = 0;
+                    var dest = (ushort)0;
                     if (DoesWriteValue(inst.Operation))
                     {
-                        dest = CreateValueNumber(_originalMethod.Values[inst.Destination].Type, ConstantValue.Void());
+                        dest = CreateValueNumber(_originalMethod.Values[inst.Destination].Type, LocalFlags.None);
                         WriteVariable(inst.Destination, blockIndex, dest);
                     }
 
@@ -122,7 +132,7 @@ namespace Cle.SemanticAnalysis
         /// </summary>
         /// <param name="variableIndex">The original local variable index.</param>
         /// <param name="block">The basic block index.</param>
-        private int ReadVariable(int variableIndex, int block)
+        private ushort ReadVariable(ushort variableIndex, int block)
         {
             // Value of 0 or completely unset means that the local is not written to in this block
             var localResult = _ssaValues[variableIndex]?[block] ?? 0;
@@ -130,7 +140,7 @@ namespace Cle.SemanticAnalysis
             if (localResult > 0)
             {
                 // We have a local value number
-                return localResult - 1;
+                return (ushort)(localResult - 1);
             }
             else
             {
@@ -144,25 +154,25 @@ namespace Cle.SemanticAnalysis
         /// <param name="variableIndex">The original local variable index.</param>
         /// <param name="block">The basic block index.</param>
         /// <param name="newValue">The associated SSA name.</param>
-        private void WriteVariable(int variableIndex, int block, int newValue)
+        private void WriteVariable(ushort variableIndex, int block, ushort newValue)
         {
             // The values are stored in an on-demand created jagged array to save a bit of space
             if (_ssaValues[variableIndex] is null)
             {
                 Debug.Assert(_originalMethod.Body != null);
-                _ssaValues[variableIndex] = new int[_originalMethod.Body.BasicBlocks.Count];
+                _ssaValues[variableIndex] = new ushort[_originalMethod.Body.BasicBlocks.Count];
             }
 
             // The values are offset by 1 to distinguish uninitialized values
-            _ssaValues[variableIndex][block] = newValue + 1;
+            _ssaValues[variableIndex][block] = (ushort)(newValue + 1);
         }
 
         /// <summary>
-        /// Creates a new local value with the given type and initial value, and returns its value number.
+        /// Creates a new local value with the given type and flags, and returns its value number.
         /// </summary>
-        private int CreateValueNumber(TypeDefinition type, ConstantValue initialValue)
+        private ushort CreateValueNumber(TypeDefinition type, LocalFlags flags)
         {
-            return _newMethod.AddLocal(type, initialValue);
+            return _newMethod.AddLocal(type, flags);
         }
 
         /// <summary>

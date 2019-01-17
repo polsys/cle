@@ -20,11 +20,12 @@ public bool Stupid() {
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             
             AssertDisassembly(compiledMethod, @"
-; #0   bool = true
-; #1   bool = false
+; #0   bool
+; #1   bool
 BB_0:
 
 BB_1:
+    Load true -> #0
     BranchIf #0 ==> BB_2
     ==> BB_3
 
@@ -32,6 +33,7 @@ BB_2:
     ==> BB_1
 
 BB_3:
+    Load false -> #1
     Return #1");
         }
 
@@ -53,13 +55,15 @@ public bool Stupid() {
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             
             AssertDisassembly(compiledMethod, @"
-; #0   bool = false
-; #1   bool = void
-; #2   bool = false
+; #0   bool
+; #1   bool
+; #2   bool
 BB_0:
+    Load false -> #0
     CopyValue #0 -> #1
 
 BB_1:
+    Load false -> #2
     BranchIf #2 ==> BB_2
     ==> BB_5
 
