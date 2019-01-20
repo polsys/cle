@@ -4,7 +4,7 @@ Statements are the building blocks of Clé programs.
 Each statement is an action.
 In contrast with expressions, they do not produce values and they appear standalone.
 
-There are several kinds of statements, described in subsection below.
+There are several kinds of statements, described in subsections below.
 Some statements end in a semicolon while blocks and statements with a block end in a closing brace.
 
 

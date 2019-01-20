@@ -32,5 +32,5 @@ Specify the `--help` option for more information.
 
 ## Contributing
 As this is a personal hobby project, I'm not really expecting contributions, but feel free to tinker with the code and share your work!
-Once past the initial bringup, I'll work in the open using Github issues and PRs, both for fun and to make the design history visible.
+Once past the initial bringup, I'll work in the open using GitHub issues and PRs, both for fun and to make the design history visible.
 

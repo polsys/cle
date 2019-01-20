@@ -63,6 +63,7 @@ The following operators accept integer operands and are of integer type:
   The right-hand expression must not be equal to zero, or a compile- or run-time error occurs.
   The division always rounds toward zero.
 - `%`, arithmetic remainder.
+  The result has the same sign as the left operand.
   The right-hand expression must not equal zero.
   Additionally, it may not equal `-1` when the left-hand expression is equal to the smallest representable `int32`/`int64`.
   In either case, the error behavior is the same as with division.
@@ -90,7 +91,7 @@ The comparison operators `==` and `!=` accept both integer and Boolean values an
 All binary operators are left associative.
 The operators have the following precedence, from highest (evaluated first) to lowest (evaluated last):
 ```
-- ! ~
+unary - ! ~
 * / %
 + -
 << >>
