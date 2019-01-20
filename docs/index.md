@@ -7,10 +7,10 @@ If you know C#, you will be immediately familiar; the language is also inspired 
 This is an almost rigorous reference for the language.
 
 * [The design philosophy](language-spec/design-philosophy.md)
-* Compilation and modules
-* Types
-* Statements
+* [Compilation and modules](language-spec/compilation.md)
+* [Types](language-spec/types.md)
+* [Statements](language-spec/statements.md)
 * [Expressions](language-spec/expressions.md)
-* Attributes
+* [Attributes](language-spec/attributes.md)
 
 More documentation is to be added later.
