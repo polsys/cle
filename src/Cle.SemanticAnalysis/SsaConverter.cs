@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using Cle.Common.TypeSystem;
 using Cle.SemanticAnalysis.IR;
@@ -29,9 +30,14 @@ namespace Cle.SemanticAnalysis
     {
         private CompiledMethod _originalMethod;
         private CompiledMethod _newMethod;
+        private BasicBlockGraphBuilder _blockGraphBuilder;
 
         // Indexed by [original variable index, basic block index], values are offset by 1 so that 0 == undefined
         private ushort[][] _ssaValues;
+
+        // Indexed by basic block index
+        private bool[] _isSealed;
+        private int[] _predecessorsSet;
 
         /// <summary>
         /// Returns a new <see cref="CompiledMethod"/> instance equivalent to the original
@@ -47,7 +53,12 @@ namespace Cle.SemanticAnalysis
             // Reset the per-conversion data structures
             _originalMethod = method;
             _newMethod = new CompiledMethod(_originalMethod.FullName);
+
+            // TODO: Pooling? Resizing?
             _ssaValues = new ushort[method.Values.Count][];
+            var blockCount = method.Body.BasicBlocks.Count;
+            _predecessorsSet = new int[blockCount];
+            _isSealed = new bool[blockCount];
 
             // Create value numbers for parameters
             for (var localIndex = (ushort)0; localIndex < method.Values.Count; localIndex++)
@@ -58,17 +69,18 @@ namespace Cle.SemanticAnalysis
                     WriteVariable(localIndex, 0, CreateValueNumber(local.Type, local.Flags));
                 }
             }
-            
+
+            // TODO: Create block builders here because Phis may be created out of order
+
             // Convert each basic block
-            var blockGraphBuilder = new BasicBlockGraphBuilder();
-            if (method.Body.BasicBlocks.Count > 1)
+            _blockGraphBuilder = new BasicBlockGraphBuilder();
+            for (var blockIndex = 0; blockIndex < method.Body.BasicBlocks.Count; blockIndex++)
             {
-                throw new NotImplementedException("Multiple BBs");
+                ConvertBlock(blockIndex, _blockGraphBuilder.GetNewBasicBlock());
             }
-            ConvertBlock(0, blockGraphBuilder.GetNewBasicBlock());
 
             // Return the converted method
-            _newMethod.Body = blockGraphBuilder.Build();
+            _newMethod.Body = _blockGraphBuilder.Build();
             return _newMethod;
         }
 
@@ -86,6 +98,10 @@ namespace Cle.SemanticAnalysis
             if (block is null)
                 return;
 
+            // If possible, seal this block
+            TrySealBlock(blockIndex);
+
+            // Perform value renaming on the instructions
             foreach (var inst in block.Instructions)
             {
                 if (inst.Operation == Opcode.Call)
@@ -112,6 +128,12 @@ namespace Cle.SemanticAnalysis
                 {
                     WriteVariable(inst.Destination, blockIndex, left);
                 }
+                else if (inst.Operation == Opcode.BranchIf)
+                {
+                    // We do not use CreateBranch because we override the target block.
+                    // AlternativeSuccessor is set after this loop.
+                    builder.AppendInstruction(Opcode.BranchIf, left, 0, 0);
+                }
                 else
                 {
                     // If the instruction produces a new value, we need an SSA number for it
@@ -125,17 +147,32 @@ namespace Cle.SemanticAnalysis
                     builder.AppendInstruction(inst.Operation, left, right, dest);
                 }
             }
+
+            // Now this block is filled, and may have successors.
+            // Update the predecessors list to match this.
+            if (block.DefaultSuccessor != -1)
+            {
+                builder.SetSuccessor(block.DefaultSuccessor);
+                _predecessorsSet[block.DefaultSuccessor]++;
+                TrySealBlock(blockIndex);
+            }
+            if (block.AlternativeSuccessor != -1)
+            {
+                builder.SetAlternativeSuccessor(block.AlternativeSuccessor);
+                _predecessorsSet[block.AlternativeSuccessor]++;
+                TrySealBlock(blockIndex);
+            }
         }
 
         /// <summary>
         /// Returns the SSA name for the given variable in the specified block.
         /// </summary>
         /// <param name="variableIndex">The original local variable index.</param>
-        /// <param name="block">The basic block index.</param>
-        private ushort ReadVariable(ushort variableIndex, int block)
+        /// <param name="blockIndex">The basic block index.</param>
+        private ushort ReadVariable(ushort variableIndex, int blockIndex)
         {
             // Value of 0 or completely unset means that the local is not written to in this block
-            var localResult = _ssaValues[variableIndex]?[block] ?? 0;
+            var localResult = _ssaValues[variableIndex]?[blockIndex] ?? 0;
 
             if (localResult > 0)
             {
@@ -144,7 +181,40 @@ namespace Cle.SemanticAnalysis
             }
             else
             {
-                throw new NotImplementedException("Global value numbers");
+                Debug.Assert(_originalMethod.Body != null);
+                var block = _originalMethod.Body.BasicBlocks[blockIndex];
+                Debug.Assert(block != null);
+
+                if (!_isSealed[blockIndex])
+                {
+                    // Incomplete CFG
+                    throw new NotImplementedException("Incomplete CFGs");
+                }
+                else if (block.Predecessors.Count == 1)
+                {
+                    // The trivial case: no phi needed
+                    return ReadVariable(variableIndex, block.Predecessors[0]);
+                }
+                else
+                {
+                    // Complete CFG
+                    // Before recursing, write the Phi value to break cycles
+                    var phiType = _originalMethod.Values[variableIndex].Type;
+                    var phiValueNumber = CreateValueNumber(phiType, LocalFlags.None);
+                    WriteVariable(variableIndex, blockIndex, phiValueNumber);
+
+                    // Add Phi operands
+                    var operands = ImmutableList<int>.Empty;
+                    foreach (var predecessor in block.Predecessors)
+                    {
+                        // TODO: Skip duplicates
+                        operands = operands.Add(ReadVariable(variableIndex, predecessor));
+                    }
+
+                    // Write the Phi
+                    _blockGraphBuilder.GetBuilderByBlockIndex(blockIndex).AddPhi(phiValueNumber, operands);
+                    return phiValueNumber;
+                }
             }
         }
 
@@ -165,6 +235,22 @@ namespace Cle.SemanticAnalysis
 
             // The values are offset by 1 to distinguish uninitialized values
             _ssaValues[variableIndex][block] = (ushort)(newValue + 1);
+        }
+
+        /// <summary>
+        /// Seals the block if it is not yet sealed and has all its predecessors set.
+        /// </summary>
+        private void TrySealBlock(int blockIndex)
+        {
+            Debug.Assert(_originalMethod.Body != null);
+
+            // TODO Perf: making the precondition check inline-able might have a positive impact
+            if (!_isSealed[blockIndex] &&
+                _originalMethod.Body.BasicBlocks[blockIndex]?.Predecessors.Count == _predecessorsSet[blockIndex])
+            {
+                _isSealed[blockIndex] = true;
+                // TODO: Add incomplete Phi operands
+            }
         }
 
         /// <summary>

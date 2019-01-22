@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Text;
 using Cle.Common.TypeSystem;
 using Cle.SemanticAnalysis.IR;
@@ -52,6 +53,26 @@ namespace Cle.SemanticAnalysis.UnitTests
 
             const string expected = "BB_0:\n" +
                                     "    Call Test::Callee(#3, #6, #9, #12) -> #1\n" +
+                                    "    Return #2\n\n";
+
+            var builder = new StringBuilder();
+            MethodDisassembler.DisassembleBody(method, builder);
+            Assert.That(builder.ToString().Replace("\r\n", "\n"), Is.EqualTo(expected));
+        }
+
+        [Test]
+        public void DisassembleBody_single_basic_block_with_phis()
+        {
+            var graphBuilder = new BasicBlockGraphBuilder();
+            var blockBuilder = graphBuilder.GetInitialBlockBuilder();
+            blockBuilder.AddPhi(7, ImmutableList<int>.Empty.Add(1));
+            blockBuilder.AddPhi(12, ImmutableList<int>.Empty.AddRange(new[] { 8, 6, 4 }));
+            blockBuilder.AppendInstruction(Opcode.Return, 2, 0, 0);
+            var method = new CompiledMethod("Test::Method") { Body = graphBuilder.Build() };
+
+            const string expected = "BB_0:\n" +
+                                    "    PHI (#1) -> #7\n" +
+                                    "    PHI (#8, #6, #4) -> #12\n" +
                                     "    Return #2\n\n";
 
             var builder = new StringBuilder();

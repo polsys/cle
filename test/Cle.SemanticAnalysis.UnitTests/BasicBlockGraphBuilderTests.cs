@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Immutable;
 using Cle.SemanticAnalysis.IR;
 using NUnit.Framework;
 
@@ -29,6 +31,7 @@ namespace Cle.SemanticAnalysis.UnitTests
             Assert.That(graph.BasicBlocks[0].Instructions[0].Operation, Is.EqualTo(Opcode.Return));
             Assert.That(graph.BasicBlocks[0].DefaultSuccessor, Is.EqualTo(-1));
             Assert.That(graph.BasicBlocks[0].AlternativeSuccessor, Is.EqualTo(-1));
+            Assert.That(graph.BasicBlocks[0].Predecessors, Is.Empty);
         }
 
         [Test]
@@ -57,11 +60,13 @@ namespace Cle.SemanticAnalysis.UnitTests
             Assert.That(graph.BasicBlocks[0].Instructions, Is.Empty);
             Assert.That(graph.BasicBlocks[0].DefaultSuccessor, Is.EqualTo(1));
             Assert.That(graph.BasicBlocks[0].AlternativeSuccessor, Is.EqualTo(-1));
+            Assert.That(graph.BasicBlocks[0].Predecessors, Is.Empty);
 
             Assert.That(graph.BasicBlocks[1].Instructions, Has.Exactly(1).Items);
             Assert.That(graph.BasicBlocks[1].Instructions[0].Operation, Is.EqualTo(Opcode.Return));
             Assert.That(graph.BasicBlocks[1].DefaultSuccessor, Is.EqualTo(-1));
             Assert.That(graph.BasicBlocks[1].AlternativeSuccessor, Is.EqualTo(-1));
+            CollectionAssert.AreEqual(new[] { 0 }, graph.BasicBlocks[1].Predecessors);
         }
 
         [Test]
@@ -96,6 +101,22 @@ namespace Cle.SemanticAnalysis.UnitTests
             Assert.That(graph.BasicBlocks[0].Instructions, Is.Empty);
             Assert.That(graph.BasicBlocks[0].DefaultSuccessor, Is.EqualTo(0));
             Assert.That(graph.BasicBlocks[0].AlternativeSuccessor, Is.EqualTo(-1));
+            CollectionAssert.AreEqual(new[] { 0 }, graph.BasicBlocks[0].Predecessors);
+        }
+
+        [Test]
+        public void GetBuilderByBlockIndex_returns_existent_builders()
+        {
+            var graphBuilder = new BasicBlockGraphBuilder();
+            var first = graphBuilder.GetInitialBlockBuilder();
+            
+            // Out-of-bounds indices are not tolerated
+            Assert.That(() => graphBuilder.GetBuilderByBlockIndex(1), Throws.InstanceOf<ArgumentOutOfRangeException>());
+
+            var second = graphBuilder.GetNewBasicBlock();
+
+            Assert.That(graphBuilder.GetBuilderByBlockIndex(0), Is.SameAs(first));
+            Assert.That(graphBuilder.GetBuilderByBlockIndex(1), Is.SameAs(second));
         }
 
         [Test]
@@ -104,6 +125,7 @@ namespace Cle.SemanticAnalysis.UnitTests
             var blockBuilder = new BasicBlockGraphBuilder().GetInitialBlockBuilder();
 
             Assert.That(() => blockBuilder.SetSuccessor(0), Throws.Nothing);
+            Assert.That(blockBuilder.DefaultSuccessor, Is.EqualTo(0));
             Assert.That(() => blockBuilder.SetSuccessor(0), Throws.InvalidOperationException);
         }
 
@@ -115,6 +137,26 @@ namespace Cle.SemanticAnalysis.UnitTests
 
             Assert.That(() => blockBuilder.SetSuccessor(0), Throws.Nothing);
             Assert.That(blockBuilder.DefaultSuccessor, Is.EqualTo(-1));
+        }
+
+        [Test]
+        public void SetAlternativeSuccessor_cannot_be_called_twice()
+        {
+            var blockBuilder = new BasicBlockGraphBuilder().GetInitialBlockBuilder();
+
+            Assert.That(() => blockBuilder.SetAlternativeSuccessor(0), Throws.Nothing);
+            Assert.That(blockBuilder.AlternativeSuccessor, Is.EqualTo(0));
+            Assert.That(() => blockBuilder.SetAlternativeSuccessor(0), Throws.InvalidOperationException);
+        }
+
+        [Test]
+        public void SetAlternativeSuccessor_does_nothing_if_return_exists()
+        {
+            var blockBuilder = new BasicBlockGraphBuilder().GetInitialBlockBuilder();
+            blockBuilder.AppendInstruction(Opcode.Return, 0, 0, 0);
+
+            Assert.That(() => blockBuilder.SetAlternativeSuccessor(0), Throws.Nothing);
+            Assert.That(blockBuilder.AlternativeSuccessor, Is.EqualTo(-1));
         }
 
         [Test]
@@ -173,14 +215,17 @@ namespace Cle.SemanticAnalysis.UnitTests
 
             Assert.That(graph.BasicBlocks[1].Instructions, Is.Empty);
             Assert.That(graph.BasicBlocks[1].DefaultSuccessor, Is.EqualTo(3));
+            CollectionAssert.AreEqual(new[] { 0 }, graph.BasicBlocks[1].Predecessors);
 
             Assert.That(graph.BasicBlocks[2].Instructions, Is.Empty);
             Assert.That(graph.BasicBlocks[2].DefaultSuccessor, Is.EqualTo(3));
+            CollectionAssert.AreEqual(new[] { 0 }, graph.BasicBlocks[2].Predecessors);
 
             Assert.That(graph.BasicBlocks[3].Instructions, Has.Exactly(1).Items);
             Assert.That(graph.BasicBlocks[3].Instructions[0].Operation, Is.EqualTo(Opcode.Return));
             Assert.That(graph.BasicBlocks[3].DefaultSuccessor, Is.EqualTo(-1));
             Assert.That(graph.BasicBlocks[3].AlternativeSuccessor, Is.EqualTo(-1));
+            CollectionAssert.AreEqual(new[] { 1, 2 }, graph.BasicBlocks[3].Predecessors);
         }
 
         [Test]
@@ -209,11 +254,33 @@ namespace Cle.SemanticAnalysis.UnitTests
 
             Assert.That(graph.BasicBlocks[1].Instructions, Has.Exactly(1).Items);
             Assert.That(graph.BasicBlocks[1].DefaultSuccessor, Is.EqualTo(-1));
+            CollectionAssert.AreEqual(new[] { 0 }, graph.BasicBlocks[1].Predecessors);
 
             Assert.That(graph.BasicBlocks[2].Instructions, Has.Exactly(1).Items);
             Assert.That(graph.BasicBlocks[2].DefaultSuccessor, Is.EqualTo(-1));
+            CollectionAssert.AreEqual(new[] { 0 }, graph.BasicBlocks[2].Predecessors);
 
             Assert.That(graph.BasicBlocks[3], Is.Null);
+        }
+
+        [Test]
+        public void Phis_are_correctly_added()
+        {
+            var graphBuilder = new BasicBlockGraphBuilder();
+            var blockBuilder = graphBuilder.GetInitialBlockBuilder();
+            blockBuilder.AddPhi(4, ImmutableList<int>.Empty.AddRange(new[] { 17, 42 }));
+            blockBuilder.AddPhi(3, ImmutableList<int>.Empty.AddRange(new[] { 6, 4 }));
+            blockBuilder.AppendInstruction(Opcode.Return, 3, 0, 0);
+
+            var graph = graphBuilder.Build();
+
+            Assert.That(graph.BasicBlocks, Has.Exactly(1).Items);
+            Assert.That(graph.BasicBlocks[0].Instructions, Has.Exactly(1).Items);
+            Assert.That(graph.BasicBlocks[0].Phis, Has.Exactly(2).Items);
+            Assert.That(graph.BasicBlocks[0].Phis[0].Destination, Is.EqualTo(4));
+            CollectionAssert.AreEqual(new[] { 17, 42 }, graph.BasicBlocks[0].Phis[0].Operands);
+            Assert.That(graph.BasicBlocks[0].Phis[1].Destination, Is.EqualTo(3));
+            CollectionAssert.AreEqual(new[] { 6, 4 }, graph.BasicBlocks[0].Phis[1].Operands);
         }
 
         [Test]

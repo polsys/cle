@@ -15,6 +15,12 @@ namespace Cle.SemanticAnalysis.IR
         public ImmutableList<Instruction> Instructions { get; }
 
         /// <summary>
+        /// Gets the Phi nodes in this basic block.
+        /// </summary>
+        [NotNull]
+        public ImmutableList<Phi> Phis { get; }
+
+        /// <summary>
         /// Gets the index of the succeeding basic block.
         /// This may be -1 if this basic block ends in a return.
         /// If this basic block ends in a branch, <see cref="AlternativeSuccessor"/> may be used instead.
@@ -27,11 +33,22 @@ namespace Cle.SemanticAnalysis.IR
         /// </summary>
         public int AlternativeSuccessor { get; }
 
-        public BasicBlock(ImmutableList<Instruction> instructions, int defaultSuccessor, int alternativeSuccessor)
+        /// <summary>
+        /// Gets the predecessors of this basic block in an arbitrary order.
+        /// </summary>
+        [NotNull]
+        public ImmutableList<int> Predecessors { get; }
+
+        public BasicBlock([NotNull] ImmutableList<Instruction> instructions,
+            [NotNull] ImmutableList<Phi> phis,
+            int defaultSuccessor, int alternativeSuccessor,
+            [NotNull] ImmutableList<int> predecessors)
         {
             Instructions = instructions;
+            Phis = phis;
             DefaultSuccessor = defaultSuccessor;
             AlternativeSuccessor = alternativeSuccessor;
+            Predecessors = predecessors;
         }
         
         // TODO: Consider implementing equality comparisons (complication: ImmutableList<T> does not override Equals)
