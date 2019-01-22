@@ -38,6 +38,12 @@ namespace Cle.SemanticAnalysis.UnitTests
                 else if (currentLine.StartsWith("BB_"))
                 {
                     // Starting a new basic block
+                    // First finalize the current basic block, if needed, with a fallthrough
+                    if (currentBlockBuilder != null && !currentBlockBuilder.HasDefinedExitBehavior)
+                    {
+                        currentBlockBuilder.SetSuccessor(currentBlockBuilder.Index + 1);
+                    }
+
                     // The line is of form "BB_nnn:" so we have to chop bits off both ends
                     var blockIndex = int.Parse(currentLine.Substring(3, currentLine.Length - 4));
                     
@@ -48,14 +54,21 @@ namespace Cle.SemanticAnalysis.UnitTests
                     }
                     Assert.That(blockIndex, Is.EqualTo(currentBlockBuilder.Index), "Blocks must be specified in order.");
                 }
+                else if (currentLine.StartsWith("==>"))
+                {
+                    // Explicitly set the successor block
+                    // The line is of form "==> BB_nnn"
+                    var blockIndex = int.Parse(currentLine.Substring(7));
+
+                    Assert.That(currentBlockBuilder, Is.Not.Null);
+                    currentBlockBuilder.SetSuccessor(blockIndex);
+                }
                 else
                 {
                     Assert.That(currentBlockBuilder, Is.Not.Null, "No basic block has been started.");
 
                     ParseInstruction(currentLine, method, currentBlockBuilder);
                 }
-
-                // TODO: Default successor behavior (fallthrough, explicit)
             }
 
             method.Body = graphBuilder.Build();
@@ -89,6 +102,14 @@ namespace Cle.SemanticAnalysis.UnitTests
                 var sourceIndex = ushort.Parse(lineParts[1].Substring(1));
 
                 builder.AppendInstruction(Opcode.Return, sourceIndex, 0, 0);
+            }
+            else if (opcode == Opcode.BranchIf)
+            {
+                var sourceIndex = ushort.Parse(lineParts[1].Substring(1));
+                var targetBlockIndex = int.Parse(lineParts[3].Substring(3));
+
+                builder.AppendInstruction(Opcode.BranchIf, sourceIndex, 0, 0);
+                builder.SetAlternativeSuccessor(targetBlockIndex);
             }
             else if (opcode == Opcode.Load)
             {

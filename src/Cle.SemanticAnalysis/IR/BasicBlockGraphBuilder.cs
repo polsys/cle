@@ -40,6 +40,16 @@ namespace Cle.SemanticAnalysis.IR
         }
 
         /// <summary>
+        /// Gets the basic block builder associated with the specified index.
+        /// The builder must already be created.
+        /// </summary>
+        [NotNull]
+        public BasicBlockBuilder GetBuilderByBlockIndex(int blockIndex)
+        {
+            return _builders[blockIndex];
+        }
+
+        /// <summary>
         /// Returns the completed immutable basic block graph.
         /// If the graph is invalid, throws <see cref="InvalidOperationException"/>.
         /// </summary>
@@ -50,8 +60,14 @@ namespace Cle.SemanticAnalysis.IR
                 throw new InvalidOperationException("The basic block graph is empty.");
 
             // Do a marking pass to skip basic blocks with no inbound edges
+            // Also collect the predecessors of each block
             var liveBlocks = new bool[_builders.Count];
-            MarkBlock(0, liveBlocks);
+            var predecessors = new ImmutableList<int>[_builders.Count];
+            for (var i = 0; i < predecessors.Length; i++)
+            {
+                predecessors[i] = ImmutableList<int>.Empty;
+            }
+            MarkBlock(0, liveBlocks, predecessors);
 
             // Construct each marked basic block
             var blocks = ImmutableList<BasicBlock>.Empty.ToBuilder();
@@ -73,14 +89,16 @@ namespace Cle.SemanticAnalysis.IR
 
                 blocks.Add(new BasicBlock(
                     blockBuilder.Instructions.ToImmutable(),
+                    blockBuilder.Phis.ToImmutable(),
                     blockBuilder.DefaultSuccessor,
-                    blockBuilder.AlternativeSuccessor));
+                    blockBuilder.AlternativeSuccessor,
+                    predecessors[i]));
             }
 
             return new BasicBlockGraph(blocks.ToImmutable());
         }
 
-        private void MarkBlock(int blockIndex, bool[] liveBlocks)
+        private void MarkBlock(int blockIndex, bool[] liveBlocks, ImmutableList<int>[] predecessors)
         {
             // If this block has already been visited, continue
             if (liveBlocks[blockIndex])
@@ -98,11 +116,13 @@ namespace Cle.SemanticAnalysis.IR
 
             if (block.DefaultSuccessor >= 0)
             {
-                MarkBlock(block.DefaultSuccessor, liveBlocks);
+                predecessors[block.DefaultSuccessor] = predecessors[block.DefaultSuccessor].Add(blockIndex);
+                MarkBlock(block.DefaultSuccessor, liveBlocks, predecessors);
             }
             if (block.AlternativeSuccessor >= 0)
             {
-                MarkBlock(block.AlternativeSuccessor, liveBlocks);
+                predecessors[block.AlternativeSuccessor] = predecessors[block.AlternativeSuccessor].Add(blockIndex);
+                MarkBlock(block.AlternativeSuccessor, liveBlocks, predecessors);
             }
         }
     }

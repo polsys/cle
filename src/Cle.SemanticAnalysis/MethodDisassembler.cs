@@ -44,6 +44,21 @@ namespace Cle.SemanticAnalysis
                 // Basic block header
                 outputBuilder.AppendLine("BB_" + blockIndex + ":");
 
+                // Phis
+                foreach (var phi in block.Phis)
+                {
+                    outputBuilder.Append(Indent + "PHI (");
+
+                    for (var i = 0; i < phi.Operands.Count; i++)
+                    {
+                        if (i > 0)
+                            outputBuilder.Append(", ");
+                        outputBuilder.Append("#" + phi.Operands[i]);
+                    }
+
+                    outputBuilder.AppendLine(") -> #" + phi.Destination);
+                }
+
                 // Instructions
                 foreach (var instruction in block.Instructions)
                 {

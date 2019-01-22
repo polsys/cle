@@ -14,6 +14,9 @@ namespace Cle.SemanticAnalysis.IR
         [NotNull]
         internal ImmutableList<Instruction>.Builder Instructions { get; } = ImmutableList<Instruction>.Empty.ToBuilder();
 
+        [NotNull]
+        internal ImmutableList<Phi>.Builder Phis { get; } = ImmutableList<Phi>.Empty.ToBuilder();
+
         /// <summary>
         /// Gets the index of this basic block.
         /// </summary>
@@ -82,6 +85,16 @@ namespace Cle.SemanticAnalysis.IR
         }
 
         /// <summary>
+        /// Adds a Phi node with the specified destination local index and source local indices.
+        /// </summary>
+        /// <param name="destination">The local that will receive the merged value from the Phi.</param>
+        /// <param name="operands">The operand locals to the Phi.</param>
+        public void AddPhi(int destination, [NotNull] ImmutableList<int> operands)
+        {
+            Phis.Add(new Phi(destination, operands));
+        }
+
+        /// <summary>
         /// Creates a new basic block builder and sets <see cref="DefaultSuccessor"/> to point to the new basic block.
         /// This method may not be called if the successor is already set.
         /// If this block has defined exit behavior, this only creates a builder and does not set the successor.
@@ -135,6 +148,24 @@ namespace Cle.SemanticAnalysis.IR
                 return;
 
             DefaultSuccessor = index;
+        }
+
+        /// <summary>
+        /// Sets the alternative successor.
+        /// Use <see cref="CreateBranch"/> instead unless you need to override the target block.
+        /// 
+        /// This method may not be called if the alternative successor is already set.
+        /// If the block already has defined exit behavior, this call does nothing.
+        /// </summary>
+        /// <param name="index">The basic block index. This is only checked when the basic block graph is built.</param>
+        public void SetAlternativeSuccessor(int index)
+        {
+            if (AlternativeSuccessor != -1)
+                throw new InvalidOperationException("The alternative successor is already set.");
+            if (HasDefinedExitBehavior)
+                return;
+
+            AlternativeSuccessor = index;
         }
     }
 }
