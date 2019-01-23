@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using Cle.Common.TypeSystem;
@@ -38,6 +39,7 @@ namespace Cle.SemanticAnalysis
         // Indexed by basic block index
         private bool[] _isSealed;
         private int[] _predecessorsSet;
+        private List<(ushort variable, ushort phiValue)>[] _incompletePhis;
 
         /// <summary>
         /// Returns a new <see cref="CompiledMethod"/> instance equivalent to the original
@@ -58,6 +60,7 @@ namespace Cle.SemanticAnalysis
             _ssaValues = new ushort[method.Values.Count][];
             var blockCount = method.Body.BasicBlocks.Count;
             _predecessorsSet = new int[blockCount];
+            _incompletePhis = new List<(ushort, ushort)>[blockCount];
             _isSealed = new bool[blockCount];
 
             // Create value numbers for parameters
@@ -154,13 +157,13 @@ namespace Cle.SemanticAnalysis
             {
                 builder.SetSuccessor(block.DefaultSuccessor);
                 _predecessorsSet[block.DefaultSuccessor]++;
-                TrySealBlock(blockIndex);
+                TrySealBlock(block.DefaultSuccessor);
             }
             if (block.AlternativeSuccessor != -1)
             {
                 builder.SetAlternativeSuccessor(block.AlternativeSuccessor);
                 _predecessorsSet[block.AlternativeSuccessor]++;
-                TrySealBlock(blockIndex);
+                TrySealBlock(block.AlternativeSuccessor);
             }
         }
 
@@ -188,7 +191,18 @@ namespace Cle.SemanticAnalysis
                 if (!_isSealed[blockIndex])
                 {
                     // Incomplete CFG
-                    throw new NotImplementedException("Incomplete CFGs");
+                    // Create a value for the Phi and set the Phi aside to be created when the block is sealed
+                    var phiType = _originalMethod.Values[variableIndex].Type;
+                    var phiValueNumber = CreateValueNumber(phiType, LocalFlags.None);
+                    WriteVariable(variableIndex, blockIndex, phiValueNumber);
+
+                    if (_incompletePhis[blockIndex] is null)
+                    {
+                        _incompletePhis[blockIndex] = new List<(ushort, ushort)>();
+                    }
+                    _incompletePhis[blockIndex].Add((variableIndex, phiValueNumber));
+
+                    return phiValueNumber;
                 }
                 else if (block.Predecessors.Count == 1)
                 {
@@ -201,21 +215,35 @@ namespace Cle.SemanticAnalysis
                     // Before recursing, write the Phi value to break cycles
                     var phiType = _originalMethod.Values[variableIndex].Type;
                     var phiValueNumber = CreateValueNumber(phiType, LocalFlags.None);
+
                     WriteVariable(variableIndex, blockIndex, phiValueNumber);
-
-                    // Add Phi operands
-                    var operands = ImmutableList<int>.Empty;
-                    foreach (var predecessor in block.Predecessors)
-                    {
-                        // TODO: Skip duplicates
-                        operands = operands.Add(ReadVariable(variableIndex, predecessor));
-                    }
-
-                    // Write the Phi
-                    _blockGraphBuilder.GetBuilderByBlockIndex(blockIndex).AddPhi(phiValueNumber, operands);
+                    AddPhiOperands(variableIndex, phiValueNumber, blockIndex);
                     return phiValueNumber;
                 }
             }
+        }
+
+        /// <summary>
+        /// Resolves Phi operands and adds the Phi node.
+        /// </summary>
+        /// <param name="variableIndex"></param>
+        /// <param name="phiValueNumber"></param>
+        /// <param name="blockIndex"></param>
+        private void AddPhiOperands(ushort variableIndex, ushort phiValueNumber, int blockIndex)
+        {
+            Debug.Assert(_originalMethod.Body != null);
+            var block = _originalMethod.Body.BasicBlocks[blockIndex];
+            Debug.Assert(block != null);
+
+            var operands = ImmutableList<int>.Empty.ToBuilder();
+            foreach (var predecessor in block.Predecessors)
+            {
+                // TODO: Skip duplicates
+                operands.Add(ReadVariable(variableIndex, predecessor));
+            }
+
+            // Write the Phi
+            _blockGraphBuilder.GetBuilderByBlockIndex(blockIndex).AddPhi(phiValueNumber, operands.ToImmutable());
         }
 
         /// <summary>
@@ -249,7 +277,15 @@ namespace Cle.SemanticAnalysis
                 _originalMethod.Body.BasicBlocks[blockIndex]?.Predecessors.Count == _predecessorsSet[blockIndex])
             {
                 _isSealed[blockIndex] = true;
-                // TODO: Add incomplete Phi operands
+
+                // Add incomplete Phi operands
+                if (_incompletePhis[blockIndex] != null)
+                {
+                    foreach (var (variable, destination) in _incompletePhis[blockIndex])
+                    {
+                        AddPhiOperands(variable, destination, blockIndex);
+                    }
+                }
             }
         }
 

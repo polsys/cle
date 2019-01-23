@@ -376,6 +376,183 @@ BB_4:
             AssertDisassembly(result, expected);
         }
 
+        [Test]
+        public void Simple_while_loop()
+        {
+            // int32 CountToTen()
+            // {
+            //     int32 result = 0;
+            //     while (result < 10) { result = result + 1; }
+            //     return result;
+            // }
+            const string source = @"
+; #0   int32
+; #1   int32
+; #2   bool
+; #3   int32
+; #4   int32
+BB_0:
+    Load 0 -> #0
+
+BB_1:
+    Load 10 -> #1
+    Less #0 < #1 -> #2
+    BranchIf #2 ==> BB_2
+    ==> BB_3
+
+BB_2:
+    Load 1 -> #3
+    Add #0 + #3 -> #4
+    CopyValue #4 -> #0
+    ==> BB_1
+
+BB_3:
+    Return #0
+";
+            var original = MethodAssembler.Assemble(source, "Test::Method");
+            var result = new SsaConverter().ConvertToSsa(original);
+
+            const string expected = @"
+; #0   int32
+; #1   int32
+; #2   int32
+; #3   bool
+; #4   int32
+; #5   int32
+BB_0:
+    Load 0 -> #0
+
+BB_1:
+    PHI (#0, #5) -> #2
+    Load 10 -> #1
+    Less #2 < #1 -> #3
+    BranchIf #3 ==> BB_2
+    ==> BB_3
+
+BB_2:
+    Load 1 -> #4
+    Add #2 + #4 -> #5
+    ==> BB_1
+
+BB_3:
+    Return #2
+";
+            AssertDisassembly(result, expected);
+        }
+
+        [Test]
+        public void While_loop_where_iteration_variable_has_more_complex_phi()
+        {
+            // int32 CountToTen()
+            // {
+            //     int32 result = 0;
+            //     while (result < 10)
+            //     {
+            //         if (result % 2 == 0) { result = result + 1; }
+            //         else { result = result + 2; }
+            //     }
+            //     return result;
+            // }
+            const string source = @"
+; #0   int32
+; #1   int32
+; #2   bool
+; #3   int32
+; #4   int32
+; #5   int32
+; #6   bool
+; #7   int32
+; #8   int32
+; #9   int32
+; #10  int32
+BB_0:
+    Load 0 -> #0
+
+BB_1:
+    Load 10 -> #1
+    Less #0 < #1 -> #2
+    BranchIf #2 ==> BB_2
+    ==> BB_6
+
+BB_2:
+    Load 2 -> #3
+    Modulo #0 % #3 -> #4
+    Load 0 -> #5
+    Equal #4 == #5 -> #6
+    BranchIf #6 ==> BB_3
+    ==> BB_4
+
+BB_3:
+    Load 1 -> #7
+    Add #0 + #7 -> #8
+    CopyValue #8 -> #0
+    ==> BB_5
+
+BB_4:
+    Load 2 -> #9
+    Add #0 + #9 -> #10
+    CopyValue #10 -> #0
+
+BB_5:
+    ==> BB_1
+
+BB_6:
+    Return #0
+";
+            var original = MethodAssembler.Assemble(source, "Test::Method");
+            var result = new SsaConverter().ConvertToSsa(original);
+
+            const string expected = @"
+; #0   int32
+; #1   int32
+; #2   int32
+; #3   bool
+; #4   int32
+; #5   int32
+; #6   int32
+; #7   bool
+; #8   int32
+; #9   int32
+; #10  int32
+; #11  int32
+; #12  int32
+BB_0:
+    Load 0 -> #0
+
+BB_1:
+    PHI (#0, #12) -> #2
+    Load 10 -> #1
+    Less #2 < #1 -> #3
+    BranchIf #3 ==> BB_2
+    ==> BB_6
+
+BB_2:
+    Load 2 -> #4
+    Modulo #2 % #4 -> #5
+    Load 0 -> #6
+    Equal #5 == #6 -> #7
+    BranchIf #7 ==> BB_3
+    ==> BB_4
+
+BB_3:
+    Load 1 -> #8
+    Add #2 + #8 -> #9
+    ==> BB_5
+
+BB_4:
+    Load 2 -> #10
+    Add #2 + #10 -> #11
+
+BB_5:
+    PHI (#11, #9) -> #12
+    ==> BB_1
+
+BB_6:
+    Return #2
+";
+            AssertDisassembly(result, expected);
+        }
+
         private void AssertDisassembly(CompiledMethod compiledMethod, string expected)
         {
             var builder = new StringBuilder();
