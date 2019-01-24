@@ -72,9 +72,7 @@ namespace Cle.SemanticAnalysis
                     WriteVariable(localIndex, 0, CreateValueNumber(local.Type, local.Flags));
                 }
             }
-
-            // TODO: Create block builders here because Phis may be created out of order
-
+            
             // Convert each basic block
             _blockGraphBuilder = new BasicBlockGraphBuilder();
             for (var blockIndex = 0; blockIndex < method.Body.BasicBlocks.Count; blockIndex++)
@@ -238,8 +236,14 @@ namespace Cle.SemanticAnalysis
             var operands = ImmutableList<int>.Empty.ToBuilder();
             foreach (var predecessor in block.Predecessors)
             {
-                // TODO: Skip duplicates
-                operands.Add(ReadVariable(variableIndex, predecessor));
+                // Skip duplicate operands
+                // This is O(N^2) but N should be small, unless the user creates a horrible if-elseif chain
+                // TODO: Remove the Phi altogether if it has only one operand
+                var operand = ReadVariable(variableIndex, predecessor);
+                if (!operands.Contains(operand))
+                {
+                    operands.Add(operand);
+                }
             }
 
             // Write the Phi

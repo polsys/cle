@@ -553,6 +553,54 @@ BB_6:
             AssertDisassembly(result, expected);
         }
 
+        [Test]
+        public void Phi_operands_are_not_duplicated()
+        {
+            // int32 F(bool p, int32 v)
+            // {
+            //     int32 result = v;
+            //     if (p) { result = v; }
+            //     return result;
+            // }
+            const string source = @"
+; #0   bool param
+; #1   int32 param
+; #2   int32
+BB_0:
+    CopyValue #1 -> #2
+    BranchIf #0 ==> BB_1
+    ==> BB_2
+
+BB_1:
+    CopyValue #1 -> #2
+
+BB_2:
+    Return #2
+";
+            var original = MethodAssembler.Assemble(source, "Test::Method");
+            var result = new SsaConverter().ConvertToSsa(original);
+
+            // Instead of PHI(#1, #1), there should be only PHI(#1).
+            // Ideally, we would remove the Phi completely, but there might be uses of the Phi already.
+            // The current algorithm does not perform such cleanup.
+            // This is better than nothing and a constant-folding pass is free to perform more cleanup.
+            const string expected = @"
+; #0   bool param
+; #1   int32 param
+; #2   int32
+BB_0:
+    BranchIf #0 ==> BB_1
+    ==> BB_2
+
+BB_1:
+
+BB_2:
+    PHI (#1) -> #2
+    Return #2
+";
+            AssertDisassembly(result, expected);
+        }
+
         private void AssertDisassembly(CompiledMethod compiledMethod, string expected)
         {
             var builder = new StringBuilder();
