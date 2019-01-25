@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Cle.Common.TypeSystem;
 using Cle.SemanticAnalysis.IR;
 using JetBrains.Annotations;
@@ -21,6 +22,7 @@ namespace Cle.SemanticAnalysis.UnitTests
             var graphBuilder = new BasicBlockGraphBuilder();
             BasicBlockBuilder currentBlockBuilder = null;
             
+            // Since this class is for testing purposes only, we use brittle and unperformant string splits
             var lines = source.Replace("\r\n", "\n").Split('\n');
             foreach (var rawLine in lines)
             {
@@ -94,8 +96,7 @@ namespace Cle.SemanticAnalysis.UnitTests
         {
             var lineParts = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
             Assert.That(Enum.TryParse<Opcode>(lineParts[0], out var opcode), Is.True, $"Unknown opcode: {lineParts[0]}");
-
-            // TODO: The remaining opcodes
+            
             if (opcode == Opcode.Return)
             {
                 // Remove leading # before parsing the value number
@@ -117,6 +118,25 @@ namespace Cle.SemanticAnalysis.UnitTests
                 var destIndex = ushort.Parse(lineParts[3].Substring(1));
                 
                 builder.AppendInstruction(Opcode.Load, value, 0, destIndex);
+            }
+            else if (opcode == Opcode.Call)
+            {
+                // TODO: Do we need a more realistic and reliable way of emulating function indices?
+                var functionName = lineParts[1].Substring(0, lineParts[1].IndexOf('('));
+                var functionIndex = functionName.GetHashCode();
+
+                var destIndex = ushort.Parse(lineParts[lineParts.Length - 1].Substring(1));
+                var paramListStart = line.IndexOf('(') + 1;
+                var parameterList = line.Substring(paramListStart, line.IndexOf(')') - paramListStart);
+
+                var paramLocals = new List<int>();
+                foreach (var param in parameterList.Split(new[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries))
+                {
+                    paramLocals.Add(int.Parse(param.Substring(1)));
+                }
+
+                builder.AppendInstruction(Opcode.Call,
+                    method.AddCallInfo(functionIndex, paramLocals.ToArray(), functionName),0, destIndex);
             }
             else if (IsUnary(opcode))
             {
