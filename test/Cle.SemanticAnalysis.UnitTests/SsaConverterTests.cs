@@ -98,6 +98,64 @@ BB_0:
         }
 
         [Test]
+        public void Single_basic_block_with_call()
+        {
+            // int32 Caller(int32 a, bool c)
+            // {
+            //     int32 b = a;
+            //     if (c) { b = b * b; }
+            //     return Callee(a, b, b + b);
+            // }
+            const string source = @"
+; #0   int32 param
+; #1   bool param
+; #2   int32
+; #3   int32
+; #4   int32
+; #5   int32
+BB_0:
+    CopyValue #0 -> #2
+    BranchIf #1 ==> BB_1
+    ==> BB_2
+
+BB_1:
+    Multiply #2 * #2 -> #3
+    CopyValue #3 -> #2
+
+BB_2:
+    Add #2 + #2 -> #4
+    Call Test::Callee(#0, #2, #4) -> #5
+    Return #5
+";
+            var original = MethodAssembler.Assemble(source, "Test::Method");
+            var result = new SsaConverter().ConvertToSsa(original);
+
+            // Value #5 is expected to be unused (created in Phi construction)
+            const string expected = @"
+; #0   int32 param
+; #1   bool param
+; #2   int32
+; #3   int32
+; #4   int32
+; #5   int32
+; #6   int32
+BB_0:
+    BranchIf #1 ==> BB_1
+    ==> BB_2
+
+BB_1:
+    Multiply #0 * #0 -> #2
+
+BB_2:
+    PHI (#0, #2) -> #3
+    Add #3 + #3 -> #4
+    Call Test::Callee(#0, #3, #4) -> #6
+    Return #6
+";
+            AssertDisassembly(result, expected);
+        }
+
+        [Test]
         public void Successive_basic_blocks()
         {
             const string source = @"
@@ -554,7 +612,7 @@ BB_6:
         }
 
         [Test]
-        public void Phi_operands_are_not_duplicated()
+        public void Trivial_phi_is_optimized_away_in_complete_cfg()
         {
             // int32 F(bool p, int32 v)
             // {
@@ -580,10 +638,8 @@ BB_2:
             var original = MethodAssembler.Assemble(source, "Test::Method");
             var result = new SsaConverter().ConvertToSsa(original);
 
-            // Instead of PHI(#1, #1), there should be only PHI(#1).
-            // Ideally, we would remove the Phi completely, but there might be uses of the Phi already.
-            // The current algorithm does not perform such cleanup.
-            // This is better than nothing and a constant-folding pass is free to perform more cleanup.
+            // PHI(#1, #1) is optimized away.
+            // Note that an unused value (#2) is created but it should hurt no-one, and can be removed in optimization.
             const string expected = @"
 ; #0   bool param
 ; #1   int32 param
@@ -595,8 +651,7 @@ BB_0:
 BB_1:
 
 BB_2:
-    PHI (#1) -> #2
-    Return #2
+    Return #1
 ";
             AssertDisassembly(result, expected);
         }

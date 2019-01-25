@@ -105,9 +105,28 @@ namespace Cle.SemanticAnalysis
             // Perform value renaming on the instructions
             foreach (var inst in block.Instructions)
             {
+                // Calls have an arbitrary number of operands
                 if (inst.Operation == Opcode.Call)
                 {
-                    throw new NotImplementedException("Calls");
+                    var originalCallInfo = _originalMethod.CallInfos[(int)inst.Left];
+
+                    // Get SSA values for the operands
+                    var parameterValues = new int[originalCallInfo.ParameterIndices.Length];
+                    for (var i = 0; i < originalCallInfo.ParameterIndices.Length; i++)
+                    {
+                        parameterValues[i] = ReadVariable((ushort)originalCallInfo.ParameterIndices[i], blockIndex);
+                    }
+
+                    // Write the return value
+                    var dest = CreateValueNumber(_originalMethod.Values[inst.Destination].Type, LocalFlags.None);
+                    WriteVariable(inst.Destination, blockIndex, dest);
+
+                    // Emit a call
+                    var callIndex = _newMethod.AddCallInfo(originalCallInfo.CalleeIndex, parameterValues,
+                        originalCallInfo.CalleeFullName);
+                    builder.AppendInstruction(Opcode.Call, callIndex, 0, dest);
+
+                    continue;
                 }
 
                 // Loads must be handled separately as Left is a constant value, not a value number
@@ -213,21 +232,30 @@ namespace Cle.SemanticAnalysis
                     // Before recursing, write the Phi value to break cycles
                     var phiType = _originalMethod.Values[variableIndex].Type;
                     var phiValueNumber = CreateValueNumber(phiType, LocalFlags.None);
-
                     WriteVariable(variableIndex, blockIndex, phiValueNumber);
-                    AddPhiOperands(variableIndex, phiValueNumber, blockIndex);
-                    return phiValueNumber;
+
+                    var operands = GetPhiOperands(variableIndex, blockIndex);
+                    if (operands.Count == 1)
+                    {
+                        // If there is exactly one operand, skip generating a Phi.
+                        // The value created earlier will be left unused.
+                        var trivialValue = (ushort)operands[0];
+                        WriteVariable(variableIndex, blockIndex, trivialValue);
+                        return trivialValue;
+                    }
+                    else
+                    {
+                        _blockGraphBuilder.GetBuilderByBlockIndex(blockIndex).AddPhi(phiValueNumber, operands);
+                        return phiValueNumber;
+                    }
                 }
             }
         }
 
         /// <summary>
-        /// Resolves Phi operands and adds the Phi node.
+        /// Returns the list of operands for the given Phi, with duplicates removed.
         /// </summary>
-        /// <param name="variableIndex"></param>
-        /// <param name="phiValueNumber"></param>
-        /// <param name="blockIndex"></param>
-        private void AddPhiOperands(ushort variableIndex, ushort phiValueNumber, int blockIndex)
+        private ImmutableList<int> GetPhiOperands(ushort variableIndex, int blockIndex)
         {
             Debug.Assert(_originalMethod.Body != null);
             var block = _originalMethod.Body.BasicBlocks[blockIndex];
@@ -238,7 +266,6 @@ namespace Cle.SemanticAnalysis
             {
                 // Skip duplicate operands
                 // This is O(N^2) but N should be small, unless the user creates a horrible if-elseif chain
-                // TODO: Remove the Phi altogether if it has only one operand
                 var operand = ReadVariable(variableIndex, predecessor);
                 if (!operands.Contains(operand))
                 {
@@ -246,8 +273,7 @@ namespace Cle.SemanticAnalysis
                 }
             }
 
-            // Write the Phi
-            _blockGraphBuilder.GetBuilderByBlockIndex(blockIndex).AddPhi(phiValueNumber, operands.ToImmutable());
+            return operands.ToImmutable();
         }
 
         /// <summary>
@@ -287,7 +313,9 @@ namespace Cle.SemanticAnalysis
                 {
                     foreach (var (variable, destination) in _incompletePhis[blockIndex])
                     {
-                        AddPhiOperands(variable, destination, blockIndex);
+                        // TODO: There might be some opportunity for optimizing away trivial Phis (see Braun et al.)
+                        var operands = GetPhiOperands(variable, blockIndex);
+                        _blockGraphBuilder.GetBuilderByBlockIndex(blockIndex).AddPhi(destination, operands);
                     }
                 }
             }
