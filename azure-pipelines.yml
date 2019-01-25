@@ -6,6 +6,7 @@ pool:
 
 variables:
   configuration: 'Release'
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 'true'
 
 steps:
 - task: DotNetCoreInstaller@0
