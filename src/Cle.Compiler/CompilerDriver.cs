@@ -41,14 +41,12 @@ namespace Cle.Compiler
 
             // Parse each module
             // TODO: Make this run in parallel
-            debugLogger.WriteHeader("PARSING PHASE");
             ParseModule(mainModule, compilation, sourceFileProvider, out var syntaxTrees);
 
             // TODO: Compile modules only once they and their dependencies are parsed (if there were no parsing errors)
             // TODO: Make this parallel
             if (!compilation.HasErrors)
             {
-                debugLogger.WriteHeader("DECLARATION COMPILATION PHASE");
                 AddDeclarationsForModule(mainModule, compilation, syntaxTrees);
             }
 
@@ -180,6 +178,7 @@ namespace Cle.Compiler
         {
             var diagnosticSink = new SingleFileDiagnosticSink();
             var compiler = new MethodCompiler(compilation, diagnosticSink);
+            var ssaConverter = new SsaConverter();
 
             // Compile each method body
             foreach (var sourceFile in syntaxTrees)
@@ -203,8 +202,17 @@ namespace Cle.Compiler
                         sourceFile.Namespace, sourceFile.Filename);
                     if (methodBody != null)
                     {
-                        compilation.SetMethodBody(declaration.BodyIndex, methodBody);
-                        debugLogger.DumpMethod(methodBody);
+                        // Convert the method to SSA and store the converted method
+                        var ssaBody = ssaConverter.ConvertToSsa(methodBody);
+                        compilation.SetMethodBody(declaration.BodyIndex, ssaBody);
+
+                        if (debugLogger.ShouldLog(methodBody.FullName))
+                        {
+                            debugLogger.WriteLine("Before SSA conversion:");
+                            debugLogger.DumpMethod(methodBody);
+                            debugLogger.WriteLine("After SSA conversion:");
+                            debugLogger.DumpMethod(ssaBody);
+                        }
                     }
                 }
 
