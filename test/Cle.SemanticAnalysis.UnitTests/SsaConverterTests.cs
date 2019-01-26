@@ -656,6 +656,100 @@ BB_2:
             AssertDisassembly(result, expected);
         }
 
+        [Test]
+        public void Operands_in_non_trivial_phi_are_not_removed()
+        {
+            // int32 F(int32 a, int32 b)
+            // {
+            //     int32 result = a;
+            //     if (b % 2 == 0) { result = b; }
+            //     else if (b % 3 == 0) { result = b; }
+            //     return result;
+            // }
+            const string source = @"
+; #0   int32 param
+; #1   int32 param
+; #2   int32
+; #3   int32
+; #4   int32
+; #5   int32
+; #6   bool
+; #7   int32
+; #8   int32
+; #9   int32
+; #10  bool
+BB_0:
+    CopyValue #0 -> #2
+    Load 2 -> #3
+    Modulo #1 % #3 -> #4
+    Load 0 -> #5
+    Equal #4 == #5 -> #6
+    BranchIf #6 ==> BB_1
+    ==> BB_2
+
+BB_1:
+    CopyValue #1 -> #2
+    ==> BB_4
+
+BB_2:
+    Load 3 -> #7
+    Modulo #1 % #7 -> #8
+    Load 0 -> #9
+    Equal #8 == #9 -> #10
+    BranchIf #10 ==> BB_3
+    ==> BB_4
+
+BB_3:
+    CopyValue #1 -> #2
+
+BB_4:
+    Return #2
+";
+            var original = MethodAssembler.Assemble(source, "Test::Method");
+            var result = new SsaConverter().ConvertToSsa(original);
+
+            // The duplicate operand in PHI (#0, #1, #1) is not optimized away, as it encodes information
+            // which value comes from which branch.
+            const string expected = @"
+; #0   int32 param
+; #1   int32 param
+; #2   int32
+; #3   int32
+; #4   int32
+; #5   bool
+; #6   int32
+; #7   int32
+; #8   int32
+; #9   bool
+; #10  int32
+BB_0:
+    Load 2 -> #2
+    Modulo #1 % #2 -> #3
+    Load 0 -> #4
+    Equal #3 == #4 -> #5
+    BranchIf #5 ==> BB_1
+    ==> BB_2
+
+BB_1:
+    ==> BB_4
+
+BB_2:
+    Load 3 -> #6
+    Modulo #1 % #6 -> #7
+    Load 0 -> #8
+    Equal #7 == #8 -> #9
+    BranchIf #9 ==> BB_3
+    ==> BB_4
+
+BB_3:
+
+BB_4:
+    PHI (#0, #1, #1) -> #10
+    Return #10
+";
+            AssertDisassembly(result, expected);
+        }
+
         private void AssertDisassembly(CompiledMethod compiledMethod, string expected)
         {
             var builder = new StringBuilder();
