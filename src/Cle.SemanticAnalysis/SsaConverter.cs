@@ -235,9 +235,9 @@ namespace Cle.SemanticAnalysis
                     WriteVariable(variableIndex, blockIndex, phiValueNumber);
 
                     var operands = GetPhiOperands(variableIndex, blockIndex);
-                    if (operands.Count == 1)
+                    if (IsTrivialPhi(operands))
                     {
-                        // If there is exactly one operand, skip generating a Phi.
+                        // If there is exactly one unique operand, skip generating a Phi.
                         // The value created earlier will be left unused.
                         var trivialValue = (ushort)operands[0];
                         WriteVariable(variableIndex, blockIndex, trivialValue);
@@ -264,16 +264,27 @@ namespace Cle.SemanticAnalysis
             var operands = ImmutableList<int>.Empty.ToBuilder();
             foreach (var predecessor in block.Predecessors)
             {
-                // Skip duplicate operands
-                // This is O(N^2) but N should be small, unless the user creates a horrible if-elseif chain
-                var operand = ReadVariable(variableIndex, predecessor);
-                if (!operands.Contains(operand))
-                {
-                    operands.Add(operand);
-                }
+                operands.Add(ReadVariable(variableIndex, predecessor));
             }
 
             return operands.ToImmutable();
+        }
+
+        /// <summary>
+        /// Returns whether all the operands are the same.
+        /// </summary>
+        private static bool IsTrivialPhi(ImmutableList<int> operands)
+        {
+            Debug.Assert(operands.Count > 0);
+
+            var first = operands[0];
+            foreach (var value in operands)
+            {
+                if (value != first)
+                    return false;
+            }
+
+            return true;
         }
 
         /// <summary>
