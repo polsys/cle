@@ -55,6 +55,7 @@
         MultipleEntryPointsProvided,
 
         TypeMismatch,
+        VoidIsNotValidType,
         IntegerConstantOutOfBounds,
         DivisionByConstantZero,
         OperatorNotDefined,
