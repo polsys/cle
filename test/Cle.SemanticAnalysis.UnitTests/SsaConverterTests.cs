@@ -750,6 +750,47 @@ BB_4:
             AssertDisassembly(result, expected);
         }
 
+        [Test]
+        public void Void_returns_use_shared_value()
+        {
+            // void F(bool p)
+            // {
+            //     if (p) { return; }
+            // }
+            const string source = @"
+; #0   bool param
+; #1   void
+; #2   void
+BB_0:
+    BranchIf #0 ==> BB_1
+    ==> BB_2
+
+BB_1:
+    Return #1
+
+BB_2:
+    Return #2
+";
+            var original = MethodAssembler.Assemble(source, "Test::Method");
+            var result = new SsaConverter().ConvertToSsa(original);
+
+            // The same (uninitialized) void value is used for both returns
+            const string expected = @"
+; #0   bool param
+; #1   void
+BB_0:
+    BranchIf #0 ==> BB_1
+    ==> BB_2
+
+BB_1:
+    Return #1
+
+BB_2:
+    Return #1
+";
+            AssertDisassembly(result, expected);
+        }
+
         private void AssertDisassembly(CompiledMethod compiledMethod, string expected)
         {
             var builder = new StringBuilder();
