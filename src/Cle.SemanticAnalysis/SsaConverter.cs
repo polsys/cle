@@ -63,13 +63,24 @@ namespace Cle.SemanticAnalysis
             _incompletePhis = new List<(ushort, ushort)>[blockCount];
             _isSealed = new bool[blockCount];
 
-            // Create value numbers for parameters
+            // Create value numbers for parameters.
+            // Additionally, create a single value number that is used for all void returns.
+            // (There is no sense in initializing a void value, let alone having several!)
+            var voidIndex = -1;
             for (var localIndex = (ushort)0; localIndex < method.Values.Count; localIndex++)
             {
                 var local = method.Values[localIndex];
                 if (local.Flags.HasFlag(LocalFlags.Parameter))
                 {
                     WriteVariable(localIndex, 0, CreateValueNumber(local.Type, local.Flags));
+                }
+                else if (local.Type.Equals(SimpleType.Void))
+                {
+                    if (voidIndex < 0)
+                    {
+                        voidIndex = CreateValueNumber(SimpleType.Void, LocalFlags.None);
+                    }
+                    WriteVariable(localIndex, 0, (ushort)voidIndex);
                 }
             }
             
