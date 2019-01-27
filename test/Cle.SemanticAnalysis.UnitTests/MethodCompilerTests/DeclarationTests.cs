@@ -113,6 +113,26 @@ namespace Cle.SemanticAnalysis.UnitTests.MethodCompilerTests
         }
 
         [Test]
+        public void CompileDeclaration_parameter_type_must_not_be_void()
+        {
+            var position = new TextPosition(140, 13, 4);
+            var parameters = ImmutableList<ParameterDeclarationSyntax>.Empty
+                .Add(new ParameterDeclarationSyntax("void", "param", position));
+
+            var syntax = new FunctionSyntax("MethodName", "int32",
+                Visibility.Private, parameters, ImmutableList<AttributeSyntax>.Empty,
+                new BlockSyntax(ImmutableList<StatementSyntax>.Empty, default), default);
+            var diagnostics = new TestingDiagnosticSink();
+            var declarationProvider = new TestingSingleFileDeclarationProvider();
+
+            var result = MethodCompiler.CompileDeclaration(syntax, "ns", "unknown.cle", 0, declarationProvider, diagnostics);
+
+            Assert.That(result, Is.Null);
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.VoidIsNotValidType, position.Line, position.ByteInLine)
+                .WithActual("param");
+        }
+
+        [Test]
         public void CompileDeclaration_does_not_accept_unknown_attribute()
         {
             var position = new TextPosition(140, 13, 4);

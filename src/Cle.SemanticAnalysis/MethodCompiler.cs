@@ -67,6 +67,12 @@ namespace Cle.SemanticAnalysis
                 {
                     return null;
                 }
+                Debug.Assert(paramType != null);
+                if (paramType.Equals(SimpleType.Void))
+                {
+                    diagnosticSink.Add(DiagnosticCode.VoidIsNotValidType, param.Position, param.Name);
+                    return null;
+                }
                 parameterTypes = parameterTypes.Add(paramType);
             }
 
@@ -431,12 +437,19 @@ namespace Cle.SemanticAnalysis
             Debug.Assert(_methodInProgress != null);
             var localCount = _methodInProgress.Values.Count;
 
-            // Compile the initial value (either a runtime expression or compile-time constant)
+            // Resolve the type and verify that it is not void
             if (!TryResolveType(declaration.TypeName, _diagnostics, declaration.Position, out var type))
             {
                 return false;
             }
             Debug.Assert(type != null);
+            if (type.Equals(SimpleType.Void))
+            {
+                _diagnostics.Add(DiagnosticCode.VoidIsNotValidType, declaration.Position, declaration.Name);
+                return false;
+            }
+
+            // Compile the initial value (either a runtime expression or compile-time constant)
             var localIndex = ExpressionCompiler.TryCompileExpression(declaration.InitialValueExpression, 
                 type, _methodInProgress, builder, this, _diagnostics);
 

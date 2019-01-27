@@ -301,5 +301,18 @@ public void NameAlreadyDefined(int32 variable) {
             Assert.That(compiledMethod, Is.Null);
             diagnostics.AssertDiagnosticAt(DiagnosticCode.VariableAlreadyDefined, 3, 4).WithActual("variable");
         }
+
+        [Test]
+        public void Variable_may_not_be_void()
+        {
+            const string source = @"namespace Test;
+public void VoidVar() {
+    void variable = VoidVar();
+}";
+            var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
+
+            Assert.That(compiledMethod, Is.Null);
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.VoidIsNotValidType, 3, 4).WithActual("variable");
+        }
     }
 }
