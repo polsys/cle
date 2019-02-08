@@ -18,7 +18,7 @@ namespace Cle.Frontend
                 case DiagnosticCode.ModuleNotFound:
                     return $"Module '{diagnostic.Module}' could not be found.";
                 case DiagnosticCode.SourceFileNotFound:
-                    return $"Source file '{diagnostic.Filename}' could not be found.";
+                    return $"Source file '{diagnostic.Filename}' could not be opened.";
                 case DiagnosticCode.ExpectedSourceFileItem:
                     return $"Expected namespace, method or type definition, read '{diagnostic.Actual}'.";
                 case DiagnosticCode.ExpectedNamespaceDeclarationBeforeDefinitions:
@@ -127,6 +127,8 @@ namespace Cle.Frontend
                 // Backend errors
                 case DiagnosticCode.BackendErrorStart:
                     return "Unspecified backend error.";
+                case DiagnosticCode.CouldNotCreateOutputFile:
+                    return $"Could create output file for the module {diagnostic.Module}.";
 
                 // Backend warnings
                 case DiagnosticCode.BackendWarningStart:

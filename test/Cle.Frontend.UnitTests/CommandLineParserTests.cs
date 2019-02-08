@@ -24,6 +24,20 @@ namespace Cle.Frontend.UnitTests
             Assert.That(CommandLineParser.TryParseArguments(new[] { "--help" }, output, out var _), Is.False);
             Assert.That(output.ToString(), Does.Contain("--help"));
         }
+        
+        [Test]
+        public void Default_values_for_parameters_are_sensible()
+        {
+            var output = new StringWriter();
+
+            Assert.That(CommandLineParser.TryParseArguments(new string[] { }, output, out var options),
+                Is.True);
+            Assert.That(options, Is.Not.Null);
+
+            Assert.That(options.EmitDisassembly, Is.False);
+            Assert.That(options.DebugOutput, Is.False);
+            Assert.That(options.MainModule, Is.EqualTo("."));
+        }
 
         [Test]
         public void Dump_regex_is_parsed()
@@ -39,14 +53,14 @@ namespace Cle.Frontend.UnitTests
         }
 
         [Test]
-        public void Main_module_is_current_directory_by_default()
+        public void Disassembly_can_be_enabled()
         {
             var output = new StringWriter();
             
-            Assert.That(CommandLineParser.TryParseArguments(new string[] { }, output, out var options),
+            Assert.That(CommandLineParser.TryParseArguments(new[] { "--disasm" }, output, out var options),
                 Is.True);
             Assert.That(options, Is.Not.Null);
-            Assert.That(options.MainModule, Is.EqualTo("."));
+            Assert.That(options.EmitDisassembly, Is.True);
         }
 
         [Test]

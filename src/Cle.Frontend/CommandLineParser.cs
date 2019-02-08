@@ -48,7 +48,8 @@ namespace Cle.Frontend
                 // Convert the options into compilation options
                 options = new CompilationOptions(
                     mainModules.Count == 0 ? "." : mainModules[0],
-                    debugPattern: parsed.Value.DumpRegex);
+                    debugPattern: parsed.Value.DumpRegex,
+                    emitDisassembly: parsed.Value.Disassembly);
 
                 return true;
             }

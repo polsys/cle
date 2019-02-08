@@ -1,5 +1,4 @@
-﻿using System.IO;
-using Cle.Common;
+﻿using Cle.Common;
 using NUnit.Framework;
 
 namespace Cle.Compiler.UnitTests
@@ -165,6 +164,70 @@ private int32 MuchBetterMain() { return 42; }";
                 Assert.That(result.Diagnostics[0].Filename, Is.EqualTo("file2.cle"));
             }
         }
+        
+        [TestCase(true, false)]
+        [TestCase(false, true)]
+        public void Compile_fails_if_output_file_cannot_be_created(bool failExecutable, bool failDisassembly)
+        {
+            const string source = @"namespace Test;
+[EntryPoint]
+private int32 Main() { return 0; }";
+            var sourceProvider = new TestingSourceFileProvider();
+            sourceProvider.Add(".", "main.cle", source);
+
+            using (var outputProvider = new TestingOutputFileProvider())
+            {
+                outputProvider.FailExecutable = failExecutable;
+                outputProvider.FailDisassembly = failDisassembly;
+                var options = new CompilationOptions(".", emitDisassembly: true);
+                var result = CompilerDriver.Compile(options, sourceProvider, outputProvider);
+
+                Assert.That(result.FailedCount, Is.EqualTo(1));
+                Assert.That(result.ModuleCount, Is.EqualTo(1));
+                Assert.That(result.SucceededCount, Is.EqualTo(0));
+
+                Assert.That(result.Diagnostics, Has.Exactly(1).Items);
+                Assert.That(result.Diagnostics[0].Code, Is.EqualTo(DiagnosticCode.CouldNotCreateOutputFile));
+                Assert.That(result.Diagnostics[0].Position.Line, Is.EqualTo(0));
+                Assert.That(result.Diagnostics[0].Module, Is.EqualTo("."));
+                Assert.That(result.Diagnostics[0].Filename, Is.Null); // TODO: Remove this limitation
+            }
+        }
+        
+        [TestCase(true)]
+        [TestCase(false)]
+        public void Compile_produces_output_successfully(bool emitDisassembly)
+        {
+            const string source = @"namespace Test;
+[EntryPoint]
+private int32 Main() { return 0; }";
+            var sourceProvider = new TestingSourceFileProvider();
+            sourceProvider.Add(".", "main.cle", source);
+
+            using (var outputProvider = new TestingOutputFileProvider())
+            {
+                var options = new CompilationOptions(".", emitDisassembly: emitDisassembly);
+                var result = CompilerDriver.Compile(options, sourceProvider, outputProvider);
+
+                Assert.That(result.FailedCount, Is.EqualTo(0));
+                Assert.That(result.ModuleCount, Is.EqualTo(1));
+                Assert.That(result.SucceededCount, Is.EqualTo(1));
+                Assert.That(result.Diagnostics, Has.Exactly(0).Items);
+
+                Assert.That(outputProvider.ExecutableStream, Is.Not.Null);
+                Assert.That(outputProvider.ExecutableStream.Position, Is.GreaterThan(0));
+
+                if (emitDisassembly)
+                {
+                    Assert.That(outputProvider.DisassemblyWriter, Is.Not.Null);
+                    Assert.That(outputProvider.DisassemblyWriter.ToString(), Does.Contain("Test::Main"));
+                }
+                else
+                {
+                    Assert.That(outputProvider.DisassemblyWriter, Is.Null);
+                }
+            }
+        }
 
         [Test]
         public void ParseModule_parses_single_file_successfully()
@@ -276,7 +339,7 @@ public int32 ComplexMethod() { return 42; }";
 
             using (var outputProvider = new TestingOutputFileProvider())
             {
-                var result = CompilerDriver.Compile(new CompilationOptions(".", debugPattern: "Simple"),
+                var _ = CompilerDriver.Compile(new CompilationOptions(".", debugPattern: "Simple"),
                     sourceProvider, outputProvider);
 
                 var writer = outputProvider.DebugWriter;
@@ -297,7 +360,7 @@ public int32 ComplexMethod() { return 42; }";
 
             using (var outputProvider = new TestingOutputFileProvider())
             {
-                var result = CompilerDriver.Compile(new CompilationOptions("."),
+                var _ = CompilerDriver.Compile(new CompilationOptions("."),
                     sourceProvider, outputProvider);
 
                 Assert.That(outputProvider.DebugWriter, Is.Null);

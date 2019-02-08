@@ -14,6 +14,10 @@ namespace Cle.Frontend
             "where the name contains the parameter string will be logged to cle-dump.txt. " +
             "Specify * to dump all methods. More complex wildcard syntax is not supported.")]
         public string DumpRegex { get; set; }
+        
+        [Option("disasm", HelpText = "If specified, an assembly language listing for the program " +
+                                     "will be emitted in the output directory.")]
+        public bool Disassembly { get; set; }
 
         [CanBeNull, ItemNotNull]
         [Value(0, Required = false,

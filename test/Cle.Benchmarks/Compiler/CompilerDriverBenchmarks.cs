@@ -88,6 +88,16 @@ private bool TypeMismatch()
 
         private class NullOutputProvider : IOutputFileProvider
         {
+            public Stream GetExecutableStream()
+            {
+                return null;
+            }
+
+            public TextWriter GetDisassemblyWriter()
+            {
+                return null;
+            }
+
             public TextWriter GetDebugFileWriter()
             {
                 return null;
