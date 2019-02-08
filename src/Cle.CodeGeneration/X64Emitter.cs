@@ -7,12 +7,12 @@ namespace Cle.CodeGeneration
     /// Provides methods for emitting x86-64 instructions to a stream.
     /// Executable metadata, method padding, etc. are not handled by this class.
     /// </summary>
-    public sealed class X64Emitter
+    internal sealed class X64Emitter
     {
         [NotNull] private readonly Stream _outputStream;
         [CanBeNull] private readonly TextWriter _disassemblyWriter;
 
-        private const string Indent = "  ";
+        private const string Indent = "    ";
 
         public X64Emitter([NotNull] Stream outputStream, [CanBeNull] TextWriter disassemblyWriter)
         {
@@ -27,6 +27,16 @@ namespace Cle.CodeGeneration
         {
             _outputStream.WriteByte(0x90);
             _disassemblyWriter?.WriteLine(Indent + "nop");
+        }
+
+        /// <summary>
+        /// Emits a return instruction.
+        /// </summary>
+        public void EmitRet()
+        {
+            // Near return opcode, as 64-bit operand is used in long mode
+            _outputStream.WriteByte(0xC3);
+            _disassemblyWriter?.WriteLine(Indent + "ret");
         }
     }
 }

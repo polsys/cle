@@ -22,14 +22,25 @@ namespace Cle.CodeGeneration.UnitTests
             var writer = new PortableExecutableWriter(stream, null);
 
             Assert.That(stream.Position, Is.EqualTo(1024));
-            writer.StartNewMethod(0);
+            writer.StartNewMethod(0, "");
             Assert.That(stream.Position, Is.EqualTo(1024));
             writer.Emitter.EmitNop();
-            writer.StartNewMethod(1);
+            writer.StartNewMethod(1, "");
             Assert.That(stream.Position, Is.EqualTo(1040));
 
             // The padding should consist of int 3's
             Assert.That(stream.GetBuffer()[1025], Is.EqualTo(0xCC));
+        }
+
+        [Test]
+        public void StartNewMethod_writes_disassembly_header()
+        {
+            var stream = new MemoryStream();
+            var disassembly = new StringWriter();
+            var peWriter = new PortableExecutableWriter(stream, disassembly);
+            
+            peWriter.StartNewMethod(0, "Namespace::Method");
+            Assert.That(disassembly.ToString(), Does.Contain("; Namespace::Method"));
         }
 
         [Test]
@@ -39,10 +50,10 @@ namespace Cle.CodeGeneration.UnitTests
             var writer = new PortableExecutableWriter(stream, null);
 
             // Entry point is at file offset 1040 (0x410)
-            writer.StartNewMethod(0);
+            writer.StartNewMethod(0, "");
             writer.Emitter.EmitNop();
 
-            writer.StartNewMethod(1);
+            writer.StartNewMethod(1, "");
             writer.MarkEntryPoint();
             
             writer.FinalizeFile();
@@ -57,7 +68,15 @@ namespace Cle.CodeGeneration.UnitTests
             // The ".text" section should be 512 bytes in size (we use the lowest allowed power of 2)
             // The total code size is stored at PE offset 0x9C.
             var codeSize = BitConverter.ToInt32(peSpan.Slice(156, 4));
+            var textSectionFileSize = BitConverter.ToInt32(peSpan.Slice(408, 4));
             Assert.That(codeSize, Is.EqualTo(0x200));
+            Assert.That(textSectionFileSize, Is.EqualTo(0x200));
+
+            // When stored in memory, the header and single section should take 4 KB each
+            var inMemorySize = BitConverter.ToInt32(peSpan.Slice(208, 4));
+            Assert.That(inMemorySize, Is.EqualTo(8192));
+            var textSectionInMemorySize = BitConverter.ToInt32(peSpan.Slice(400, 4));
+            Assert.That(textSectionInMemorySize, Is.EqualTo(4096));
 
             // The total file size should, therefore, be 1024 (header) + 512 (.text) bytes
             Assert.That(stream.Length, Is.EqualTo(1536));
@@ -74,7 +93,7 @@ namespace Cle.CodeGeneration.UnitTests
             writer.MarkEntryPoint();
             for (var i = 0; i < 70; i++)
             {
-                writer.StartNewMethod(i);
+                writer.StartNewMethod(i, "");
                 writer.Emitter.EmitNop();
             }
             
@@ -86,7 +105,9 @@ namespace Cle.CodeGeneration.UnitTests
 
             // 70 methods * 16 bytes/method = 3 file alignments = 1536 bytes
             var codeSize = BitConverter.ToInt32(peSpan.Slice(156, 4));
+            var textSectionFileSize = BitConverter.ToInt32(peSpan.Slice(408, 4));
             Assert.That(codeSize, Is.EqualTo(0x600));
+            Assert.That(textSectionFileSize, Is.EqualTo(0x600));
 
             // Total: 1024 (header) + 1536 (.text) bytes
             Assert.That(stream.Length, Is.EqualTo(2560));
@@ -106,7 +127,7 @@ namespace Cle.CodeGeneration.UnitTests
         {
             var stream = new MemoryStream();
             var writer = new PortableExecutableWriter(stream, null);
-            writer.StartNewMethod(0);
+            writer.StartNewMethod(0, "");
             writer.MarkEntryPoint();
 
             Assert.That(() => writer.MarkEntryPoint(), Throws.InvalidOperationException);

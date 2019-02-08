@@ -20,9 +20,9 @@ namespace Cle.Frontend
 
             // Create file interfaces
             var sourceProvider = new SourceFileProvider(Directory.GetCurrentDirectory());
-            using (var outputProvider = new OutputFileProvider(Directory.GetCurrentDirectory()))
+            const string outputName = "out.exe"; // TODO: Determine this in CommandLineParser
+            using (var outputProvider = new OutputFileProvider(Directory.GetCurrentDirectory(), outputName))
             {
-
                 // Initialize a compiler instance and call it
                 var result = CompilerDriver.Compile(options, sourceProvider, outputProvider);
 

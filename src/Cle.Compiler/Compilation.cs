@@ -42,6 +42,21 @@ namespace Cle.Compiler
         /// </summary>
         public int EntryPointIndex => _entryPointIndex;
 
+        /// <summary>
+        /// Gets the number of method bodies.
+        /// Not all method indices in the range may be valid before the compilation has finished.
+        /// </summary>
+        public int MethodBodyCount
+        {
+            get
+            {
+                lock (_methodBodyLock)
+                {
+                    return _methodBodies.Count;
+                }
+            }
+        }
+
         [NotNull]
         [ItemNotNull]
         private readonly List<Diagnostic> _diagnostics = new List<Diagnostic>();

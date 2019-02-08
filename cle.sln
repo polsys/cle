@@ -33,6 +33,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cle.CodeGeneration", "src\C
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cle.CodeGeneration.UnitTests", "test\Cle.CodeGeneration.UnitTests\Cle.CodeGeneration.UnitTests.csproj", "{7D8A881D-B443-4A88-8F18-AF6D22038389}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cle.IntegrationTests", "test\Cle.IntegrationTests\Cle.IntegrationTests.csproj", "{8EDA47F3-EC94-45B0-8F51-CB397A84EB6B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -90,6 +92,10 @@ Global
 		{7D8A881D-B443-4A88-8F18-AF6D22038389}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7D8A881D-B443-4A88-8F18-AF6D22038389}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7D8A881D-B443-4A88-8F18-AF6D22038389}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8EDA47F3-EC94-45B0-8F51-CB397A84EB6B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8EDA47F3-EC94-45B0-8F51-CB397A84EB6B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8EDA47F3-EC94-45B0-8F51-CB397A84EB6B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8EDA47F3-EC94-45B0-8F51-CB397A84EB6B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -108,6 +114,7 @@ Global
 		{9C8387AA-EB58-4819-AAF5-16B6A6CFD348} = {3A372906-46C7-4D1B-A71B-48888E2F1A8F}
 		{17745E6B-C653-4901-AF80-354DEDF216C9} = {A14775F6-0FFF-449E-8160-D31C668A441A}
 		{7D8A881D-B443-4A88-8F18-AF6D22038389} = {3A372906-46C7-4D1B-A71B-48888E2F1A8F}
+		{8EDA47F3-EC94-45B0-8F51-CB397A84EB6B} = {3A372906-46C7-4D1B-A71B-48888E2F1A8F}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {5F2D74AA-DFCB-4E95-8578-F81259CC155E}

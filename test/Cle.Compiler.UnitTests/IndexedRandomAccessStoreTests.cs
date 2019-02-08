@@ -10,8 +10,11 @@ namespace Cle.Compiler.UnitTests
         {
             var store = new IndexedRandomAccessStore<string>();
 
+            Assert.That(store.Count, Is.EqualTo(0));
             Assert.That(store.ReserveIndex(), Is.EqualTo(0));
+            Assert.That(store.Count, Is.EqualTo(1));
             Assert.That(() => store[0] = "test", Throws.Nothing);
+            Assert.That(store.Count, Is.EqualTo(1));
             Assert.That(store[0], Is.EqualTo("test"));
         }
 
@@ -35,12 +38,14 @@ namespace Cle.Compiler.UnitTests
             for (var i = 0; i < 10; i++)
             {
                 Assert.That(store.ReserveIndex(), Is.EqualTo(i));
+                Assert.That(store.Count, Is.EqualTo(i + 1));
             }
             Assert.That(() => store[9] = "nine", Throws.Nothing);
 
             for (var i = 10; i < 1000; i++)
             {
                 Assert.That(store.ReserveIndex(), Is.EqualTo(i));
+                Assert.That(store.Count, Is.EqualTo(i + 1));
             }
             Assert.That(() => store[100] = "one zero zero", Throws.Nothing);
             Assert.That(() => store[999] = "nine nine nine", Throws.Nothing);

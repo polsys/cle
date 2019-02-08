@@ -14,6 +14,11 @@ namespace Cle.Compiler
         private int _nextIndex;
         private T[] _array;
 
+        /// <summary>
+        /// Gets the number of reserved indices.
+        /// </summary>
+        public int Count => _nextIndex;
+
         public T this[int index]
         {
             get

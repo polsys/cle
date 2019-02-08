@@ -1,0 +1,12 @@
+// This test is the code generator "Hello World!"
+//
+// Expected return code: 42.
+// No console output expected.
+
+namespace ReturnInt;
+
+[EntryPoint]
+public int32 Main()
+{
+    return 42;
+}

@@ -11,7 +11,16 @@ namespace Cle.CodeGeneration.UnitTests
             GetEmitter(out var stream, out var disassembly).EmitNop();
 
             CollectionAssert.AreEqual(new byte[] { 0x90 }, stream.ToArray());
-            Assert.That(disassembly.ToString().TrimEnd(), Is.EqualTo("  nop"));
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("nop"));
+        }
+
+        [Test]
+        public void EmitRet_emits_single_byte_return()
+        {
+            GetEmitter(out var stream, out var disassembly).EmitRet();
+
+            CollectionAssert.AreEqual(new byte[] { 0xC3 }, stream.ToArray());
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("ret"));
         }
 
         private static X64Emitter GetEmitter(out MemoryStream stream, out StringWriter disassembly)

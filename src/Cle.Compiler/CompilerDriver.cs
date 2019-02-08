@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
+using Cle.CodeGeneration;
 using Cle.Common;
 using Cle.Parser;
 using Cle.Parser.SyntaxTree;
@@ -65,7 +67,21 @@ namespace Cle.Compiler
 
             // TODO: Run the optimizer if enabled
 
-            // TODO: Generate code
+            // Generate code
+            if (!compilation.HasErrors)
+            {
+                var outputStream = outputFileProvider.GetExecutableStream();
+                var disassemblyWriter = options.EmitDisassembly ? outputFileProvider.GetDisassemblyWriter() : null;
+                if (outputStream is null || (options.EmitDisassembly && disassemblyWriter is null))
+                {
+                    // TODO: Also include the failed file name
+                    compilation.AddModuleLevelDiagnostic(DiagnosticCode.CouldNotCreateOutputFile, mainModule);
+                }
+                else
+                {
+                    GenerateCode(compilation, outputStream, disassemblyWriter);
+                }
+            }
 
             // Return statistics
             // At this point, the compilation is no more accessed from multiple threads,
@@ -218,6 +234,21 @@ namespace Cle.Compiler
 
                 compilation.AddDiagnostics(diagnosticSink.Diagnostics);
             }
+        }
+
+        private static void GenerateCode([NotNull] Compilation compilation, [NotNull] Stream outputStream,
+            [CanBeNull] TextWriter disassemblyWriter)
+        {
+            var generator = new WindowsX64CodeGenerator(outputStream, disassemblyWriter);
+            
+            // TODO: This acquires the method body lock once for each method - refactor Compilation
+            var highestBodyIndex = compilation.MethodBodyCount;
+            for (var i = 0; i < highestBodyIndex; i++)
+            {
+                generator.EmitMethod(compilation.GetMethodBody(i), i, compilation.EntryPointIndex == i);
+            }
+
+            generator.FinalizeFile();
         }
     }
 }

@@ -20,15 +20,21 @@ namespace Cle.Compiler
         public string DebugPattern { get; }
 
         /// <summary>
+        /// If true, an assembly language listing for the compiled program should be produced along the executable.
+        /// </summary>
+        public bool EmitDisassembly { get; }
+
+        /// <summary>
         /// Gets the name of the main module.
         /// </summary>
         [NotNull]
         public string MainModule { get; }
 
-        public CompilationOptions([NotNull] string mainModule, string debugPattern = null)
+        public CompilationOptions([NotNull] string mainModule, string debugPattern = null, bool emitDisassembly = false)
         {
             MainModule = mainModule;
             DebugPattern = debugPattern;
+            EmitDisassembly = emitDisassembly;
         }
     }
 }

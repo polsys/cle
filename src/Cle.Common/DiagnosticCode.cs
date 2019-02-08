@@ -71,6 +71,7 @@
         UnreachableCode,
 
         BackendErrorStart = 3000,
+        CouldNotCreateOutputFile,
 
         BackendWarningStart = 3500,
     }
