@@ -1,16 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using Cle.Common.TypeSystem;
+using Cle.SemanticAnalysis;
 using Cle.SemanticAnalysis.IR;
 using JetBrains.Annotations;
 using NUnit.Framework;
 
-namespace Cle.SemanticAnalysis.UnitTests
+namespace Cle.UnitTests.Common
 {
     /// <summary>
     /// An UNRELIABLE intermediate representation assembler for TESTING ONLY.
     /// </summary>
-    internal static class MethodAssembler
+    public static class MethodAssembler
     {
         /// <summary>
         /// Creates a <see cref="CompiledMethod"/> out of the given IR disassembly,

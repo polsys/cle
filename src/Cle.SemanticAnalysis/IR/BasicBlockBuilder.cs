@@ -9,7 +9,7 @@ namespace Cle.SemanticAnalysis.IR
     /// Instance methods allow adding instructions and creating/setting successor blocks.
     /// Additionally, once a basic block is guaranteed to exit, all operations become no-ops to omit dead code.
     /// </summary>
-    internal class BasicBlockBuilder
+    public class BasicBlockBuilder
     {
         [NotNull]
         internal ImmutableList<Instruction>.Builder Instructions { get; } = ImmutableList<Instruction>.Empty.ToBuilder();
