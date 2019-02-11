@@ -10,7 +10,7 @@ namespace Cle.SemanticAnalysis.IR
     /// Use <see cref="GetInitialBlockBuilder"/> to get the first basic block builder, then use methods
     /// on block builders to add instructions and create new blocks.
     /// </summary>
-    internal class BasicBlockGraphBuilder
+    public class BasicBlockGraphBuilder
     {
         [NotNull]
         [ItemNotNull]

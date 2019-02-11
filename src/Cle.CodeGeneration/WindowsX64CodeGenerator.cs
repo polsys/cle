@@ -1,4 +1,6 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
+using Cle.CodeGeneration.Lir;
 using Cle.SemanticAnalysis.IR;
 using JetBrains.Annotations;
 
@@ -47,8 +49,53 @@ namespace Cle.CodeGeneration
                 _peWriter.MarkEntryPoint();
             }
 
-            // TODO: Implement actual code generation
-            _peWriter.Emitter.EmitRet();
+            // TODO: Lower the IR to a low-level form
+            var loweredMethod = LoweringX64.Lower(method);
+
+            // TODO: Debug log the lowering
+            // TODO: Perform LIR optimization (e.g. peephole)
+
+            // TODO: Allocate registers for locals (with special casing for parameters and special values)
+            // For now, just do a best "effort" that happens to work with some methods
+            for (var i = 0; i < loweredMethod.Locals.Count; i++)
+            {
+                if (!loweredMethod.Locals[i].Location.IsRegister)
+                    loweredMethod.Locals[i].Location = new StorageLocation<X64Register>((X64Register)(i + 1));
+            }
+
+            // TODO: Emit the lowered IR
+            for (var i = 0; i < loweredMethod.Blocks.Count; i++)
+            {
+                _peWriter.Emitter.WriteBlockLabel(i);
+                EmitBlock(loweredMethod.Blocks[i], loweredMethod);
+            }
+        }
+
+        private void EmitBlock(LowBlock block, LowMethod<X64Register> method)
+        {
+            foreach (var inst in block.Instructions)
+            {
+                switch (inst.Op)
+                {
+                    case LowOp.LoadInt:
+                        _peWriter.Emitter.EmitLoad(method.Locals[inst.Dest].Location, inst.Data);
+                        break;
+                    case LowOp.Move:
+                        var sourceLocation = method.Locals[inst.Left].Location;
+                        var destLocation = method.Locals[inst.Dest].Location;
+
+                        if (sourceLocation != destLocation)
+                        {
+                            _peWriter.Emitter.EmitMov(destLocation, sourceLocation);
+                        }
+                        break;
+                    case LowOp.Return:
+                        _peWriter.Emitter.EmitRet();
+                        break; // TODO: Could be return?
+                    default:
+                        throw new NotImplementedException("Unimplemented LIR opcode");
+                }
+            }
         }
     }
 }
