@@ -96,11 +96,164 @@ namespace Cle.CodeGeneration
         }
 
         /// <summary>
+        /// Emits a movzx instruction from the low 8 bits to the full register.
+        /// </summary>
+        public void EmitZeroExtendFromByte(StorageLocation<X64Register> srcDest)
+        {
+            if (!srcDest.IsRegister)
+                throw new NotImplementedException("Movzx on stack");
+            if (srcDest.Register >= X64Register.Xmm0)
+                throw new NotImplementedException("Movzx on XMM register");
+
+            _disassemblyWriter?.WriteLine(
+                $"{Indent}movzx {GetRegisterName(srcDest.Register)}, {Get8BitRegisterName(srcDest.Register)}");
+
+            var (encodedDest, needR) = GetRegisterEncoding(srcDest.Register);
+            var (encodedSrc, needB) = GetRegisterEncoding(srcDest.Register);
+
+            EmitRexPrefixIfNeeded(true, needR, false, needB);
+            _outputStream.WriteByte(0x0F);
+            _outputStream.WriteByte(0xB6);
+            EmitModRmForRegisterToRegister(encodedDest, encodedSrc);
+        }
+
+        /// <summary>
+        /// Emits a cmp instruction with the two operands.
+        /// The operands are considered to be full width.
+        /// </summary>
+        // TODO: Support specifying operand size
+        public void EmitCmp(StorageLocation<X64Register> left, StorageLocation<X64Register> right)
+        {
+            if (!left.IsRegister || !right.IsRegister)
+                throw new NotImplementedException("Cmp on stack");
+            if (left.Register >= X64Register.Xmm0 || right.Register >= X64Register.Xmm0)
+                throw new NotImplementedException("SIMD compare");
+
+            // General-to-general register cmp
+            DisassembleRegReg("cmp", left.Register, right.Register);
+
+            var (encodedDest, needR) = GetRegisterEncoding(left.Register);
+            var (encodedSrc, needB) = GetRegisterEncoding(right.Register);
+
+            EmitRexPrefixIfNeeded(true, needR, false, needB);
+            _outputStream.WriteByte(0x3B);
+            EmitModRmForRegisterToRegister(encodedDest, encodedSrc);
+        }
+
+        /// <summary>
+        /// Emits a test instruction with the two operands.
+        /// The operands are considered to be full width.
+        /// </summary>
+        // TODO: Support specifying operand size
+        public void EmitTest(StorageLocation<X64Register> left, StorageLocation<X64Register> right)
+        {
+            if (!left.IsRegister || !right.IsRegister)
+                throw new NotImplementedException("Test on stack");
+            if (left.Register >= X64Register.Xmm0 || right.Register >= X64Register.Xmm0)
+                throw new InvalidOperationException("SIMD test");
+            
+            DisassembleRegReg("test", left.Register, right.Register);
+
+            var (encodedDest, needR) = GetRegisterEncoding(left.Register);
+            var (encodedSrc, needB) = GetRegisterEncoding(right.Register);
+
+            EmitRexPrefixIfNeeded(true, needR, false, needB);
+            _outputStream.WriteByte(0x85);
+            EmitModRmForRegisterToRegister(encodedDest, encodedSrc);
+        }
+
+        /// <summary>
+        /// Emits a set byte instruction with the specified condition code.
+        /// </summary>
+        public void EmitSetcc(X64Condition condition, StorageLocation<X64Register> dest)
+        {
+            if (!dest.IsRegister)
+                throw new NotImplementedException("Setcc on stack");
+            if (dest.Register >= X64Register.Xmm0)
+                throw new InvalidOperationException("Setcc on XMM register");
+            
+            _disassemblyWriter?.WriteLine($"{Indent}set{GetConditionName(condition)} {Get8BitRegisterName(dest.Register)}");
+
+            var (encodedReg, needB) = GetRegisterEncoding(dest.Register);
+
+            EmitRexPrefixIfNeeded(false, false, false, needB);
+            _outputStream.WriteByte(0x0F);
+            _outputStream.WriteByte((byte)(0x90 | (byte)condition));
+            EmitModRmForSingleRegister(encodedReg);
+        }
+
+        /// <summary>
+        /// Emits an unconditional jump instruction to an undetermined position and returns a <see cref="Fixup"/>
+        /// value that can be used to fix the target position once it is known.
+        /// </summary>
+        /// <param name="blockIndex">
+        /// The destination basic block index.
+        /// This will be used as a tag on the <see cref="Fixup"/>.
+        /// </param>
+        /// <param name="fixup">Information required for fixing the target later.</param>
+        public void EmitJmpWithFixup(int blockIndex, out Fixup fixup)
+        {
+            // The position points to the displacement, which is 1 byte past the start of the instruction
+            fixup = new Fixup(FixupType.RelativeJump, blockIndex, (int)_outputStream.Position + 1);
+
+            _disassemblyWriter?.WriteLine(Indent + "jmp LB_" + blockIndex);
+
+            _outputStream.WriteByte(0xE9);
+            Emit4ByteImmediate((uint)blockIndex);
+        }
+
+        /// <summary>
+        /// Emits a conditional jump instruction to an undetermined position and returns a <see cref="Fixup"/>
+        /// value that can be used to fix the target position once it is known.
+        /// </summary>
+        /// <param name="condition">The condition code where the jump is executed.</param>
+        /// <param name="blockIndex">
+        /// The destination basic block index.
+        /// This will be used as a tag on the <see cref="Fixup"/>.
+        /// </param>
+        /// <param name="fixup">Information required for fixing the target later.</param>
+        public void EmitJccWithFixup(X64Condition condition, int blockIndex, out Fixup fixup)
+        {
+            // The position points to the displacement, which is 2 bytes past the start of the instruction
+            fixup = new Fixup(FixupType.RelativeJump, blockIndex, (int)_outputStream.Position + 2);
+
+            _disassemblyWriter?.WriteLine($"{Indent}j{GetConditionName(condition)} LB_{blockIndex}");
+
+            _outputStream.WriteByte(0x0F);
+            _outputStream.WriteByte((byte)(0x80 | (byte)condition));
+            Emit4ByteImmediate((uint)blockIndex);
+        }
+
+        /// <summary>
+        /// Applies the given fixup.
+        /// </summary>
+        /// <param name="fixup">The fixup returned by a previous method call.</param>
+        /// <param name="newValue">
+        /// This is interpreted according to the fixup type.
+        /// For relative jumps, this is the address of the jump target.
+        /// </param>
+        public void ApplyFixup(in Fixup fixup, int newValue)
+        {
+            switch (fixup.Type)
+            {
+                case FixupType.RelativeJump:
+                    _outputStream.Seek(fixup.Position, SeekOrigin.Begin);
+                    Emit4ByteImmediate((uint)(newValue - fixup.Position - 4));
+                    _outputStream.Seek(0, SeekOrigin.End);
+                    return;
+                case FixupType.Invalid:
+                    throw new NotImplementedException("Unimplemented fixup type: " + fixup.Type);
+            }
+        }
+
+        /// <summary>
+        /// Returns the current writer position that can be used as a jump target.
         /// Writes a label for the given basic block to the disassembly stream.
         /// </summary>
-        public void WriteBlockLabel(int blockIndex)
+        public void StartBlock(int blockIndex, out int position)
         {
             _disassemblyWriter?.WriteLine("LB_" + blockIndex + ":");
+            position = (int)_outputStream.Position;
         }
 
         private void DisassembleRegReg(string opcode, X64Register dest, X64Register src)
@@ -154,6 +307,14 @@ namespace Cle.CodeGeneration
                 rex |= 0b_0000_0001;
 
             _outputStream.WriteByte(rex);
+        }
+
+        private void EmitModRmForSingleRegister(byte reg)
+        {
+            byte modRm = 0b_11_000_000;
+            modRm |= reg;
+
+            _outputStream.WriteByte(modRm);
         }
 
         private void EmitModRmForRegisterToRegister(byte dest, byte source)
@@ -245,6 +406,47 @@ namespace Cle.CodeGeneration
             {
                 // Not even sensible to talk about 32-bit registers
                 return baseName;
+            }
+        }
+
+        private static string Get8BitRegisterName(X64Register reg)
+        {
+            // Same performance notes as above
+            var baseName = GetRegisterName(reg);
+            if (reg > X64Register.Invalid && reg < X64Register.Rsi)
+            {
+                // rax becomes al, etc.
+                return baseName.Substring(1, 1) + "l";
+            }
+            else if (reg >= X64Register.Rsi && reg < X64Register.R8)
+            {
+                // rsi becomes sil
+                return baseName.Substring(1) + "l";
+            }
+            else if (reg >= X64Register.R8 && reg < X64Register.Xmm0)
+            {
+                // r8 becomes r8b
+                return baseName + "b";
+            }
+            else
+            {
+                // Not even sensible to talk about 8-bit registers
+                return baseName;
+            }
+        }
+
+        private static string GetConditionName(X64Condition condition)
+        {
+            switch (condition)
+            {
+                case X64Condition.Overflow:
+                    return "o";
+                case X64Condition.Equal:
+                    return "e";
+                case X64Condition.NotEqual:
+                    return "ne";
+                default:
+                    return "??";
             }
         }
     }

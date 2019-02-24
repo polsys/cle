@@ -1,0 +1,23 @@
+// This test verifies a simple comparison operation and a branch.
+// The comparison is not folded away in non-optimized builds.
+//
+// Expected return code: 100.
+// No console output expected.
+
+namespace IntEquality;
+
+[EntryPoint]
+public int32 Main()
+{
+    int32 a = 42;
+    int32 b = 42;
+    
+    if (a == b)
+    {
+        return 100;
+    }
+    else
+    {
+        return 0;
+    }
+}

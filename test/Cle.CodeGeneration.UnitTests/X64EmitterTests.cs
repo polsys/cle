@@ -7,6 +7,19 @@ namespace Cle.CodeGeneration.UnitTests
     public class X64EmitterTests
     {
         [Test]
+        public void StartBlock_returns_block_offset()
+        {
+            var emitter = GetEmitter(out _, out var disassembly);
+            emitter.StartBlock(0, out var first);
+            emitter.EmitNop();
+            emitter.StartBlock(1, out var second);
+            
+            Assert.That(disassembly.ToString().Replace("\r\n", "\n"), Is.EqualTo("LB_0:\n    nop\nLB_1:\n"));
+            Assert.That(first, Is.EqualTo(0));
+            Assert.That(second, Is.EqualTo(1)); // TODO: Blocks should start at 16-byte offsets for optimal cache use
+        }
+
+        [Test]
         public void EmitNop_emits_single_byte_nop()
         {
             GetEmitter(out var stream, out var disassembly).EmitNop();
@@ -100,6 +113,129 @@ namespace Cle.CodeGeneration.UnitTests
 
             CollectionAssert.AreEqual(new byte[] { 0x49, 0x8B, 0xD9 }, stream.ToArray());
             Assert.That(disassembly.ToString().Trim(), Is.EqualTo("mov rbx, r9"));
+        }
+
+        [Test]
+        public void EmitZeroExtendFromByte_extends_basic_register()
+        {
+            GetEmitter(out var stream, out var disassembly).EmitZeroExtendFromByte(
+                new StorageLocation<X64Register>(X64Register.Rbx));
+
+            CollectionAssert.AreEqual(new byte[] { 0x48, 0x0F, 0xB6, 0xDB }, stream.ToArray());
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("movzx rbx, bl"));
+        }
+
+        [Test]
+        public void EmitZeroExtendFromByte_extends_new_register()
+        {
+            GetEmitter(out var stream, out var disassembly).EmitZeroExtendFromByte(
+                new StorageLocation<X64Register>(X64Register.R10));
+
+            CollectionAssert.AreEqual(new byte[] { 0x4D, 0x0F, 0xB6, 0xD2 }, stream.ToArray());
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("movzx r10, r10b"));
+        }
+
+        [Test]
+        public void EmitSetcc_emits_setne_to_basic_register()
+        {
+            GetEmitter(out var stream, out var disassembly).EmitSetcc(
+                X64Condition.NotEqual,
+                new StorageLocation<X64Register>(X64Register.Rax));
+
+            CollectionAssert.AreEqual(new byte[] { 0x0F, 0x95, 0xC0 }, stream.ToArray());
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("setne al"));
+        }
+
+        [Test]
+        public void EmitSetcc_emits_sete_to_new_register()
+        {
+            GetEmitter(out var stream, out var disassembly).EmitSetcc(
+                X64Condition.Equal,
+                new StorageLocation<X64Register>(X64Register.R9));
+
+            CollectionAssert.AreEqual(new byte[] { 0x41, 0x0F, 0x94, 0xC1 }, stream.ToArray());
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("sete r9b"));
+        }
+
+        [Test]
+        public void EmitCmp_emits_compare_between_basic_registers()
+        {
+            GetEmitter(out var stream, out var disassembly).EmitCmp(
+                new StorageLocation<X64Register>(X64Register.Rax),
+                new StorageLocation<X64Register>(X64Register.Rbx));
+
+            CollectionAssert.AreEqual(new byte[] { 0x48, 0x3B, 0xC3 }, stream.ToArray());
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("cmp rax, rbx"));
+        }
+
+        [Test]
+        public void EmitCmp_emits_compare_between_new_registers()
+        {
+            GetEmitter(out var stream, out var disassembly).EmitCmp(
+                new StorageLocation<X64Register>(X64Register.R8),
+                new StorageLocation<X64Register>(X64Register.R15));
+
+            CollectionAssert.AreEqual(new byte[] { 0x4D, 0x3B, 0xC7 }, stream.ToArray());
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("cmp r8, r15"));
+        }
+
+        [Test]
+        public void EmitTest_emits_logical_compare_between_basic_and_new_registers()
+        {
+            GetEmitter(out var stream, out var disassembly).EmitTest(
+                new StorageLocation<X64Register>(X64Register.R9),
+                new StorageLocation<X64Register>(X64Register.Rax));
+
+            CollectionAssert.AreEqual(new byte[] { 0x4C, 0x85, 0xC8 }, stream.ToArray());
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("test r9, rax"));
+        }
+
+        [Test]
+        public void EmitJcc_and_ApplyFixup_emit_conditional_jump()
+        {
+            var emitter = GetEmitter(out var stream, out var disassembly);
+            emitter.EmitJccWithFixup(X64Condition.Equal, 16, out var fixup);
+
+            // Initially, the displacement field only encodes the block index
+            CollectionAssert.AreEqual(new byte[] { 0x0F, 0x84, 0x10, 0x00, 0x00, 0x00 }, stream.ToArray());
+
+            // Applying the fixup replaces the displacement with a correctly computed value.
+            // The displacement is relative to the next instruction, therefore is 6 bytes less than the target byte.
+            emitter.ApplyFixup(fixup, 0x12345678);
+            CollectionAssert.AreEqual(new byte[] { 0x0F, 0x84, 0x72, 0x56, 0x34, 0x12 }, stream.ToArray());
+
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("je LB_16"));
+        }
+
+        [Test]
+        public void EmitJcc_and_ApplyFixup_emit_correct_displacement()
+        {
+            var emitter = GetEmitter(out var stream, out _);
+
+            // The nop instructions ensure that the offset is calculated correctly
+            emitter.EmitNop();
+            emitter.EmitJccWithFixup(X64Condition.Equal, 16, out var fixup);
+            emitter.EmitNop();
+            
+            // Displacement is -7 bytes (1 for initial nop, 6 for je)
+            emitter.ApplyFixup(fixup, 0);
+            CollectionAssert.AreEqual(new byte[] { 0x90, 0x0F, 0x84, 0xF9, 0xFF, 0xFF, 0xFF, 0x90 }, stream.ToArray());
+        }
+
+        [Test]
+        public void EmitJmp_and_ApplyFixup_emit_unconditional_jump()
+        {
+            var emitter = GetEmitter(out var stream, out var disassembly);
+            emitter.EmitJmpWithFixup(16, out var fixup);
+
+            // Initially, the displacement field only encodes the block index
+            CollectionAssert.AreEqual(new byte[] { 0xE9, 0x10, 0x00, 0x00, 0x00 }, stream.ToArray());
+            
+            // The displacement is 5 bytes less than the target byte
+            emitter.ApplyFixup(fixup, 0x12345678);
+            CollectionAssert.AreEqual(new byte[] { 0xE9, 0x73, 0x56, 0x34, 0x12 }, stream.ToArray());
+
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("jmp LB_16"));
         }
 
         private static X64Emitter GetEmitter(out MemoryStream stream, out StringWriter disassembly)

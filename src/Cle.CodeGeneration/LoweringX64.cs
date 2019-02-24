@@ -16,9 +16,6 @@ namespace Cle.CodeGeneration
             Debug.Assert(highMethod.Body != null);
             Debug.Assert(highMethod.Body.BasicBlocks.Count > 0);
 
-            if (highMethod.Body.BasicBlocks.Count > 1)
-                throw new NotImplementedException("Multiple BBs");
-
             var lowMethod = new LowMethod<X64Register>();
 
             // Create locals for SSA values
@@ -29,42 +26,95 @@ namespace Cle.CodeGeneration
             }
 
             // Convert each basic block
-            lowMethod.Blocks.Add(ConvertBlock(highMethod.Body.BasicBlocks[0], highMethod, lowMethod));
+            foreach (var highBlock in highMethod.Body.BasicBlocks)
+            {
+                if (highBlock is null)
+                {
+                    lowMethod.Blocks.Add(new LowBlock());
+                }
+                else
+                {
+                    lowMethod.Blocks.Add(ConvertBlock(highBlock, highMethod, lowMethod));
+                }
+            }
 
             // TODO: Convert PHIs into copies
 
             return lowMethod;
         }
 
-        private static LowBlock ConvertBlock(BasicBlock highBlock, CompiledMethod highMethod,
-            LowMethod<X64Register> methodInProgress)
+        private static LowBlock ConvertBlock([NotNull] BasicBlock highBlock, [NotNull] CompiledMethod highMethod,
+            [NotNull] LowMethod<X64Register> methodInProgress)
         {
             var lowBlock = new LowBlock();
 
             // Convert the instructions
+            var returns = false;
             foreach (var inst in highBlock.Instructions)
             {
                 switch (inst.Operation)
                 {
+                    case Opcode.BranchIf:
+                        ConvertBranchIf(lowBlock, highBlock, (int)inst.Left);
+                        break;
+                    case Opcode.Equal:
+                        lowBlock.Instructions.Add(new LowInstruction(LowOp.Compare,
+                            0, (int)inst.Left, inst.Right, 0));
+                        lowBlock.Instructions.Add(new LowInstruction(LowOp.SetIfEqual, inst.Destination, 0, 0, 0));
+                        break;
                     case Opcode.Load:
                         lowBlock.Instructions.Add(new LowInstruction(LowOp.LoadInt, inst.Destination, 0, 0, inst.Left));
                         break;
                     case Opcode.Return:
-                        // Convert "Return x" into "Move x -> return_reg, Return"
-                        var src = highMethod.Values[(int)inst.Left];
-                        var dest = methodInProgress.Locals.Count;
-                        methodInProgress.Locals.Add(new LowLocal<X64Register>(src.Type)
-                            { Location = new StorageLocation<X64Register>(X64Register.Rax) });
-
-                        lowBlock.Instructions.Add(new LowInstruction(LowOp.Move, dest, (int)inst.Left, 0, 0));
-                        lowBlock.Instructions.Add(new LowInstruction(LowOp.Return, 0, 0, 0, 0));
+                        returns = true;
+                        ConvertReturn(lowBlock, (int)inst.Left, highMethod, methodInProgress);
                         break;
                     default:
-                        throw new NotImplementedException("Unimplemented opcode to lower");
+                        throw new NotImplementedException("Unimplemented opcode to lower: " + inst.Operation);
                 }
             }
 
+            if (!returns)
+            {
+                lowBlock.Instructions.Add(new LowInstruction(LowOp.Jump, highBlock.DefaultSuccessor, 0, 0, 0));
+            }
+
             return lowBlock;
+        }
+
+        private static void ConvertBranchIf(LowBlock lowBlock, BasicBlock highBlock, int valueIndex)
+        {
+            // In high IR an if (a == b) branch is represented as
+            //   Equal a == b -> c
+            //   BranchIf c ==> dest.
+            // We lower this to
+            //   Compare a, b
+            //   SetEqual c
+            //   Test c
+            //   JumpIfNotEqual dest. (note: this tests that c != 0)
+            // This is suboptimal, but enables sharing lowering code with if (c) branches.
+            // A peephole pattern transforms the LIR to
+            //   Compare a, b
+            //   JumpIfEqual dest.
+            lowBlock.Instructions.Add(new LowInstruction(LowOp.Test, 0, valueIndex, 0, 0));
+            lowBlock.Instructions.Add(new LowInstruction(LowOp.JumpIfNotEqual, highBlock.AlternativeSuccessor, 0, 0, 0));
+        }
+
+        private static void ConvertReturn(LowBlock lowBlock, int valueIndex, CompiledMethod highMethod,
+            LowMethod<X64Register> methodInProgress)
+        {
+            // Convert
+            //   Return x
+            // into
+            //   Move x -> return_reg
+            //   Return.
+            var src = highMethod.Values[valueIndex];
+            var dest = methodInProgress.Locals.Count;
+            methodInProgress.Locals.Add(new LowLocal<X64Register>(src.Type)
+                { Location = new StorageLocation<X64Register>(X64Register.Rax) });
+
+            lowBlock.Instructions.Add(new LowInstruction(LowOp.Move, dest, valueIndex, 0, 0));
+            lowBlock.Instructions.Add(new LowInstruction(LowOp.Return, 0, 0, 0, 0));
         }
     }
 }
