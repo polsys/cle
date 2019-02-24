@@ -1,10 +1,8 @@
-using System.IO;
-using Cle.UnitTests.Common;
 using NUnit.Framework;
 
 namespace Cle.CodeGeneration.UnitTests.X64CodeGenerator
 {
-    public class VariableTests
+    public class VariableTests : X64CodeGeneratorTestBase
     {
         [Test]
         public void Constant_integer_load_and_return()
@@ -25,16 +23,33 @@ LB_0:
             EmitAndAssertDisassembly(source, expected);
         }
 
-        private static void EmitAndAssertDisassembly(string source, string expected)
+        [Test]
+        public void Bool_assignment_via_comparison()
         {
-            var sourceMethod = MethodAssembler.Assemble(source, "Test::Method");
-            var disassemblyWriter = new StringWriter();
-            var codeGen = new WindowsX64CodeGenerator(Stream.Null, disassemblyWriter);
-
-            codeGen.EmitMethod(sourceMethod, 0, false);
-
-            Assert.That(disassemblyWriter.ToString().Replace("\r\n", "\n").Trim(), 
-                Is.EqualTo(expected.Replace("\r\n", "\n").Trim()));
+            // int32 a = 42;
+            // int32 b = 100;
+            // return a == b;
+            const string source = @"
+; #0   int32
+; #1   int32
+; #2   bool
+BB_0:
+    Load 42 -> #0
+    Load 100 -> #1
+    Equal #0 == #1 -> #2
+    Return #2
+";
+            const string expected = @"
+; Test::Method
+LB_0:
+    mov eax, 2Ah
+    mov ebx, 64h
+    cmp rax, rbx
+    sete al
+    movzx rax, al
+    ret
+";
+            EmitAndAssertDisassembly(source, expected);
         }
     }
 }
