@@ -13,6 +13,7 @@ namespace Cle.CodeGeneration.Lir
 
         public bool IsRegister => !Register.Equals((TRegister)default);
         public bool IsStack => _stackOffset > 0;
+        public bool IsSet => IsRegister || IsStack;
 
         public TRegister Register { get; }
         public int StackOffset => _stackOffset - 1;
