@@ -61,7 +61,9 @@ namespace Cle.CodeGeneration
             var loweredMethod = LoweringX64.Lower(method);
 
             // TODO: Debug log the lowering
-            // TODO: Perform LIR optimization (e.g. peephole)
+            // TODO: Does the LIR need some other optimization (block merging, etc.) before peephole?
+            // Perform peephole optimization
+            PeepholeOptimizer<X64Register>.Optimize(loweredMethod);
 
             // TODO: Allocate registers for locals (with special casing for parameters and special values)
             // For now, just do a best "effort" that happens to work with some methods

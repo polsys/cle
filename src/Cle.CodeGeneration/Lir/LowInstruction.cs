@@ -19,6 +19,9 @@
             Right = right;
             Data = data;
         }
+
+        public bool UsesLeft => Op > LowOp.LoadInt && Op < LowOp.SetIfEqual;
+        public bool UsesRight => Op == LowOp.Compare;
     }
 
     internal enum LowOp
