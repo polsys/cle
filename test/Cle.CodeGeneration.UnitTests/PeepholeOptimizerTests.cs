@@ -5,7 +5,7 @@ using NUnit.Framework;
 
 namespace Cle.CodeGeneration.UnitTests
 {
-    public class PeepholeOptimizerTests
+    internal class PeepholeOptimizerTests
     {
         [Test]
         public void Optimizer_handles_near_empty_method()
@@ -142,8 +142,10 @@ LB_0:
             OptimizeAndVerifyUnchanged(method);
         }
 
-        [Test]
-        public void Jump_if_equal_pattern_is_folded()
+        [TestCase(LowOp.SetIfEqual, "JumpIfEqual")]
+        [TestCase(LowOp.SetIfLess, "JumpIfLess")]
+        [TestCase(LowOp.SetIfLessOrEqual, "JumpIfLessOrEqual")]
+        public void Jump_if_equal_pattern_is_folded(LowOp comparisonOp, string expectedFoldedOp)
         {
             var method = new LowMethod<X64Register>();
             method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32));
@@ -154,19 +156,54 @@ LB_0:
                 Instructions =
                 {
                     new LowInstruction(LowOp.Compare, 0, 0, 1, 0), // Compare #0, #1
-                    new LowInstruction(LowOp.SetIfEqual, 2, 0, 0, 0), // SetIfEqual #2
+                    new LowInstruction(comparisonOp, 2, 0, 0, 0), // SetIfEqual #2
                     new LowInstruction(LowOp.Test, 0, 2, 0, 0), // Test #2
                     new LowInstruction(LowOp.JumpIfNotEqual, 1, 0, 0, 0) // JumpIfNotEqual (not zero) LB_1
                 }
             });
 
-            const string expected = @"
+            var expected = $@"
 ; #0 int32 [?]
 ; #1 int32 [?]
 ; #2 bool [?]
 LB_0:
     Compare 0 1 0 -> 0
-    JumpIfEqual 0 0 0 -> 1
+    {expectedFoldedOp} 0 0 0 -> 1
+";
+            OptimizeAndVerify(method, expected);
+        }
+
+        [TestCase(LowOp.SetIfEqual, "JumpIfNotEqual")]
+        [TestCase(LowOp.SetIfLess, "JumpIfGreaterOrEqual")]
+        [TestCase(LowOp.SetIfLessOrEqual, "JumpIfGreater")]
+        public void Jump_if_not_equal_pattern_is_folded(LowOp comparisonOp, string expectedFoldedOp)
+        {
+            var method = new LowMethod<X64Register>();
+            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32));
+            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32));
+            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Bool));
+            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Bool));
+            method.Blocks.Add(new LowBlock
+            {
+                Instructions =
+                {
+                    new LowInstruction(LowOp.Compare, 0, 0, 1, 0), // Compare #0, #1
+                    new LowInstruction(comparisonOp, 2, 0, 0, 0), // SetIfEqual #2
+                    new LowInstruction(LowOp.Test, 0, 2, 0, 0), // Test #2 (negation, part 1)
+                    new LowInstruction(LowOp.SetIfEqual, 3, 0, 0, 0), // SetIfZero #3 (negation, part 2)
+                    new LowInstruction(LowOp.Test, 0, 3, 0, 0), // Test #3
+                    new LowInstruction(LowOp.JumpIfNotEqual, 1, 0, 0, 0) // JumpIfNotEqual (not zero) LB_1
+                }
+            });
+
+            var expected = $@"
+; #0 int32 [?]
+; #1 int32 [?]
+; #2 bool [?]
+; #3 bool [?]
+LB_0:
+    Compare 0 1 0 -> 0
+    {expectedFoldedOp} 0 0 0 -> 1
 ";
             OptimizeAndVerify(method, expected);
         }
@@ -199,6 +236,80 @@ LB_0:
     Compare 0 1 0 -> 0
     SetIfEqual 0 0 0 -> 2
     JumpIfEqual 0 0 0 -> 1
+    Return 0 0 0 -> 0
+";
+            OptimizeAndVerify(method, expected);
+        }
+
+        [Test]
+        public void Jump_if_not_equal_pattern_is_partially_folded_if_result_is_used()
+        {
+            var method = new LowMethod<X64Register>();
+            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32));
+            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32));
+            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Bool));
+            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Bool)
+                { Location = new StorageLocation<X64Register>(X64Register.Rax) });
+            method.Blocks.Add(new LowBlock
+            {
+                Instructions =
+                {
+                    new LowInstruction(LowOp.Compare, 0, 0, 1, 0), // Compare #0, #1
+                    new LowInstruction(LowOp.SetIfEqual, 2, 0, 0, 0), // SetIfEqual #2
+                    new LowInstruction(LowOp.Test, 0, 2, 0, 0), // Test #2 (negation, part 1)
+                    new LowInstruction(LowOp.SetIfEqual, 3, 0, 0, 0), // SetIfZero #3 (negation, part 2)
+                    new LowInstruction(LowOp.Test, 0, 3, 0, 0), // Test #3
+                    new LowInstruction(LowOp.JumpIfNotEqual, 1, 0, 0, 0), // JumpIfNotEqual (not zero) LB_1
+                    new LowInstruction(LowOp.Return, 0, 0, 0, 0), // Return (#3)
+                }
+            });
+
+            const string expected = @"
+; #0 int32 [?]
+; #1 int32 [?]
+; #2 bool [?]
+; #3 bool [rax]
+LB_0:
+    Compare 0 1 0 -> 0
+    SetIfNotEqual 0 0 0 -> 3
+    JumpIfNotEqual 0 0 0 -> 1
+    Return 0 0 0 -> 0
+";
+            OptimizeAndVerify(method, expected);
+        }
+
+        [Test]
+        public void Jump_if_not_equal_pattern_is_partially_folded_if_non_negated_result_is_used()
+        {
+            var method = new LowMethod<X64Register>();
+            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32));
+            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32));
+            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Bool)
+                { Location = new StorageLocation<X64Register>(X64Register.Rax) });
+            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Bool));
+            method.Blocks.Add(new LowBlock
+            {
+                Instructions =
+                {
+                    new LowInstruction(LowOp.Compare, 0, 0, 1, 0), // Compare #0, #1
+                    new LowInstruction(LowOp.SetIfEqual, 2, 0, 0, 0), // SetIfEqual #2
+                    new LowInstruction(LowOp.Test, 0, 2, 0, 0), // Test #2 (negation, part 1)
+                    new LowInstruction(LowOp.SetIfEqual, 3, 0, 0, 0), // SetIfZero #3 (negation, part 2)
+                    new LowInstruction(LowOp.Test, 0, 3, 0, 0), // Test #3
+                    new LowInstruction(LowOp.JumpIfNotEqual, 1, 0, 0, 0), // JumpIfNotEqual (not zero) LB_1
+                    new LowInstruction(LowOp.Return, 0, 0, 0, 0), // Return (#3)
+                }
+            });
+
+            const string expected = @"
+; #0 int32 [?]
+; #1 int32 [?]
+; #2 bool [rax]
+; #3 bool [?]
+LB_0:
+    Compare 0 1 0 -> 0
+    SetIfEqual 0 0 0 -> 2
+    JumpIfNotEqual 0 0 0 -> 1
     Return 0 0 0 -> 0
 ";
             OptimizeAndVerify(method, expected);

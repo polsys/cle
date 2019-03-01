@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using Cle.CodeGeneration.Lir;
+using Cle.Common.TypeSystem;
 using Cle.SemanticAnalysis.IR;
 using JetBrains.Annotations;
 
@@ -57,13 +58,30 @@ namespace Cle.CodeGeneration
             {
                 switch (inst.Operation)
                 {
+                    case Opcode.BitwiseNot:
+                        if (methodInProgress.Locals[(int)inst.Left].Type.Equals(SimpleType.Bool))
+                        {
+                            // For booleans, BitwiseNot is interpreted as a logical NOT.
+                            // Convert it into a Test followed by SetIfZero (SetIfEqual)
+                            lowBlock.Instructions.Add(new LowInstruction(LowOp.Test, 0, (int)inst.Left, 0, 0));
+                            lowBlock.Instructions.Add(new LowInstruction(LowOp.SetIfEqual, inst.Destination, 0, 0, 0));
+                        }
+                        else
+                        {
+                            goto default;
+                        }
+                        break;
                     case Opcode.BranchIf:
                         ConvertBranchIf(lowBlock, highBlock, (int)inst.Left);
                         break;
                     case Opcode.Equal:
-                        lowBlock.Instructions.Add(new LowInstruction(LowOp.Compare,
-                            0, (int)inst.Left, inst.Right, 0));
-                        lowBlock.Instructions.Add(new LowInstruction(LowOp.SetIfEqual, inst.Destination, 0, 0, 0));
+                        ConvertCompare(in inst, LowOp.SetIfEqual, lowBlock);
+                        break;
+                    case Opcode.Less:
+                        ConvertCompare(in inst, LowOp.SetIfLess, lowBlock);
+                        break;
+                    case Opcode.LessOrEqual:
+                        ConvertCompare(in inst, LowOp.SetIfLessOrEqual, lowBlock);
                         break;
                     case Opcode.Load:
                         lowBlock.Instructions.Add(new LowInstruction(LowOp.LoadInt, inst.Destination, 0, 0, inst.Left));
@@ -101,6 +119,12 @@ namespace Cle.CodeGeneration
             //   JumpIfEqual dest.
             lowBlock.Instructions.Add(new LowInstruction(LowOp.Test, 0, valueIndex, 0, 0));
             lowBlock.Instructions.Add(new LowInstruction(LowOp.JumpIfNotEqual, highBlock.AlternativeSuccessor, 0, 0, 0));
+        }
+
+        private static void ConvertCompare(in Instruction inst, LowOp op, LowBlock lowBlock)
+        {
+            lowBlock.Instructions.Add(new LowInstruction(LowOp.Compare, 0, (int)inst.Left, inst.Right, 0));
+            lowBlock.Instructions.Add(new LowInstruction(op, inst.Destination, 0, 0, 0));
         }
 
         private static void ConvertReturn(LowBlock lowBlock, int valueIndex, CompiledMethod highMethod,

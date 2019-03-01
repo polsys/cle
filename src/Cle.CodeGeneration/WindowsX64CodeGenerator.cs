@@ -116,14 +116,23 @@ namespace Cle.CodeGeneration
                         break;
                     }
                     case LowOp.SetIfEqual:
-                    {
-                        var destLocation = method.Locals[inst.Dest].Location;
-
-                        // We must zero-extend manually since setcc sets only the low 8 bits
-                        emitter.EmitSetcc(X64Condition.Equal, destLocation);
-                        emitter.EmitZeroExtendFromByte(destLocation);
+                        EmitConditionalSet(X64Condition.Equal, method.Locals[inst.Dest].Location);
                         break;
-                    }
+                    case LowOp.SetIfNotEqual:
+                        EmitConditionalSet(X64Condition.NotEqual, method.Locals[inst.Dest].Location);
+                        break;
+                    case LowOp.SetIfLess:
+                        EmitConditionalSet(X64Condition.Less, method.Locals[inst.Dest].Location);
+                        break;
+                    case LowOp.SetIfLessOrEqual:
+                        EmitConditionalSet(X64Condition.LessOrEqual, method.Locals[inst.Dest].Location);
+                        break;
+                    case LowOp.SetIfGreater:
+                        EmitConditionalSet(X64Condition.Greater, method.Locals[inst.Dest].Location);
+                        break;
+                    case LowOp.SetIfGreaterOrEqual:
+                        EmitConditionalSet(X64Condition.GreaterOrEqual, method.Locals[inst.Dest].Location);
+                        break;
                     case LowOp.Jump:
                     {
                         // Do not emit a jump for a simple fallthrough
@@ -141,6 +150,18 @@ namespace Cle.CodeGeneration
                     case LowOp.JumpIfNotEqual:
                         EmitConditionalJump(X64Condition.NotEqual, inst.Dest);
                         break;
+                    case LowOp.JumpIfLess:
+                        EmitConditionalJump(X64Condition.Less, inst.Dest);
+                        break;
+                    case LowOp.JumpIfLessOrEqual:
+                        EmitConditionalJump(X64Condition.LessOrEqual, inst.Dest);
+                        break;
+                    case LowOp.JumpIfGreater:
+                        EmitConditionalJump(X64Condition.Greater, inst.Dest);
+                        break;
+                    case LowOp.JumpIfGreaterOrEqual:
+                        EmitConditionalJump(X64Condition.GreaterOrEqual, inst.Dest);
+                        break;
                     case LowOp.Return:
                         emitter.EmitRet();
                         return;
@@ -156,6 +177,15 @@ namespace Cle.CodeGeneration
         {
             _peWriter.Emitter.EmitJccWithFixup(condition, targetBlock, out var fixup);
             _fixupsForMethod.Add(fixup);
+        }
+
+        private void EmitConditionalSet(X64Condition condition, in StorageLocation<X64Register> destLocation)
+        {
+            var emitter = _peWriter.Emitter;
+
+            // We must zero-extend manually since setcc sets only the low 8 bits
+            emitter.EmitSetcc(condition, destLocation);
+            emitter.EmitZeroExtendFromByte(destLocation);
         }
     }
 }

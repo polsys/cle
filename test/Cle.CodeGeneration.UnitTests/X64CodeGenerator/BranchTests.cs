@@ -4,16 +4,18 @@ namespace Cle.CodeGeneration.UnitTests.X64CodeGenerator
 {
     public class BranchTests : X64CodeGeneratorTestBase
     {
-        [Test]
-        public void Integer_comparison_and_branch()
+        [TestCase("Equal", "je")]
+        [TestCase("Less", "jl")]
+        [TestCase("LessOrEqual", "jle")]
+        public void Integer_comparison_and_branch(string comparison, string expectedConditionalJump)
         {
             // int32 a = 42;
-            // if (a == 100)
+            // if (a op 100)
             // {
             //     return false;
             // }
             // return true;
-            const string source = @"
+            var source = $@"
 ; #0   int32
 ; #1   int32
 ; #2   bool
@@ -22,7 +24,7 @@ namespace Cle.CodeGeneration.UnitTests.X64CodeGenerator
 BB_0:
     Load 42 -> #0
     Load 100 -> #1
-    Equal #0 == #1 -> #2
+    {comparison} #0 == #1 -> #2
     BranchIf #2 ==> BB_1
     ==> BB_2
 
@@ -34,13 +36,65 @@ BB_2:
     Load true -> #4
     Return #4";
 
-            const string expected = @"
+            var expected = $@"
 ; Test::Method
 LB_0:
     mov eax, 2Ah
     mov ebx, 64h
     cmp rax, rbx
-    je LB_1
+    {expectedConditionalJump} LB_1
+    jmp LB_2
+LB_1:
+    mov eax, 0h
+    ret
+LB_2:
+    mov eax, 1h
+    ret
+";
+            EmitAndAssertDisassembly(source, expected);
+        }
+
+        [TestCase("Equal", "jne")]
+        [TestCase("Less", "jge")]
+        [TestCase("LessOrEqual", "jg")]
+        public void Inverted_integer_comparison_and_branch(string comparison, string expectedConditionalJump)
+        {
+            // int32 a = 42;
+            // if (a !op 100)
+            // {
+            //     return false;
+            // }
+            // return true;
+            var source = $@"
+; #0   int32
+; #1   int32
+; #2   bool
+; #3   bool
+; #4   bool
+; #5   bool
+BB_0:
+    Load 42 -> #0
+    Load 100 -> #1
+    {comparison} #0 == #1 -> #2
+    BitwiseNot #2 -> #3
+    BranchIf #3 ==> BB_1
+    ==> BB_2
+
+BB_1:
+    Load false -> #4
+    Return #4
+
+BB_2:
+    Load true -> #5
+    Return #5";
+
+            var expected = $@"
+; Test::Method
+LB_0:
+    mov eax, 2Ah
+    mov ebx, 64h
+    cmp rax, rbx
+    {expectedConditionalJump} LB_1
     jmp LB_2
 LB_1:
     mov eax, 0h
@@ -84,6 +138,51 @@ LB_0:
     mov eax, 1h
     test rax, rax
     jne LB_1
+    jmp LB_2
+LB_1:
+    mov eax, 0h
+    ret
+LB_2:
+    mov eax, 1h
+    ret
+";
+            EmitAndAssertDisassembly(source, expected);
+        }
+
+        [Test]
+        public void Inverted_bool_comparison_and_branch()
+        {
+            // bool b = true;
+            // if (!b)
+            // {
+            //     return false;
+            // }
+            // return true;
+            const string source = @"
+; #0   bool
+; #1   bool
+; #2   bool
+; #3   bool
+BB_0:
+    Load true -> #0
+    BitwiseNot #0 -> #1
+    BranchIf #1 ==> BB_1
+    ==> BB_2
+
+BB_1:
+    Load false -> #2
+    Return #2
+
+BB_2:
+    Load true -> #3
+    Return #3";
+
+            const string expected = @"
+; Test::Method
+LB_0:
+    mov eax, 1h
+    test rax, rax
+    je LB_1
     jmp LB_2
 LB_1:
     mov eax, 0h
