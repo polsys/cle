@@ -46,7 +46,10 @@ namespace Cle.CodeGeneration
         private static LowBlock ConvertBlock([NotNull] BasicBlock highBlock, [NotNull] CompiledMethod highMethod,
             [NotNull] LowMethod<X64Register> methodInProgress)
         {
-            var lowBlock = new LowBlock();
+            var lowBlock = new LowBlock
+            {
+                Phis = highBlock.Phis
+            };
 
             // Convert the instructions
             var returns = false;

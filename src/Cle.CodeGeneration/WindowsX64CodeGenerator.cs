@@ -65,20 +65,15 @@ namespace Cle.CodeGeneration
             // Perform peephole optimization
             PeepholeOptimizer<X64Register>.Optimize(loweredMethod);
 
-            // TODO: Allocate registers for locals (with special casing for parameters and special values)
-            // For now, just do a best "effort" that happens to work with some methods
-            for (var i = 0; i < loweredMethod.Locals.Count; i++)
-            {
-                if (!loweredMethod.Locals[i].Location.IsRegister)
-                    loweredMethod.Locals[i].Location = new StorageLocation<X64Register>((X64Register)(i + 1));
-            }
+            // Allocate registers for locals (with special casing for parameters)
+            X64RegisterAllocator.Allocate(loweredMethod);
 
             // Emit the lowered IR
             for (var i = 0; i < loweredMethod.Blocks.Count; i++)
             {
                 _peWriter.Emitter.StartBlock(i, out var position);
                 _blockPositions.Add(position);
-                EmitBlock(loweredMethod.Blocks[i], loweredMethod);
+                EmitBlock(i, loweredMethod);
             }
 
             // Apply fixups
@@ -88,8 +83,9 @@ namespace Cle.CodeGeneration
             }
         }
 
-        private void EmitBlock(LowBlock block, LowMethod<X64Register> method)
+        private void EmitBlock(int blockIndex, LowMethod<X64Register> method)
         {
+            var block = method.Blocks[blockIndex];
             var emitter = _peWriter.Emitter;
 
             foreach (var inst in block.Instructions)
@@ -130,6 +126,10 @@ namespace Cle.CodeGeneration
                     }
                     case LowOp.Jump:
                     {
+                        // Do not emit a jump for a simple fallthrough
+                        if (inst.Dest == blockIndex + 1)
+                            return;
+
                         // TODO: Don't bother creating a fixup for a backward branch where the destination is already known
                         emitter.EmitJmpWithFixup(inst.Dest, out var fixup);
                         _fixupsForMethod.Add(fixup);
@@ -143,7 +143,7 @@ namespace Cle.CodeGeneration
                         break;
                     case LowOp.Return:
                         emitter.EmitRet();
-                        break; // TODO: Could be return?
+                        return;
                     case LowOp.Nop:
                         break;
                     default:

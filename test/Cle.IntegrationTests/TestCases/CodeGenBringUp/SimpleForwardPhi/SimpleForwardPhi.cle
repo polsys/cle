@@ -1,0 +1,21 @@
+// This test verifies an int32 PHI caused by a simple boolean comparison branch.
+// The branch is not folded away in non-optimized builds.
+//
+// Expected return code: 50.
+// No console output expected.
+
+namespace SimpleForwardPhi;
+
+[EntryPoint]
+public int32 Main()
+{
+    int32 a = 0;
+    bool b = true;
+    
+    if (b)
+    {
+        a = 50;
+    }
+    
+    return a;
+}

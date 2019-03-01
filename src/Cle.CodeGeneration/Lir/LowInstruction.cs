@@ -21,7 +21,12 @@
         }
 
         public bool UsesLeft => Op > LowOp.LoadInt && Op < LowOp.SetIfEqual;
-        public bool UsesRight => Op == LowOp.Compare;
+        public bool UsesRight => Op == LowOp.Compare || Op == LowOp.IntegerAdd;
+
+        public bool UsesDest => Op == LowOp.LoadInt || Op == LowOp.Move ||
+                                Op == LowOp.IntegerAdd ||
+                                Op == LowOp.SetIfEqual || Op == LowOp.Jump ||
+                                Op == LowOp.JumpIfEqual || Op == LowOp.JumpIfNotEqual;
     }
 
     internal enum LowOp
@@ -43,6 +48,13 @@
         /// Moves the value in Left to Dest.
         /// </summary>
         Move,
+
+        // Arithmetic
+
+        /// <summary>
+        /// Sums the Left and Right locals and stores the result in Dest local.
+        /// </summary>
+        IntegerAdd,
 
         // Conditions
 
