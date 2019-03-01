@@ -37,6 +37,7 @@
         Xmm12,
         Xmm13,
         Xmm14,
-        Xmm15
+        Xmm15,
+        Count
     }
 }

@@ -1,4 +1,6 @@
 ﻿using System.Collections.Generic;
+using Cle.SemanticAnalysis.IR;
+using JetBrains.Annotations;
 
 namespace Cle.CodeGeneration.Lir
 {
@@ -7,8 +9,17 @@ namespace Cle.CodeGeneration.Lir
     /// </summary>
     internal class LowBlock
     {
+        /// <summary>
+        /// Gets a linear list of lowered instructions in this block.
+        /// </summary>
+        [NotNull]
         public List<LowInstruction> Instructions = new List<LowInstruction>();
 
-        // TODO: Phis to be resolved at the end of this block
+        /// <summary>
+        /// Gets a read-only list of Phi nodes executed at the start of this block.
+        /// Can be null.
+        /// </summary>
+        [CanBeNull, ItemNotNull]
+        public IReadOnlyList<Phi> Phis;
     }
 }

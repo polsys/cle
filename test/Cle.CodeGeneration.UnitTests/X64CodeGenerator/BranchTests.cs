@@ -94,5 +94,49 @@ LB_2:
 ";
             EmitAndAssertDisassembly(source, expected);
         }
+
+        [Test]
+        public void Branch_with_a_single_backwards_phi()
+        {
+            // int a = 0;
+            // bool b = true;
+            // if (b)
+            // {
+            //     a = 1;
+            // }
+            // return a;
+            const string source = @"
+; #0   int32
+; #1   bool
+; #2   int32
+; #3   int32
+BB_0:
+    Load 0 -> #0
+    Load true -> #1
+    BranchIf #1 ==> BB_1
+    ==> BB_2
+
+BB_1:
+    Load 1 -> #2
+
+BB_2:
+    PHI (#0, #2) -> #3
+    Return #3";
+
+            const string expected = @"
+; Test::Method
+LB_0:
+    mov eax, 0h
+    mov ebx, 1h
+    test rbx, rbx
+    jne LB_1
+    jmp LB_2
+LB_1:
+    mov eax, 1h
+LB_2:
+    ret
+";
+            EmitAndAssertDisassembly(source, expected);
+        }
     }
 }
