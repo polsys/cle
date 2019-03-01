@@ -9,5 +9,9 @@
         Overflow = 0,
         Equal = 0b0100,
         NotEqual = 0b0101,
+        Less = 0b1100,
+        GreaterOrEqual = 0b1101,
+        LessOrEqual = 0b1110,
+        Greater = 0b1111,
     }
 }

@@ -106,40 +106,126 @@ namespace Cle.CodeGeneration
                 }
             }
 
-            if (instructionsLeft >= 3
-                && current.Op == LowOp.Compare
-                && block[currentPos + 1].Op == LowOp.SetIfEqual
-                && block[currentPos + 2].Op == LowOp.Test
-                && block[currentPos + 3].Op == LowOp.JumpIfNotEqual)
+            if (instructionsLeft >= 2
+                && IsConditionalSet(current.Op)
+                && block[currentPos + 1].Op == LowOp.Test
+                && block[currentPos + 2].Op == LowOp.SetIfEqual)
+            {
+                // This pattern is created by lowering of a logical NOT. In HIR, only the ==, < and <= comparisons
+                // are represented directly and their negations are implemented via a logical negation.
+                // ----
+                // SetIfEqual -> #2
+                // Test #2
+                // SetIfEqual -> #3
+                // ----
+                // (SetIfEqual -> #2, if #2 is used later on)
+                // SetIfNotEqual -> #3
+
+                var dest = block[currentPos + 2].Dest;
+                block[currentPos + 2] = new LowInstruction(NegateConditional(current.Op), dest, 0, 0, 0);
+                block.RemoveAt(currentPos + 1);
+
+                if (localUses[current.Dest] == 1)
+                {
+                    block.RemoveAt(currentPos);
+                }
+
+                return true;
+            }
+
+            if (instructionsLeft >= 2
+                && IsConditionalSet(block[currentPos].Op)
+                && block[currentPos + 1].Op == LowOp.Test
+                && block[currentPos + 2].Op == LowOp.JumpIfNotEqual)
             {
                 // This pattern is created by lowering because the high IR does not explicitly distinguish
                 // whether the comparison result is a temporary or a proper variable.
                 // ----
-                // Compare #0, #1
+                // [typically Compare #0, #1]
                 // SetIfEqual -> #2
                 // Test #2
                 // JumpIfNotEqual dest
                 // ----
-                // Compare #0, #1
+                // [Compare #0, #1]
                 // (SetIfEqual #2, if #2 is used later on)
                 // JumpIfEqual dest
 
-                if (localUses[block[currentPos + 1].Dest] == 1)
+                var replacement = GetConditionalJumpFromConditionalSet(block[currentPos].Op);
+                if (localUses[block[currentPos].Dest] == 1)
                 {
                     // The comparison result is not used, both SetIfEqual and Test may be omitted
-                    block[currentPos + 3] = new LowInstruction(LowOp.JumpIfEqual, block[currentPos + 3].Dest, 0, 0, 0);
-                    block.RemoveAt(currentPos + 2);
+                    block[currentPos + 2] = new LowInstruction(replacement, block[currentPos + 2].Dest, 0, 0, 0);
                     block.RemoveAt(currentPos + 1);
+                    block.RemoveAt(currentPos);
                 }
                 else
                 {
                     // The Test may be omitted as the comparison result is still in processor flags
-                    block[currentPos + 3] = new LowInstruction(LowOp.JumpIfEqual, block[currentPos + 3].Dest, 0, 0, 0);
-                    block.RemoveAt(currentPos + 2);
+                    block[currentPos + 2] = new LowInstruction(replacement, block[currentPos + 2].Dest, 0, 0, 0);
+                    block.RemoveAt(currentPos + 1);
                 }
             }
 
             return false;
+        }
+
+        private static bool IsConditionalSet(LowOp op)
+        {
+            return op >= LowOp.SetIfEqual && op <= LowOp.SetIfGreaterOrEqual;
+        }
+
+        private static LowOp GetConditionalJumpFromConditionalSet(LowOp op)
+        {
+            switch (op)
+            {
+                case LowOp.SetIfEqual:
+                    return LowOp.JumpIfEqual;
+                case LowOp.SetIfNotEqual:
+                    return LowOp.JumpIfNotEqual;
+                case LowOp.SetIfLess:
+                    return LowOp.JumpIfLess;
+                case LowOp.SetIfLessOrEqual:
+                    return LowOp.JumpIfLessOrEqual;
+                case LowOp.SetIfGreater:
+                    return LowOp.JumpIfGreater;
+                case LowOp.SetIfGreaterOrEqual:
+                    return LowOp.JumpIfGreaterOrEqual;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(op), op.ToString());
+            }
+        }
+
+        private static LowOp NegateConditional(LowOp op)
+        {
+            switch (op)
+            {
+                case LowOp.SetIfEqual:
+                    return LowOp.SetIfNotEqual;
+                case LowOp.SetIfNotEqual:
+                    return LowOp.SetIfEqual;
+                case LowOp.SetIfLess:
+                    return LowOp.SetIfGreaterOrEqual;
+                case LowOp.SetIfLessOrEqual:
+                    return LowOp.SetIfGreater;
+                case LowOp.SetIfGreater:
+                    return LowOp.SetIfLessOrEqual;
+                case LowOp.SetIfGreaterOrEqual:
+                    return LowOp.SetIfLess;
+                case LowOp.JumpIfEqual:
+                    return LowOp.JumpIfNotEqual;
+                case LowOp.JumpIfNotEqual:
+                    return LowOp.JumpIfEqual;
+                case LowOp.JumpIfLess:
+                    return LowOp.JumpIfGreaterOrEqual;
+                case LowOp.JumpIfLessOrEqual:
+                    return LowOp.JumpIfGreater;
+                case LowOp.JumpIfGreater:
+                    return LowOp.JumpIfLessOrEqual;
+                case LowOp.JumpIfGreaterOrEqual:
+                    return LowOp.JumpIfLess;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(op), op.ToString());
+            }
         }
     }
 }

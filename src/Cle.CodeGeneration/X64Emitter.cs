@@ -445,6 +445,14 @@ namespace Cle.CodeGeneration
                     return "e";
                 case X64Condition.NotEqual:
                     return "ne";
+                case X64Condition.Less:
+                    return "l";
+                case X64Condition.GreaterOrEqual:
+                    return "ge";
+                case X64Condition.LessOrEqual:
+                    return "le";
+                case X64Condition.Greater:
+                    return "g";
                 default:
                     return "??";
             }

@@ -70,6 +70,26 @@
         /// Sets Dest local to 1 if the previous comparison has set the Equal/Zero flag.
         /// </summary>
         SetIfEqual,
+        /// <summary>
+        /// Sets Dest local to 1 if the previous comparison has not set the Equal/Zero flag.
+        /// </summary>
+        SetIfNotEqual,
+        /// <summary>
+        /// Sets Dest local to 1 if the previous comparison has set the Less flag.
+        /// </summary>
+        SetIfLess,
+        /// <summary>
+        /// Sets Dest local to 1 if the previous comparison has set the Equal/Zero or the Less flag.
+        /// </summary>
+        SetIfLessOrEqual,
+        /// <summary>
+        /// Sets Dest local to 1 if the previous comparison has set the Greater flag.
+        /// </summary>
+        SetIfGreater,
+        /// <summary>
+        /// Sets Dest local to 1 if the previous comparison has set the Equal/Zero or the Greater flag.
+        /// </summary>
+        SetIfGreaterOrEqual,
 
         // Control flow
 
@@ -85,6 +105,22 @@
         /// Jumps to the low block indexed by Dest if the Equal/Zero flag is not set.
         /// </summary>
         JumpIfNotEqual,
+        /// <summary>
+        /// Jumps to the low block indexed by Dest if the Less flag is set.
+        /// </summary>
+        JumpIfLess,
+        /// <summary>
+        /// Jumps to the low block indexed by Dest if the Less or Equal/Zero flag is set.
+        /// </summary>
+        JumpIfLessOrEqual,
+        /// <summary>
+        /// Jumps to the low block indexed by Dest if the Greater flag is set.
+        /// </summary>
+        JumpIfGreater,
+        /// <summary>
+        /// Jumps to the low block indexed by Dest if the Greater or Equal/Zero flag is set.
+        /// </summary>
+        JumpIfGreaterOrEqual,
         /// <summary>
         /// Exits the method.
         /// Has no operands - the return value is assumed to be in the correct location.
