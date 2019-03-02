@@ -14,6 +14,11 @@ namespace Cle.Common.TypeSystem
         /// </summary>
         public abstract string TypeName { get; }
 
+        /// <summary>
+        /// Gets the in-memory size of this type in bytes.
+        /// </summary>
+        public abstract int SizeInBytes { get; }
+
         public abstract bool Equals(TypeDefinition other);
         public abstract override bool Equals(object obj);
         public abstract override int GetHashCode();

@@ -58,6 +58,18 @@ namespace Cle.CodeGeneration
             {
                 switch (inst.Operation)
                 {
+                    case Opcode.Add:
+                        if (methodInProgress.Locals[(int)inst.Left].Type.Equals(SimpleType.Int32) &&
+                            methodInProgress.Locals[inst.Right].Type.Equals(SimpleType.Int32))
+                        {
+                            lowBlock.Instructions.Add(
+                                new LowInstruction(LowOp.IntegerAdd, inst.Destination, (int)inst.Left, inst.Right, 0));
+                        }
+                        else
+                        {
+                            goto default;
+                        }
+                        break;
                     case Opcode.BitwiseNot:
                         if (methodInProgress.Locals[(int)inst.Left].Type.Equals(SimpleType.Bool))
                         {
