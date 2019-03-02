@@ -1,0 +1,21 @@
+// This test verifies a simple while loop with an integer condition, arithmetical body and two PHIs.
+//
+// Expected return code: 45.
+// No console output expected.
+
+namespace SimpleWhileLoop;
+
+[EntryPoint]
+public int32 Main()
+{
+    int32 i = 0;
+    int32 sum = 0;
+    
+    while (i < 10)
+    {
+        sum = sum + i;
+        i = i + 1;
+    }
+    
+    return sum;
+}

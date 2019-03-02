@@ -99,13 +99,17 @@ namespace Cle.CodeGeneration
                     {
                         var sourceLocation = method.Locals[inst.Left].Location;
                         var destLocation = method.Locals[inst.Dest].Location;
+                        var operandSize = method.Locals[inst.Dest].Type.SizeInBytes;
 
                         if (sourceLocation != destLocation)
                         {
-                            emitter.EmitMov(destLocation, sourceLocation);
+                            emitter.EmitMov(destLocation, sourceLocation, operandSize);
                         }
                         break;
                     }
+                    case LowOp.IntegerAdd:
+                        EmitIntegerBinaryOp(BinaryOp.Add, in inst, method);
+                        break;
                     case LowOp.Compare:
                         emitter.EmitCmp(method.Locals[inst.Left].Location, method.Locals[inst.Right].Location);
                         break;
@@ -139,28 +143,35 @@ namespace Cle.CodeGeneration
                         if (inst.Dest == blockIndex + 1)
                             return;
 
-                        // TODO: Don't bother creating a fixup for a backward branch where the destination is already known
-                        emitter.EmitJmpWithFixup(inst.Dest, out var fixup);
-                        _fixupsForMethod.Add(fixup);
+                        // Don't bother creating a fixup for a backward branch where the destination is already known
+                        if (inst.Dest <= blockIndex)
+                        {
+                            emitter.EmitJmp(inst.Dest, _blockPositions[inst.Dest]);
+                        }
+                        else
+                        {
+                            emitter.EmitJmpWithFixup(inst.Dest, out var fixup);
+                            _fixupsForMethod.Add(fixup);
+                        }
                         break;
                     }
                     case LowOp.JumpIfEqual:
-                        EmitConditionalJump(X64Condition.Equal, inst.Dest);
+                        EmitConditionalJump(X64Condition.Equal, inst.Dest, blockIndex);
                         break;
                     case LowOp.JumpIfNotEqual:
-                        EmitConditionalJump(X64Condition.NotEqual, inst.Dest);
+                        EmitConditionalJump(X64Condition.NotEqual, inst.Dest, blockIndex);
                         break;
                     case LowOp.JumpIfLess:
-                        EmitConditionalJump(X64Condition.Less, inst.Dest);
+                        EmitConditionalJump(X64Condition.Less, inst.Dest, blockIndex);
                         break;
                     case LowOp.JumpIfLessOrEqual:
-                        EmitConditionalJump(X64Condition.LessOrEqual, inst.Dest);
+                        EmitConditionalJump(X64Condition.LessOrEqual, inst.Dest, blockIndex);
                         break;
                     case LowOp.JumpIfGreater:
-                        EmitConditionalJump(X64Condition.Greater, inst.Dest);
+                        EmitConditionalJump(X64Condition.Greater, inst.Dest, blockIndex);
                         break;
                     case LowOp.JumpIfGreaterOrEqual:
-                        EmitConditionalJump(X64Condition.GreaterOrEqual, inst.Dest);
+                        EmitConditionalJump(X64Condition.GreaterOrEqual, inst.Dest, blockIndex);
                         break;
                     case LowOp.Return:
                         emitter.EmitRet();
@@ -173,10 +184,19 @@ namespace Cle.CodeGeneration
             }
         }
 
-        private void EmitConditionalJump(X64Condition condition, int targetBlock)
+        private void EmitConditionalJump(X64Condition condition, int targetBlock, int currentBlock)
         {
-            _peWriter.Emitter.EmitJccWithFixup(condition, targetBlock, out var fixup);
-            _fixupsForMethod.Add(fixup);
+            var emitter = _peWriter.Emitter;
+
+            if (targetBlock <= currentBlock)
+            {
+                emitter.EmitJcc(condition, targetBlock, _blockPositions[targetBlock]);
+            }
+            else
+            {
+                emitter.EmitJccWithFixup(condition, targetBlock, out var fixup);
+                _fixupsForMethod.Add(fixup);
+            }
         }
 
         private void EmitConditionalSet(X64Condition condition, in StorageLocation<X64Register> destLocation)
@@ -186,6 +206,33 @@ namespace Cle.CodeGeneration
             // We must zero-extend manually since setcc sets only the low 8 bits
             emitter.EmitSetcc(condition, destLocation);
             emitter.EmitZeroExtendFromByte(destLocation);
+        }
+
+        private void EmitIntegerBinaryOp(BinaryOp op, in LowInstruction inst, LowMethod<X64Register> method)
+        {
+            var emitter = _peWriter.Emitter;
+
+            var leftLocation = method.Locals[inst.Left].Location;
+            var rightLocation = method.Locals[inst.Right].Location;
+            var destLocation = method.Locals[inst.Dest].Location;
+            var operandSize = method.Locals[inst.Dest].Type.SizeInBytes;
+
+            if (leftLocation == destLocation)
+            {
+                // The ideal case: we can emit "op left, right"
+                emitter.EmitGeneralBinaryOp(op, leftLocation, rightLocation, operandSize);
+            }
+            else if (rightLocation == destLocation)
+            {
+                // Still good: "op right, left"
+                emitter.EmitGeneralBinaryOp(op, rightLocation, leftLocation, operandSize);
+            }
+            else
+            {
+                // We have to do a temporary move first
+                emitter.EmitMov(destLocation, leftLocation, operandSize);
+                emitter.EmitGeneralBinaryOp(op, destLocation, rightLocation, operandSize);
+            }
         }
     }
 }

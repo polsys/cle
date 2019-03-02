@@ -74,23 +74,27 @@ namespace Cle.CodeGeneration
 
         /// <summary>
         /// Emits a mov instruction from the source to the destination.
-        /// The operands are considered to be full width.
+        /// The operand size is specified in bytes.
         /// </summary>
-        // TODO: Support specifying operand size
-        public void EmitMov(StorageLocation<X64Register> dest, StorageLocation<X64Register> source)
+        public void EmitMov(StorageLocation<X64Register> dest, StorageLocation<X64Register> source, int operandSize)
         {
+            // TODO: 8-bit ops need their own special handling, as the opcodes are different
+            // TODO: 16-bit ops use the same opcode but need tests for that case
+            if (operandSize != 4 && operandSize != 8)
+                throw new NotImplementedException("Other operand widths");
+
             if (!source.IsRegister || !dest.IsRegister)
                 throw new NotImplementedException("Mov to/from stack");
             if (source.Register >= X64Register.Xmm0 || dest.Register >= X64Register.Xmm0)
                 throw new NotImplementedException("Mov to/from XMM registers");
 
             // General-to-general register mov
-            DisassembleRegReg("mov", dest.Register, source.Register);
+            DisassembleRegReg("mov", dest.Register, source.Register, operandSize);
 
             var (encodedDest, needR) = GetRegisterEncoding(dest.Register);
             var (encodedSrc, needB) = GetRegisterEncoding(source.Register);
 
-            EmitRexPrefixIfNeeded(true, needR, false, needB);
+            EmitRexPrefixIfNeeded(operandSize == 8, needR, false, needB);
             _outputStream.WriteByte(0x8B);
             EmitModRmForRegisterToRegister(encodedDest, encodedSrc);
         }
@@ -118,6 +122,35 @@ namespace Cle.CodeGeneration
         }
 
         /// <summary>
+        /// Emits a general-purpose binary operation with the specified operand width.
+        /// </summary>
+        /// <param name="op">The binary operation to emit.</param>
+        /// <param name="srcDest">The left location, used both as a source and a destination. Must not be an XMM register.</param>
+        /// <param name="right">The left location, used as a source. Must not be an XMM register.</param>
+        /// <param name="operandSize">The operand width in bytes.</param>
+        public void EmitGeneralBinaryOp(BinaryOp op, StorageLocation<X64Register> srcDest,
+            StorageLocation<X64Register> right, int operandSize)
+        {
+            // TODO: 8-bit and 16-bit ops need their own special handling, as the opcodes are different
+            if (operandSize != 4 && operandSize != 8)
+                throw new NotImplementedException("Other operand widths");
+
+            if (!srcDest.IsRegister || !right.IsRegister)
+                throw new NotImplementedException("Binary op on stack");
+            if (srcDest.Register >= X64Register.Xmm0 || right.Register >= X64Register.Xmm0)
+                throw new InvalidOperationException("Trying to emit a general-purpose op on a SIMD register.");
+            
+            DisassembleRegReg(GetGeneralBinaryName(op), srcDest.Register, right.Register, operandSize);
+
+            var (encodedLeft, needR) = GetRegisterEncoding(srcDest.Register);
+            var (encodedRight, needB) = GetRegisterEncoding(right.Register);
+
+            EmitRexPrefixIfNeeded(operandSize == 8, needR, false, needB);
+            _outputStream.WriteByte(GetGeneralBinaryOpcode(op));
+            EmitModRmForRegisterToRegister(encodedLeft, encodedRight);
+        }
+
+        /// <summary>
         /// Emits a cmp instruction with the two operands.
         /// The operands are considered to be full width.
         /// </summary>
@@ -130,7 +163,7 @@ namespace Cle.CodeGeneration
                 throw new NotImplementedException("SIMD compare");
 
             // General-to-general register cmp
-            DisassembleRegReg("cmp", left.Register, right.Register);
+            DisassembleRegReg("cmp", left.Register, right.Register, 8);
 
             var (encodedDest, needR) = GetRegisterEncoding(left.Register);
             var (encodedSrc, needB) = GetRegisterEncoding(right.Register);
@@ -152,7 +185,7 @@ namespace Cle.CodeGeneration
             if (left.Register >= X64Register.Xmm0 || right.Register >= X64Register.Xmm0)
                 throw new InvalidOperationException("SIMD test");
             
-            DisassembleRegReg("test", left.Register, right.Register);
+            DisassembleRegReg("test", left.Register, right.Register, 8);
 
             var (encodedDest, needR) = GetRegisterEncoding(left.Register);
             var (encodedSrc, needB) = GetRegisterEncoding(right.Register);
@@ -183,6 +216,19 @@ namespace Cle.CodeGeneration
         }
 
         /// <summary>
+        /// Emits an unconditional jump instruction to the specified position.
+        /// </summary>
+        /// <param name="blockIndex">The destination basic block index, used for disassembly.</param>
+        /// <param name="target">The jump target position. For blocks, this is received from <see cref="StartBlock"/>.</param>
+        public void EmitJmp(int blockIndex, int target)
+        {
+            _disassemblyWriter?.WriteLine(Indent + "jmp LB_" + blockIndex);
+
+            _outputStream.WriteByte(0xE9);
+            Emit4ByteImmediate((uint)(target - _outputStream.Position - 4));
+        }
+
+        /// <summary>
         /// Emits an unconditional jump instruction to an undetermined position and returns a <see cref="Fixup"/>
         /// value that can be used to fix the target position once it is known.
         /// </summary>
@@ -195,11 +241,22 @@ namespace Cle.CodeGeneration
         {
             // The position points to the displacement, which is 1 byte past the start of the instruction
             fixup = new Fixup(FixupType.RelativeJump, blockIndex, (int)_outputStream.Position + 1);
+            EmitJmp(blockIndex, 0);
+        }
 
-            _disassemblyWriter?.WriteLine(Indent + "jmp LB_" + blockIndex);
+        /// <summary>
+        /// Emits a conditional jump instruction to the specified position.
+        /// </summary>
+        /// <param name="condition">The condition code where the jump is executed.</param>
+        /// <param name="blockIndex"> The destination basic block index, used for disassembly.</param>
+        /// <param name="target">The jump target position. For blocks, this is received from <see cref="StartBlock"/>.</param>
+        public void EmitJcc(X64Condition condition, int blockIndex, int target)
+        {
+            _disassemblyWriter?.WriteLine($"{Indent}j{GetConditionName(condition)} LB_{blockIndex}");
 
-            _outputStream.WriteByte(0xE9);
-            Emit4ByteImmediate((uint)blockIndex);
+            _outputStream.WriteByte(0x0F);
+            _outputStream.WriteByte((byte)(0x80 | (byte)condition));
+            Emit4ByteImmediate((uint)(target - _outputStream.Position - 4));
         }
 
         /// <summary>
@@ -216,12 +273,7 @@ namespace Cle.CodeGeneration
         {
             // The position points to the displacement, which is 2 bytes past the start of the instruction
             fixup = new Fixup(FixupType.RelativeJump, blockIndex, (int)_outputStream.Position + 2);
-
-            _disassemblyWriter?.WriteLine($"{Indent}j{GetConditionName(condition)} LB_{blockIndex}");
-
-            _outputStream.WriteByte(0x0F);
-            _outputStream.WriteByte((byte)(0x80 | (byte)condition));
-            Emit4ByteImmediate((uint)blockIndex);
+            EmitJcc(condition, blockIndex, 0);
         }
 
         /// <summary>
@@ -256,9 +308,31 @@ namespace Cle.CodeGeneration
             position = (int)_outputStream.Position;
         }
 
-        private void DisassembleRegReg(string opcode, X64Register dest, X64Register src)
+        private void DisassembleRegReg(string opcode, X64Register left, X64Register right, int operandSize)
         {
-            _disassemblyWriter?.WriteLine($"{Indent}{opcode} {GetRegisterName(dest)}, {GetRegisterName(src)}");
+            if (_disassemblyWriter is null)
+                return;
+
+            var leftName = "?";
+            var rightName = "?";
+
+            switch (operandSize)
+            {
+                case 1:
+                    leftName = Get8BitRegisterName(left);
+                    rightName = Get8BitRegisterName(right);
+                    break;
+                case 4:
+                    leftName = Get32BitRegisterName(left);
+                    rightName = Get32BitRegisterName(right);
+                    break;
+                case 8:
+                    leftName = GetRegisterName(left);
+                    rightName = GetRegisterName(right);
+                    break;
+            }
+
+            _disassemblyWriter.WriteLine($"{Indent}{opcode} {leftName}, {rightName}");
         }
 
         private void Emit8ByteImmediate(ulong bytes)
@@ -455,6 +529,28 @@ namespace Cle.CodeGeneration
                     return "g";
                 default:
                     return "??";
+            }
+        }
+
+        private static string GetGeneralBinaryName(BinaryOp op)
+        {
+            switch (op)
+            {
+                case BinaryOp.Add:
+                    return "add";
+                default:
+                    return "???";
+            }
+        }
+
+        private static byte GetGeneralBinaryOpcode(BinaryOp op)
+        {
+            switch (op)
+            {
+                case BinaryOp.Add:
+                    return 0x03;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(op), op.ToString());
             }
         }
     }
