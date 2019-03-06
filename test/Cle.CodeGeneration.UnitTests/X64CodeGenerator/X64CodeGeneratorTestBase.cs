@@ -12,7 +12,7 @@ namespace Cle.CodeGeneration.UnitTests.X64CodeGenerator
             var disassemblyWriter = new StringWriter();
             var codeGen = new WindowsX64CodeGenerator(Stream.Null, disassemblyWriter);
 
-            codeGen.EmitMethod(sourceMethod, 0, false);
+            codeGen.EmitMethod(sourceMethod, 0, false, null);
 
             Assert.That(disassemblyWriter.ToString().Replace("\r\n", "\n").Trim(), 
                 Is.EqualTo(expected.Replace("\r\n", "\n").Trim()));

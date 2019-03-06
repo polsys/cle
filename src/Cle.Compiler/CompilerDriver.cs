@@ -79,7 +79,8 @@ namespace Cle.Compiler
                 }
                 else
                 {
-                    GenerateCode(compilation, outputStream, disassemblyWriter);
+                    debugLogger.WriteHeader("CODE GENERATION PHASE");
+                    GenerateCode(compilation, outputStream, disassemblyWriter, debugLogger);
                 }
             }
 
@@ -237,7 +238,7 @@ namespace Cle.Compiler
         }
 
         private static void GenerateCode([NotNull] Compilation compilation, [NotNull] Stream outputStream,
-            [CanBeNull] TextWriter disassemblyWriter)
+            [CanBeNull] TextWriter disassemblyWriter, [NotNull] DebugLogger debugLogger)
         {
             var generator = new WindowsX64CodeGenerator(outputStream, disassemblyWriter);
             
@@ -245,7 +246,10 @@ namespace Cle.Compiler
             var highestBodyIndex = compilation.MethodBodyCount;
             for (var i = 0; i < highestBodyIndex; i++)
             {
-                generator.EmitMethod(compilation.GetMethodBody(i), i, compilation.EntryPointIndex == i);
+                var methodBody = compilation.GetMethodBody(i);
+                var dumpWriterForMethod = debugLogger.ShouldLog(methodBody.FullName) ? debugLogger.Writer : null;
+
+                generator.EmitMethod(methodBody, i, compilation.EntryPointIndex == i, dumpWriterForMethod);
             }
 
             generator.FinalizeFile();

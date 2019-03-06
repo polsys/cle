@@ -12,8 +12,13 @@ namespace Cle.Compiler
     /// </summary>
     internal class DebugLogger
     {
-        [CanBeNull] private readonly TextWriter _writer;
         [CanBeNull] private readonly string _pattern;
+
+        /// <summary>
+        /// Gets the internal writer, which may be null.
+        /// </summary>
+        [CanBeNull]
+        public TextWriter Writer { get; }
 
         /// <summary>
         /// Creates a logger.
@@ -28,7 +33,7 @@ namespace Cle.Compiler
         /// </param>
         public DebugLogger([CanBeNull] TextWriter writer, [CanBeNull] string methodPattern)
         {
-            _writer = writer;
+            Writer = writer;
 
             if (methodPattern is null)
             {
@@ -44,12 +49,12 @@ namespace Cle.Compiler
         /// <param name="methodName">The full name of the method to match.</param>
         public bool ShouldLog([NotNull] string methodName)
         {
-            return _writer != null && _pattern != null &&
+            return Writer != null && _pattern != null &&
                 methodName.IndexOf(_pattern, StringComparison.InvariantCultureIgnoreCase) != -1;
         }
 
         /// <summary>
-        /// If <paramref name="methodName"/> matches the method name, the method will be disassembled
+        /// If <paramref name="method"/> matches the pattern, the method will be disassembled
         /// to the output writer.
         /// </summary>
         /// <param name="method">The method IR.</param>
@@ -59,23 +64,23 @@ namespace Cle.Compiler
                 return;
 
             // Write the full name as a comment
-            _writer.Write("; ");
-            _writer.WriteLine(method.FullName);
+            Writer.Write("; ");
+            Writer.WriteLine(method.FullName);
 
             // Disassemble the method
             if (method.Body is null)
             {
-                _writer.WriteLine("; (Method has no body)");
-                _writer.WriteLine();
+                Writer.WriteLine("; (Method has no body)");
+                Writer.WriteLine();
             }
             else
             {
                 var builder = new StringBuilder();
                 MethodDisassembler.Disassemble(method, builder);
 
-                _writer.Write(builder);
+                Writer.Write(builder);
             }
-            _writer.WriteLine();
+            Writer.WriteLine();
         }
 
         /// <summary>
@@ -84,13 +89,13 @@ namespace Cle.Compiler
         /// <param name="header">The header text.</param>
         public void WriteHeader([NotNull] string header)
         {
-            if (_writer != null)
+            if (Writer != null)
             {
-                _writer.WriteLine();
-                _writer.WriteLine();
-                _writer.Write("## ");
-                _writer.WriteLine(header);
-                _writer.WriteLine();
+                Writer.WriteLine();
+                Writer.WriteLine();
+                Writer.Write("## ");
+                Writer.WriteLine(header);
+                Writer.WriteLine();
             }
         }
 
@@ -99,10 +104,7 @@ namespace Cle.Compiler
         /// </summary>
         public void WriteLine([NotNull] string text)
         {
-            if (_writer != null)
-            {
-                _writer.WriteLine(text);
-            }
+            Writer?.WriteLine(text);
         }
     }
 }
