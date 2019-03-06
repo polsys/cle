@@ -48,7 +48,9 @@ namespace Cle.CodeGeneration
         /// <param name="method">A compiled method in SSA form.</param>
         /// <param name="methodIndex">The compiler internal index for the method.</param>
         /// <param name="isEntryPoint">If true, this method is marked as the executable entry point.</param>
-        public void EmitMethod([NotNull] CompiledMethod method, int methodIndex, bool isEntryPoint)
+        /// <param name="dumpWriter">An optional text writer for debug dumping of the current method.</param>
+        public void EmitMethod([NotNull] CompiledMethod method, int methodIndex, bool isEntryPoint,
+            [CanBeNull] TextWriter dumpWriter)
         {
             _fixupsForMethod.Clear();
             _blockPositions.Clear();
@@ -63,8 +65,7 @@ namespace Cle.CodeGeneration
 
             // Lower the IR to a low-level form
             var loweredMethod = LoweringX64.Lower(method);
-
-            // TODO: Debug log the lowering
+            
             // TODO: Does the LIR need some other optimization (block merging, etc.) before peephole?
             // Perform peephole optimization
             PeepholeOptimizer<X64Register>.Optimize(loweredMethod);
@@ -72,6 +73,12 @@ namespace Cle.CodeGeneration
             // Allocate registers for locals (with special casing for parameters)
             X64RegisterAllocator.Allocate(loweredMethod);
             DetermineRegistersToSave(loweredMethod);
+
+            // Debug log the lowering
+            if (!(dumpWriter is null))
+            {
+                DebugLog(loweredMethod, method.FullName, dumpWriter);
+            }
 
             // Emit the lowered IR
             for (var i = 0; i < loweredMethod.Blocks.Count; i++)
@@ -310,6 +317,18 @@ namespace Cle.CodeGeneration
                     }
                 }
             }
+        }
+
+        private static void DebugLog([NotNull] LowMethod<X64Register> loweredMethod, string methodFullName,
+            [NotNull] TextWriter dumpWriter)
+        {
+            // Dump the LIR
+            dumpWriter.Write("; Lowered IR for ");
+            dumpWriter.WriteLine(methodFullName);
+
+            loweredMethod.Dump(dumpWriter);
+            dumpWriter.WriteLine();
+            dumpWriter.WriteLine();
         }
     }
 }
