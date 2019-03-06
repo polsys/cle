@@ -45,8 +45,8 @@ BB_0:
 ; Test::Method
 LB_0:
     mov eax, 2Ah
-    mov ebx, 64h
-    cmp rax, rbx
+    mov ecx, 64h
+    cmp rax, rcx
     {expectedLowOp} al
     movzx rax, al
     ret
@@ -78,8 +78,8 @@ BB_0:
 ; Test::Method
 LB_0:
     mov eax, 2Ah
-    mov ebx, 64h
-    cmp rax, rbx
+    mov ecx, 64h
+    cmp rax, rcx
     {expectedLowOp} al
     movzx rax, al
     ret
@@ -116,12 +116,12 @@ BB_0:
 ; Test::Method
 LB_0:
     mov eax, 2Ah
-    mov ebx, 64h
-    mov ecx, eax
-    add ecx, ebx
-    add ecx, eax
+    mov ecx, 64h
+    mov edx, eax
+    add edx, ecx
+    add edx, eax
+    add eax, edx
     add eax, ecx
-    add eax, ebx
     ret
 ";
             EmitAndAssertDisassembly(source, expected);

@@ -1,0 +1,21 @@
+// This test verifies that a simple boolean function call succeeds.
+//
+// Expected return code: 100.
+// No console output expected.
+
+namespace Call;
+
+[EntryPoint]
+public int32 Main()
+{
+    if (Negate(false))
+    {
+        return 100;
+    }
+    return 0;
+}
+
+private bool Negate(bool value)
+{
+    return !value;
+}

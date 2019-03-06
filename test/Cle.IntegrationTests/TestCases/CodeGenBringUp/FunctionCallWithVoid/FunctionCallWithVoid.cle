@@ -1,0 +1,30 @@
+// This test verifies that a simple void method call with no parameters succeeds.
+// Additionally, it verifies that registers are not trashed by method calls.
+// The call may be omitted in optimized builds.
+//
+// Expected return code: 100.
+// No console output expected.
+
+namespace Call;
+
+[EntryPoint]
+public int32 Main()
+{
+    int32 result = 100;
+    DoNothing();
+    return result;
+}
+
+private void DoNothing()
+{
+    // Trash all the registers
+    int32 a = 17;
+    int32 b = 18;
+    int32 c = 19;
+    int32 d = 20;
+    int32 e = 21;
+    int32 f = 22;
+    int32 g = 23;
+    int32 h = 24;
+    int32 sum = a+b+c+d+e+f+g+h;
+}

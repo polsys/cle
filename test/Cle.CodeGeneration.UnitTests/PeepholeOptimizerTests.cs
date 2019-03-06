@@ -96,6 +96,71 @@ LB_0:
         }
 
         [Test]
+        public void Unnecessary_temporary_moves_are_folded()
+        {
+            var method = new LowMethod<X64Register>();
+            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32)
+                { Location = new StorageLocation<X64Register>(X64Register.Rax) });
+            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32));
+            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32));
+            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32)
+                { Location = new StorageLocation<X64Register>(X64Register.Rax) });
+            method.Blocks.Add(new LowBlock
+            {
+                Instructions =
+                {
+                    new LowInstruction(LowOp.Move, 1, 0, 0, 0), // Move #0 -> #1
+                    new LowInstruction(LowOp.Move, 2, 1, 0, 0), // Move #1 -> #2
+                    new LowInstruction(LowOp.Move, 3, 2, 0, 0), // Move #2 -> #3
+                }
+            });
+
+            const string expected = @"
+; #0 int32 [rax]
+; #1 int32 [?]
+; #2 int32 [?]
+; #3 int32 [rax]
+LB_0:
+    Move 0 0 0 -> 3
+";
+            OptimizeAndVerify(method, expected);
+        }
+
+        [Test]
+        public void Necessary_temporary_move_is_not_folded()
+        {
+            var method = new LowMethod<X64Register>();
+            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32)
+                { Location = new StorageLocation<X64Register>(X64Register.Rax) });
+            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32));
+            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32));
+            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32)
+                { Location = new StorageLocation<X64Register>(X64Register.Rax) });
+            method.Blocks.Add(new LowBlock
+            {
+                Instructions =
+                {
+                    new LowInstruction(LowOp.Move, 1, 0, 0, 0), // Move #0 -> #1
+                    new LowInstruction(LowOp.Move, 2, 1, 0, 0), // Move #1 -> #2
+                    new LowInstruction(LowOp.Move, 3, 2, 0, 0), // Move #2 -> #3
+                    new LowInstruction(LowOp.Test, 0, 1, 0, 0), // Test #1
+                }
+            });
+
+            const string expected = @"
+; #0 int32 [rax]
+; #1 int32 [?]
+; #2 int32 [?]
+; #3 int32 [rax]
+LB_0:
+    Move 0 0 0 -> 1
+    Move 1 0 0 -> 3
+    Test 1 0 0 -> 0
+";
+            OptimizeAndVerify(method, expected);
+        }
+
+        [Test]
         public void SetIfEqual_and_move_are_folded()
         {
             var method = new LowMethod<X64Register>();

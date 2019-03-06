@@ -21,9 +21,21 @@ namespace Cle.CodeGeneration
 
             // Create locals for SSA values
             // Additional locals may be created by instructions
+            var paramCount = 0;
             foreach (var value in highMethod.Values)
             {
-                lowMethod.Locals.Add(new LowLocal<X64Register>(value.Type));
+                if (value.Flags.HasFlag(LocalFlags.Parameter))
+                {
+                    lowMethod.Locals.Add(new LowLocal<X64Register>(value.Type)
+                    {
+                        Location = GetLocationForParameter(paramCount)
+                    });
+                    paramCount++;
+                }
+                else
+                {
+                    lowMethod.Locals.Add(new LowLocal<X64Register>(value.Type));
+                }
             }
 
             // Convert each basic block
@@ -42,6 +54,23 @@ namespace Cle.CodeGeneration
             // TODO: Convert PHIs into copies
 
             return lowMethod;
+        }
+
+        private static StorageLocation<X64Register> GetLocationForParameter(int paramIndex)
+        {
+            switch (paramIndex)
+            {
+                case 0:
+                    return new StorageLocation<X64Register>(X64Register.Rcx);
+                case 1:
+                    return new StorageLocation<X64Register>(X64Register.Rdx);
+                case 2:
+                    return new StorageLocation<X64Register>(X64Register.R8);
+                case 3:
+                    return new StorageLocation<X64Register>(X64Register.R9);
+                default:
+                    throw new NotImplementedException("Parameters on stack");
+            }
         }
 
         private static LowBlock ConvertBlock([NotNull] BasicBlock highBlock, [NotNull] CompiledMethod highMethod,
@@ -85,6 +114,10 @@ namespace Cle.CodeGeneration
                         break;
                     case Opcode.BranchIf:
                         ConvertBranchIf(lowBlock, highBlock, (int)inst.Left);
+                        break;
+                    case Opcode.Call:
+                        ConvertCall(lowBlock, highMethod.CallInfos[(int)inst.Left], (int)inst.Left, inst.Destination,
+                            methodInProgress);
                         break;
                     case Opcode.Equal:
                         ConvertCompare(in inst, LowOp.SetIfEqual, lowBlock);
@@ -146,14 +179,51 @@ namespace Cle.CodeGeneration
             //   Return x
             // into
             //   Move x -> return_reg
-            //   Return.
-            var src = highMethod.Values[valueIndex];
-            var dest = methodInProgress.Locals.Count;
-            methodInProgress.Locals.Add(new LowLocal<X64Register>(src.Type)
-                { Location = new StorageLocation<X64Register>(X64Register.Rax) });
+            //   Return,
+            // unless this is a void method (in which case the return value is undefined).
+            var returnValue = highMethod.Values[valueIndex];
 
-            lowBlock.Instructions.Add(new LowInstruction(LowOp.Move, dest, valueIndex, 0, 0));
+            if (!returnValue.Type.Equals(SimpleType.Void))
+            {
+                var dest = methodInProgress.Locals.Count;
+                methodInProgress.Locals.Add(new LowLocal<X64Register>(returnValue.Type)
+                    { Location = new StorageLocation<X64Register>(X64Register.Rax) });
+
+                lowBlock.Instructions.Add(new LowInstruction(LowOp.Move, dest, valueIndex, 0, 0));
+            }
+
             lowBlock.Instructions.Add(new LowInstruction(LowOp.Return, 0, 0, 0, 0));
+        }
+
+        private static void ConvertCall(LowBlock lowBlock, MethodCallInfo callInfo, int callInfoIndex, ushort dest,
+            LowMethod<X64Register> methodInProgress)
+        {
+            // Move parameters to correct locations
+            // These are represented by short-lived temporaries in fixed locations,
+            // and it is up to the register allocator to optimize this
+            for (var i = 0; i < callInfo.ParameterIndices.Length; i++)
+            {
+                var paramIndex = callInfo.ParameterIndices[i];
+                methodInProgress.Locals.Add(new LowLocal<X64Register>(methodInProgress.Locals[paramIndex].Type)
+                {
+                    Location = GetLocationForParameter(i)
+                });
+
+                lowBlock.Instructions.Add(new LowInstruction(LowOp.Move, methodInProgress.Locals.Count - 1, paramIndex, 0, 0));
+            }
+
+            lowBlock.Instructions.Add(new LowInstruction(LowOp.Call, 0, callInfoIndex, 0, (uint)callInfo.CalleeIndex));
+
+            // Then, unless the method returns void, do the same for the return value
+            if (!methodInProgress.Locals[dest].Type.Equals(SimpleType.Void))
+            {
+                methodInProgress.Locals.Add(new LowLocal<X64Register>(methodInProgress.Locals[dest].Type)
+                {
+                    Location = new StorageLocation<X64Register>(X64Register.Rax)
+                });
+
+                lowBlock.Instructions.Add(new LowInstruction(LowOp.Move, dest, methodInProgress.Locals.Count - 1, 0, 0));
+            }
         }
     }
 }

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using Cle.CodeGeneration.Lir;
+using Cle.Common.TypeSystem;
 using Cle.SemanticAnalysis.IR;
 using JetBrains.Annotations;
 
@@ -12,6 +13,7 @@ namespace Cle.CodeGeneration
         [NotNull] private readonly PortableExecutableWriter _peWriter;
         [NotNull] private readonly List<Fixup> _fixupsForMethod;
         [NotNull] private readonly List<int> _blockPositions;
+        [NotNull] private readonly List<X64Register> _savedRegisters;
 
         /// <summary>
         /// Creates a code generator instance with the specified output stream and optional disassembly stream.
@@ -29,6 +31,7 @@ namespace Cle.CodeGeneration
             _peWriter = new PortableExecutableWriter(outputStream, disassemblyWriter);
             _fixupsForMethod = new List<Fixup>();
             _blockPositions = new List<int>();
+            _savedRegisters = new List<X64Register>(8);
         }
 
         /// <summary>
@@ -49,6 +52,7 @@ namespace Cle.CodeGeneration
         {
             _fixupsForMethod.Clear();
             _blockPositions.Clear();
+            _savedRegisters.Clear();
 
             _peWriter.StartNewMethod(methodIndex, method.FullName);
             if (isEntryPoint)
@@ -67,13 +71,14 @@ namespace Cle.CodeGeneration
 
             // Allocate registers for locals (with special casing for parameters)
             X64RegisterAllocator.Allocate(loweredMethod);
+            DetermineRegistersToSave(loweredMethod);
 
             // Emit the lowered IR
             for (var i = 0; i < loweredMethod.Blocks.Count; i++)
             {
                 _peWriter.Emitter.StartBlock(i, out var position);
                 _blockPositions.Add(position);
-                EmitBlock(i, loweredMethod);
+                EmitBlock(i, loweredMethod, method);
             }
 
             // Apply fixups
@@ -83,10 +88,17 @@ namespace Cle.CodeGeneration
             }
         }
 
-        private void EmitBlock(int blockIndex, LowMethod<X64Register> method)
+        private void EmitBlock(int blockIndex, LowMethod<X64Register> method, CompiledMethod highMethod)
         {
             var block = method.Blocks[blockIndex];
             var emitter = _peWriter.Emitter;
+
+            // If this is the first block, save callee-saved registers
+            // TODO: We also have to allocate shadow space for called methods, but we don't support spilling yet
+            if (blockIndex == 0)
+            {
+                EmitRegisterSave(emitter);
+            }
 
             foreach (var inst in block.Instructions)
             {
@@ -98,8 +110,10 @@ namespace Cle.CodeGeneration
                     case LowOp.Move:
                     {
                         var sourceLocation = method.Locals[inst.Left].Location;
-                        var destLocation = method.Locals[inst.Dest].Location;
-                        var operandSize = method.Locals[inst.Dest].Type.SizeInBytes;
+                        var destLocal = method.Locals[inst.Dest];
+                        var destLocation = destLocal.Location;
+                        // Move booleans always as 4 byte values so that we don't need to care about zero extension
+                        var operandSize = destLocal.Type.Equals(SimpleType.Bool) ? 4 : destLocal.Type.SizeInBytes;
 
                         if (sourceLocation != destLocation)
                         {
@@ -137,6 +151,23 @@ namespace Cle.CodeGeneration
                     case LowOp.SetIfGreaterOrEqual:
                         EmitConditionalSet(X64Condition.GreaterOrEqual, method.Locals[inst.Dest].Location);
                         break;
+                    case LowOp.Call:
+                    {
+                        var calleeName = highMethod.CallInfos[inst.Left].CalleeFullName;
+
+                        if (_peWriter.TryGetMethodOffset((int)inst.Data, out var knownOffset))
+                        {
+                            // If the method offset is already known, emit a complete call
+                            emitter.EmitCall(knownOffset, calleeName);
+                        }
+                        else
+                        {
+                            // Otherwise, the offset must be fixed up later
+                            emitter.EmitCallWithFixup((int)inst.Data, calleeName, out var fixup);
+                            _peWriter.AddCallFixup(fixup);
+                        }
+                        break;
+                    }
                     case LowOp.Jump:
                     {
                         // Do not emit a jump for a simple fallthrough
@@ -174,7 +205,7 @@ namespace Cle.CodeGeneration
                         EmitConditionalJump(X64Condition.GreaterOrEqual, inst.Dest, blockIndex);
                         break;
                     case LowOp.Return:
-                        emitter.EmitRet();
+                        EmitReturn(emitter);
                         return;
                     case LowOp.Nop:
                         break;
@@ -232,6 +263,52 @@ namespace Cle.CodeGeneration
                 // We have to do a temporary move first
                 emitter.EmitMov(destLocation, leftLocation, operandSize);
                 emitter.EmitGeneralBinaryOp(op, destLocation, rightLocation, operandSize);
+            }
+        }
+
+        private void EmitReturn(X64Emitter emitter)
+        {
+            // Pop saved registers in reverse order
+            for (var i = _savedRegisters.Count - 1; i >= 0; i--)
+            {
+                emitter.EmitPop(_savedRegisters[i]);
+            }
+
+            emitter.EmitRet();
+        }
+
+        private void EmitRegisterSave(X64Emitter emitter)
+        {
+            // Push the registers onto the stack in order
+            // TODO: Consider replacing this with moves
+            foreach (var reg in _savedRegisters)
+            {
+                emitter.EmitPush(reg);
+            }
+        }
+
+        private void DetermineRegistersToSave(LowMethod<X64Register> loweredMethod)
+        {
+            _savedRegisters.Clear();
+
+            foreach (var local in loweredMethod.Locals)
+            {
+                if (local.Location.IsRegister)
+                {
+                    // rbx, rbp, rdi, rsi, and r12-15 are nonvolatile
+                    // TODO: xmm6-15 are nonvolatile as well
+                    // Additionally, rsp is nonvolatile but it is handled separately
+
+                    var reg = local.Location.Register;
+                    if (reg == X64Register.Rbx || reg >= X64Register.Rbp ||
+                        reg == X64Register.Rdi || reg == X64Register.Rsi ||
+                        reg >= X64Register.R12 && reg <= X64Register.R15)
+                    {
+                        // O(#locals * #saved registers)
+                        if (!_savedRegisters.Contains(reg))
+                            _savedRegisters.Add(reg);
+                    }
+                }
             }
         }
     }

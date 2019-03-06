@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using JetBrains.Annotations;
 
@@ -18,6 +19,10 @@ namespace Cle.CodeGeneration
         [CanBeNull] private readonly TextWriter _disassemblyWriter;
         [NotNull] private readonly Stream _exeStream;
         private int _entryPointOffset;
+
+        private readonly List<Fixup> _callFixups = new List<Fixup>();
+        // TODO: Consider an array instead
+        private readonly Dictionary<int, int> _methodOffsets = new Dictionary<int, int>();
 
         private const int FileAlignment = 0x0200; // 512 bytes, the minimum allowed
         private const int SectionAlignment = 0x1000; // 4096 bytes, the default page size
@@ -44,10 +49,9 @@ namespace Cle.CodeGeneration
         /// <param name="methodName">The full method name, used for disassembly.</param>
         public void StartNewMethod(int methodIndex, [NotNull] string methodName)
         {
-            // TODO: Record the method index (throw if duplicate)
-            
             // Methods always start at multiple of 16 bytes
             WritePadding(16, _int3Padding);
+            _methodOffsets.Add(methodIndex, (int)_exeStream.Position);
 
             // Write a header for method disassembly
             if (_disassemblyWriter != null)
@@ -57,6 +61,17 @@ namespace Cle.CodeGeneration
                 _disassemblyWriter.Write("; ");
                 _disassemblyWriter.WriteLine(methodName);
             }
+        }
+
+        /// <summary>
+        /// If the specified method has been started with <see cref="StartNewMethod"/>,
+        /// returns true and the file offset for the method. Otherwise returns false.
+        /// </summary>
+        /// <param name="methodIndex">The compiler-internal index passed to <see cref="StartNewMethod"/>.</param>
+        /// <param name="offset">The file offset at the start of the method.</param>
+        public bool TryGetMethodOffset(int methodIndex, out int offset)
+        {
+            return _methodOffsets.TryGetValue(methodIndex, out offset);
         }
 
         /// <summary>
@@ -70,6 +85,15 @@ namespace Cle.CodeGeneration
                 throw new InvalidOperationException("The entry point has already been set.");
 
             _entryPointOffset = (int)_exeStream.Position;
+        }
+
+        /// <summary>
+        /// Records a method call fixup to be applied when <see cref="FinalizeFile"/> is called.
+        /// </summary>
+        /// <param name="fixup">The tag must contain the callee method index.</param>
+        public void AddCallFixup(in Fixup fixup)
+        {
+            _callFixups.Add(fixup);
         }
 
         /// <summary>
@@ -100,6 +124,9 @@ namespace Cle.CodeGeneration
             // PE header + .text
             var totalImageSize = SectionAlignment + RoundUp(paddedSizeOfCode, SectionAlignment);
             WriteIntAt(totalImageSize, 208);
+
+            // Apply the last fixups
+            ApplyCallFixups();
             
             void WriteIntAt(int value, int offset)
             {
@@ -112,6 +139,14 @@ namespace Cle.CodeGeneration
                 tempBuffer[3] = (byte)(value >> 24);
 
                 _exeStream.Write(tempBuffer, 0, 4);
+            }
+
+            void ApplyCallFixups()
+            {
+                foreach (var fixup in _callFixups)
+                {
+                    Emitter.ApplyFixup(fixup, _methodOffsets[fixup.Tag]);
+                }
             }
         }
 
@@ -138,11 +173,6 @@ namespace Cle.CodeGeneration
         }
 
         // TODO: Once Stream.Write(ReadOnlySpan<byte>) overload is available, use the static data initialization trick
-        private readonly byte[] _nullPadding =
-        {
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-        };
-
         private readonly byte[] _int3Padding =
         {
             0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC

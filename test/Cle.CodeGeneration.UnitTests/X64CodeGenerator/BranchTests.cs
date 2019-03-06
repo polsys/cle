@@ -40,8 +40,8 @@ BB_2:
 ; Test::Method
 LB_0:
     mov eax, 2Ah
-    mov ebx, 64h
-    cmp rax, rbx
+    mov ecx, 64h
+    cmp rax, rcx
     {expectedConditionalJump} LB_1
     jmp LB_2
 LB_1:
@@ -92,8 +92,8 @@ BB_2:
 ; Test::Method
 LB_0:
     mov eax, 2Ah
-    mov ebx, 64h
-    cmp rax, rbx
+    mov ecx, 64h
+    cmp rax, rcx
     {expectedConditionalJump} LB_1
     jmp LB_2
 LB_1:
@@ -226,8 +226,8 @@ BB_2:
 ; Test::Method
 LB_0:
     mov eax, 0h
-    mov ebx, 1h
-    test rbx, rbx
+    mov ecx, 1h
+    test rcx, rcx
     jne LB_1
     jmp LB_2
 LB_1:

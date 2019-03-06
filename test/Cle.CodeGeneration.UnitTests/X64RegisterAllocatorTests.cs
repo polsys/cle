@@ -151,5 +151,53 @@ namespace Cle.CodeGeneration.UnitTests
 
             Assert.That(method.Locals[0].Location, Is.Not.EqualTo(method.Locals[2].Location));
         }
+
+        [Test]
+        public void Call_instruction_reserves_registers()
+        {
+            var method = new LowMethod<X64Register>();
+            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Bool));
+            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Bool));
+            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Bool));
+            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Bool));
+            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Bool));
+            method.Blocks.Add(new LowBlock
+            {
+                Instructions =
+                {
+                    new LowInstruction(LowOp.LoadInt, 0, 0, 0, 1), // Load 1 -> #0
+                    new LowInstruction(LowOp.LoadInt, 1, 0, 0, 1), // Load 1 -> #1
+                    new LowInstruction(LowOp.LoadInt, 2, 0, 0, 1), // Load 1 -> #2
+                    new LowInstruction(LowOp.LoadInt, 3, 0, 0, 1), // Load 1 -> #3
+                    new LowInstruction(LowOp.LoadInt, 4, 0, 0, 1), // Load 1 -> #4
+
+                    new LowInstruction(LowOp.Call, 0, 0, 0, 1234), // Call - this trashes rax, rcx, rdx, r8 and r9
+
+                    new LowInstruction(LowOp.Test, 0, 0, 0, 0), // Test #0
+                    new LowInstruction(LowOp.Test, 0, 1, 0, 0), // Test #1
+                    new LowInstruction(LowOp.Test, 0, 2, 0, 0), // Test #2
+                    new LowInstruction(LowOp.Test, 0, 3, 0, 0), // Test #3
+                    new LowInstruction(LowOp.Test, 0, 4, 0, 0), // Test #4
+                    new LowInstruction(LowOp.Return, 0, 0, 0, 0)
+                }
+            });
+
+            X64RegisterAllocator.Allocate(method);
+
+            foreach (var local in method.Locals)
+            {
+                Assert.That(local.Location.IsSet, Is.True);
+                Assert.That(local.Location.Register, Is.Not.EqualTo(X64Register.Rax));
+                Assert.That(local.Location.Register, Is.Not.EqualTo(X64Register.Rcx));
+                Assert.That(local.Location.Register, Is.Not.EqualTo(X64Register.Rdx));
+                Assert.That(local.Location.Register, Is.Not.EqualTo(X64Register.R8));
+                Assert.That(local.Location.Register, Is.Not.EqualTo(X64Register.R9));
+                Assert.That(local.Location.Register, Is.Not.EqualTo(X64Register.R10));
+                Assert.That(local.Location.Register, Is.Not.EqualTo(X64Register.R11));
+
+                // ..and as a general sanity check, do not allocate the stack pointer!
+                Assert.That(local.Location.Register, Is.Not.EqualTo(X64Register.Rsp));
+            }
+        }
     }
 }

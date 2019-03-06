@@ -91,6 +91,14 @@ namespace Cle.CodeGeneration
                         block.RemoveAt(currentPos);
                         return true;
                     }
+                    else if (current.Op == LowOp.Move && next.Left == current.Dest && localUses[current.Dest] == 1)
+                    {
+                        // Same as above but with Move instead of Load
+                        // This pattern occurs a lot in method calls
+                        block[currentPos + 1] = new LowInstruction(LowOp.Move, next.Dest, current.Left, 0, 0);
+                        block.RemoveAt(currentPos);
+                        return true;
+                    }
                     else if (current.Op == LowOp.SetIfEqual && next.Left == current.Dest && localUses[current.Dest] == 1)
                     {
                         // When #0 is used only in the move instruction
