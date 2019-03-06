@@ -23,6 +23,7 @@ namespace Cle.UnitTests.Common
             var method = new CompiledMethod(fullName);
             var graphBuilder = new BasicBlockGraphBuilder();
             BasicBlockBuilder currentBlockBuilder = null;
+            var calledMethodIndices = new Dictionary<string, int>();
             
             // Since this class is for testing purposes only, we use brittle and unperformant string splits
             var lines = source.Replace("\r\n", "\n").Split('\n');
@@ -91,7 +92,7 @@ namespace Cle.UnitTests.Common
                 {
                     Assert.That(currentBlockBuilder, Is.Not.Null, "No basic block has been started.");
 
-                    ParseInstruction(currentLine, method, currentBlockBuilder);
+                    ParseInstruction(currentLine, method, currentBlockBuilder, calledMethodIndices);
                 }
             }
 
@@ -114,7 +115,8 @@ namespace Cle.UnitTests.Common
             method.AddLocal(type, isParam ? LocalFlags.Parameter : LocalFlags.None);
         }
 
-        private static void ParseInstruction(string line, CompiledMethod method, BasicBlockBuilder builder)
+        private static void ParseInstruction(string line, CompiledMethod method, BasicBlockBuilder builder,
+            Dictionary<string, int> calledMethodIndices)
         {
             var lineParts = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
             Assert.That(Enum.TryParse<Opcode>(lineParts[0], out var opcode), Is.True, $"Unknown opcode: {lineParts[0]}");
@@ -143,9 +145,14 @@ namespace Cle.UnitTests.Common
             }
             else if (opcode == Opcode.Call)
             {
-                // TODO: Do we need a more realistic and reliable way of emulating function indices?
+                // Emulate function indices by creating them sequentially upwards from 100
+                // If a function is called twice, it will have the same index both times
                 var functionName = lineParts[1].Substring(0, lineParts[1].IndexOf('('));
-                var functionIndex = functionName.GetHashCode();
+                if (!calledMethodIndices.TryGetValue(functionName, out var functionIndex))
+                {
+                    functionIndex = 100 + calledMethodIndices.Count;
+                    calledMethodIndices.Add(functionName, functionIndex);
+                }
 
                 var destIndex = ushort.Parse(lineParts[lineParts.Length - 1].AsSpan(1));
                 var paramListStart = line.IndexOf('(') + 1;

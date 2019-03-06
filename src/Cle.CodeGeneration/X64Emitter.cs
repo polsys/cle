@@ -216,6 +216,44 @@ namespace Cle.CodeGeneration
         }
 
         /// <summary>
+        /// Emits a full-width push instruction with the specified source register.
+        /// </summary>
+        public void EmitPush(X64Register src)
+        {
+            if (src >= X64Register.Xmm0)
+                throw new InvalidOperationException("Push on XMM register");
+
+            _disassemblyWriter?.WriteLine($"{Indent}push {GetRegisterName(src)}");
+            var (encodedReg, needB) = GetRegisterEncoding(src);
+
+            if (needB)
+            {
+                // New registers need a REX.B prefix
+                _outputStream.WriteByte(0x41);
+            }
+            _outputStream.WriteByte((byte)(0x50 | encodedReg));
+        }
+
+        /// <summary>
+        /// Emits a full-width pop instruction with the specified destination register.
+        /// </summary>
+        public void EmitPop(X64Register dest)
+        {
+            if (dest >= X64Register.Xmm0)
+                throw new InvalidOperationException("Pop on XMM register");
+
+            _disassemblyWriter?.WriteLine($"{Indent}pop {GetRegisterName(dest)}");
+            var (encodedReg, needB) = GetRegisterEncoding(dest);
+
+            // The opcode is encoded exactly as push, except for the 0x8 bit
+            if (needB)
+            {
+                _outputStream.WriteByte(0x41);
+            }
+            _outputStream.WriteByte((byte)(0x58 | encodedReg));
+        }
+
+        /// <summary>
         /// Emits an unconditional jump instruction to the specified position.
         /// </summary>
         /// <param name="blockIndex">The destination basic block index, used for disassembly.</param>
@@ -248,7 +286,7 @@ namespace Cle.CodeGeneration
         /// Emits a conditional jump instruction to the specified position.
         /// </summary>
         /// <param name="condition">The condition code where the jump is executed.</param>
-        /// <param name="blockIndex"> The destination basic block index, used for disassembly.</param>
+        /// <param name="blockIndex">The destination basic block index, used for disassembly.</param>
         /// <param name="target">The jump target position. For blocks, this is received from <see cref="StartBlock"/>.</param>
         public void EmitJcc(X64Condition condition, int blockIndex, int target)
         {
@@ -274,6 +312,32 @@ namespace Cle.CodeGeneration
             // The position points to the displacement, which is 2 bytes past the start of the instruction
             fixup = new Fixup(FixupType.RelativeJump, blockIndex, (int)_outputStream.Position + 2);
             EmitJcc(condition, blockIndex, 0);
+        }
+
+        /// <summary>
+        /// Emits a call to the specified position.
+        /// </summary>
+        /// <param name="target">The target byte where the execution will be transferred to.</param>
+        /// <param name="methodName">The target name for disassembly.</param>
+        public void EmitCall(int target, [NotNull] string methodName)
+        {
+            _disassemblyWriter?.WriteLine($"{Indent}call {methodName}");
+
+            _outputStream.WriteByte(0xE8);
+            Emit4ByteImmediate((uint)(target - _outputStream.Position - 4));
+        }
+
+        /// <summary>
+        /// Emits a call to an unspecified target and returns a <see cref="Fixup"/> that can be used to set the target.
+        /// </summary>
+        /// <param name="targetIndex">Method index to call. This will be used as the fixup tag.</param>
+        /// <param name="methodName">The target name for disassembly.</param>
+        /// <param name="fixup">Information required for fixing the target later.</param>
+        public void EmitCallWithFixup(int targetIndex, [NotNull] string methodName, out Fixup fixup)
+        {
+            // The call opcode is a single byte
+            fixup = new Fixup(FixupType.RelativeJump, targetIndex, (int)_outputStream.Position + 1);
+            EmitCall(0, methodName);
         }
 
         /// <summary>

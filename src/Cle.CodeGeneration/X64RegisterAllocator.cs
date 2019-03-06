@@ -10,6 +10,28 @@ namespace Cle.CodeGeneration
     /// </summary>
     internal static class X64RegisterAllocator
     {
+        // Registers are ordered in decreasing preference with regards to two conditions:
+        //   - basic registers are preferred over new registers (r8-15) for shorter encoding
+        //   - volatile registers are preferred over callee-saved registers to avoid pushing/popping
+        // This should increase code quality but does cause extra work in allocation (more conflicts)
+        private static readonly int[] s_preferredIntegerRegisterOrder =
+        {
+            (int)X64Register.Rax,
+            (int)X64Register.Rcx,
+            (int)X64Register.Rdx,
+            (int)X64Register.R8,
+            (int)X64Register.R9,
+            (int)X64Register.Rdi,
+            (int)X64Register.Rsi,
+            (int)X64Register.Rbp,
+            (int)X64Register.R10,
+            (int)X64Register.R11,
+            (int)X64Register.R12,
+            (int)X64Register.R13,
+            (int)X64Register.R14,
+            (int)X64Register.R15,
+        };
+
         /// <summary>
         /// Allocates registers for the given method.
         /// </summary>
@@ -81,7 +103,11 @@ namespace Cle.CodeGeneration
             // In the latter loop, Phis are unmerged
             foreach (var interval in intervals)
             {
-                method.Locals[interval.LocalIndex].Location = new StorageLocation<X64Register>(interval.Register);
+                // Some intervals are temporaries (for example, for calls) and are not associated with a local
+                if (interval.LocalIndex >= 0)
+                {
+                    method.Locals[interval.LocalIndex].Location = new StorageLocation<X64Register>(interval.Register);
+                }
             }
             for (var i = 0; i < localToAllocatedLocalMap.Length; i++)
             {
@@ -131,6 +157,18 @@ namespace Cle.CodeGeneration
                     if (inst.UsesDest)
                         intervals[inst.Dest].Use(instIndex);
 
+                    // Calls trash some registers, so we need to add intervals for them
+                    if (inst.Op == LowOp.Call)
+                    {
+                        intervals.Add(new Interval { Start = instIndex, End = instIndex, Register = X64Register.Rax });
+                        intervals.Add(new Interval { Start = instIndex, End = instIndex, Register = X64Register.Rcx });
+                        intervals.Add(new Interval { Start = instIndex, End = instIndex, Register = X64Register.Rdx });
+                        intervals.Add(new Interval { Start = instIndex, End = instIndex, Register = X64Register.R8 });
+                        intervals.Add(new Interval { Start = instIndex, End = instIndex, Register = X64Register.R9 });
+                        intervals.Add(new Interval { Start = instIndex, End = instIndex, Register = X64Register.R10 });
+                        intervals.Add(new Interval { Start = instIndex, End = instIndex, Register = X64Register.R11 });
+                    }
+
                     instIndex++;
                 }
             }
@@ -167,12 +205,12 @@ namespace Cle.CodeGeneration
                     // The register is blocked - we have to reallocate the blocking register.
                     // If the blocking register also has a requirement, it WON'T be respected -
                     // ergo, intervals with requirements should be kept as short as possible.
-                    for (var i = (int)X64Register.Rax; i < (int)X64Register.Xmm0; i++)
+                    foreach (var reg in s_preferredIntegerRegisterOrder)
                     {
-                        if (registerUsers[i] == -1 && freeSince[i] <= intervals[blocker].Start)
+                        if (registerUsers[reg] == -1 && freeSince[reg] <= intervals[blocker].Start)
                         {
-                            intervals[blocker].Register = (X64Register)i;
-                            ReserveRegister(i, blocker, registerUsers, freeSince);
+                            intervals[blocker].Register = (X64Register)reg;
+                            ReserveRegister(reg, blocker, registerUsers, freeSince);
                             return;
                         }
                     }
@@ -182,12 +220,12 @@ namespace Cle.CodeGeneration
             }
 
             // Else, get the first free register
-            for (var i = (int)X64Register.Rax; i < (int)X64Register.Xmm0; i++)
+            foreach (var reg in s_preferredIntegerRegisterOrder)
             {
-                if (registerUsers[i] == -1)
+                if (registerUsers[reg] == -1)
                 {
-                    ReserveRegister(i, intervalIndex, registerUsers, freeSince);
-                    intervals[intervalIndex].Register = (X64Register)i;
+                    ReserveRegister(reg, intervalIndex, registerUsers, freeSince);
+                    intervals[intervalIndex].Register = (X64Register)reg;
                     return;
                 }
             }
@@ -211,7 +249,7 @@ namespace Cle.CodeGeneration
         {
             public int Start = -1;
             public int End = -1;
-            public int LocalIndex;
+            public int LocalIndex = -1;
             public X64Register Register;
 
             /// <summary>

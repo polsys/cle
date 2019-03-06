@@ -169,6 +169,42 @@ namespace Cle.CodeGeneration.UnitTests
         }
 
         [Test]
+        public void EmitPush_pushes_basic_register()
+        {
+            GetEmitter(out var stream, out var disassembly).EmitPush(X64Register.Rdi);
+
+            CollectionAssert.AreEqual(new byte[] { 0x57 }, stream.ToArray());
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("push rdi"));
+        }
+
+        [Test]
+        public void EmitPush_pushes_new_register()
+        {
+            GetEmitter(out var stream, out var disassembly).EmitPush(X64Register.R9);
+
+            CollectionAssert.AreEqual(new byte[] { 0x41, 0x51 }, stream.ToArray());
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("push r9"));
+        }
+
+        [Test]
+        public void EmitPop_pops_basic_register()
+        {
+            GetEmitter(out var stream, out var disassembly).EmitPop(X64Register.Rdi);
+
+            CollectionAssert.AreEqual(new byte[] { 0x5F }, stream.ToArray());
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("pop rdi"));
+        }
+
+        [Test]
+        public void EmitPop_pops_new_register()
+        {
+            GetEmitter(out var stream, out var disassembly).EmitPop(X64Register.R9);
+
+            CollectionAssert.AreEqual(new byte[] { 0x41, 0x59 }, stream.ToArray());
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("pop r9"));
+        }
+
+        [Test]
         public void EmitCmp_emits_compare_between_basic_registers()
         {
             GetEmitter(out var stream, out var disassembly).EmitCmp(
@@ -259,6 +295,32 @@ namespace Cle.CodeGeneration.UnitTests
             CollectionAssert.AreEqual(new byte[] { 0xE9, 0x73, 0x56, 0x34, 0x12 }, stream.ToArray());
 
             Assert.That(disassembly.ToString().Trim(), Is.EqualTo("jmp LB_16"));
+        }
+
+        [Test]
+        public void EmitCall_emits_call()
+        {
+            GetEmitter(out var stream, out var disassembly).EmitCall(0x12345678, "Method::Name");
+
+            // The displacement is relative to the next instruction, therefore is 5 bytes less than the target byte
+            CollectionAssert.AreEqual(new byte[] { 0xE8, 0x73, 0x56, 0x34, 0x12 }, stream.ToArray());
+
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("call Method::Name"));
+        }
+
+        [Test]
+        public void EmitCallWithFixup_and_ApplyFixup_emit_correct_displacement()
+        {
+            var emitter = GetEmitter(out var stream, out _);
+
+            // The nop instructions ensure that the offset is calculated correctly
+            emitter.EmitNop();
+            emitter.EmitCallWithFixup(16, "Method::Name", out var fixup);
+            emitter.EmitNop();
+
+            // Displacement is -6 bytes (1 for initial nop, 5 for call)
+            emitter.ApplyFixup(fixup, 0);
+            CollectionAssert.AreEqual(new byte[] { 0x90, 0xE8, 0xFA, 0xFF, 0xFF, 0xFF, 0x90 }, stream.ToArray());
         }
 
         [Test]

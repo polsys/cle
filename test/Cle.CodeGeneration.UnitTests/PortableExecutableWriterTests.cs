@@ -114,6 +114,28 @@ namespace Cle.CodeGeneration.UnitTests
         }
 
         [Test]
+        public void FinalizeFile_applies_call_fixup()
+        {
+            var stream = new MemoryStream();
+            var writer = new PortableExecutableWriter(stream, null);
+
+            // Create two methods and a call between them
+            writer.MarkEntryPoint();
+            writer.StartNewMethod(0, "Main");
+            writer.Emitter.EmitCallWithFixup(1, "Callee", out var fixup);
+            writer.AddCallFixup(fixup);
+            writer.StartNewMethod(1, "Callee");
+            
+            writer.FinalizeFile();
+
+            // The first method starts at offset 0x400 and the second at 0x410
+            // Therefore, the instruction at 0x400 is "call rip+0xB"
+            var peSpan = stream.GetBuffer().AsSpan();
+            var callInstruction = peSpan.Slice(0x400, 5).ToArray();
+            CollectionAssert.AreEqual(new byte[] { 0xE8, 0x0B, 0x00, 0x00, 0x00 }, callInstruction);
+        }
+
+        [Test]
         public void FinalizeFile_throws_if_entry_point_is_not_set()
         {
             var stream = new MemoryStream();
@@ -131,6 +153,26 @@ namespace Cle.CodeGeneration.UnitTests
             writer.MarkEntryPoint();
 
             Assert.That(() => writer.MarkEntryPoint(), Throws.InvalidOperationException);
+        }
+
+        [Test]
+        public void TryGetMethodOffset_returns_offset_if_found()
+        {
+            var stream = new MemoryStream();
+            var writer = new PortableExecutableWriter(stream, null);
+            
+            writer.MarkEntryPoint();
+            writer.StartNewMethod(0, "Main");
+            writer.Emitter.EmitNop();
+            
+            writer.StartNewMethod(1, "Other");
+            writer.Emitter.EmitNop();
+
+            Assert.That(writer.TryGetMethodOffset(0, out var first), Is.True);
+            Assert.That(first, Is.GreaterThan(0));
+            Assert.That(writer.TryGetMethodOffset(1, out var second), Is.True);
+            Assert.That(second, Is.GreaterThan(first));
+            Assert.That(writer.TryGetMethodOffset(2, out _), Is.False);
         }
     }
 }

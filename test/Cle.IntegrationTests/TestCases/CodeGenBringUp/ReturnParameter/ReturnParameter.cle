@@ -1,0 +1,17 @@
+// This test verifies that a method parameter is correctly moved to the return register.
+//
+// Expected return code: 100.
+// No console output expected.
+
+namespace ReturnParameter;
+
+[EntryPoint]
+public int32 Main()
+{
+    return Func(100);
+}
+
+private int32 Func(int32 value)
+{
+    return value;
+}

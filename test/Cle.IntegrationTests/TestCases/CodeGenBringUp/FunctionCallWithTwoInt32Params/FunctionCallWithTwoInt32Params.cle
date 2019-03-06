@@ -1,0 +1,17 @@
+// This test verifies that simple function calls succeed and variables are not overwritten.
+//
+// Expected return code: 15.
+// No console output expected.
+
+namespace Call;
+
+[EntryPoint]
+public int32 Main()
+{
+    return Add(Add(1, 2), Add(4, 8));
+}
+
+private int32 Add(int32 a, int32 b)
+{
+    return a + b;
+}

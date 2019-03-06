@@ -122,6 +122,12 @@
         /// </summary>
         JumpIfGreaterOrEqual,
         /// <summary>
+        /// Calls the method indexed by Data.
+        /// The Left operand contains the call info index for disassembly purposes.
+        /// The return value is implicitly stored in the register with the correct location.
+        /// </summary>
+        Call,
+        /// <summary>
         /// Exits the method.
         /// Has no operands - the return value is assumed to be in the correct location.
         /// </summary>
