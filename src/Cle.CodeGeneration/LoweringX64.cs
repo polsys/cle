@@ -26,32 +26,25 @@ namespace Cle.CodeGeneration
             {
                 if (value.Flags.HasFlag(LocalFlags.Parameter))
                 {
-                    lowMethod.Locals.Add(new LowLocal<X64Register>(value.Type)
-                    {
-                        Location = GetLocationForParameter(paramCount)
-                    });
                     paramCount++;
                 }
-                else
-                {
-                    lowMethod.Locals.Add(new LowLocal<X64Register>(value.Type));
-                }
+                lowMethod.Locals.Add(new LowLocal<X64Register>(value.Type));
             }
 
             // Convert each basic block
-            foreach (var highBlock in highMethod.Body.BasicBlocks)
+            for (var i = 0; i < highMethod.Body.BasicBlocks.Count; i++)
             {
+                var highBlock = highMethod.Body.BasicBlocks[i];
+
                 if (highBlock is null)
                 {
                     lowMethod.Blocks.Add(new LowBlock());
                 }
                 else
                 {
-                    lowMethod.Blocks.Add(ConvertBlock(highBlock, highMethod, lowMethod));
+                    lowMethod.Blocks.Add(ConvertBlock(highBlock, highMethod, lowMethod, i == 0, paramCount));
                 }
             }
-
-            // TODO: Convert PHIs into copies
 
             return lowMethod;
         }
@@ -74,12 +67,28 @@ namespace Cle.CodeGeneration
         }
 
         private static LowBlock ConvertBlock([NotNull] BasicBlock highBlock, [NotNull] CompiledMethod highMethod,
-            [NotNull] LowMethod<X64Register> methodInProgress)
+            [NotNull] LowMethod<X64Register> methodInProgress, bool isFirstBlock, int paramCount)
         {
             var lowBlock = new LowBlock
             {
                 Phis = highBlock.Phis
             };
+
+            // At the start of the first block, we must copy parameters from fixed-location temps to freely assigned locals
+            if (isFirstBlock)
+            {
+                // This assumes that the first paramCount locals are the parameters
+                for (var i = 0; i < paramCount; i++)
+                {
+                    methodInProgress.Locals.Add(new LowLocal<X64Register>(highMethod.Values[i].Type)
+                    {
+                        Location = GetLocationForParameter(i)
+                    });
+                    var tempIndex = methodInProgress.Locals.Count - 1;
+
+                    lowBlock.Instructions.Add(new LowInstruction(LowOp.Move, i, tempIndex, 0, 0));
+                }
+            }
 
             // Convert the instructions
             var returns = false;
@@ -88,16 +97,7 @@ namespace Cle.CodeGeneration
                 switch (inst.Operation)
                 {
                     case Opcode.Add:
-                        if (methodInProgress.Locals[(int)inst.Left].Type.Equals(SimpleType.Int32) &&
-                            methodInProgress.Locals[inst.Right].Type.Equals(SimpleType.Int32))
-                        {
-                            lowBlock.Instructions.Add(
-                                new LowInstruction(LowOp.IntegerAdd, inst.Destination, (int)inst.Left, inst.Right, 0));
-                        }
-                        else
-                        {
-                            goto default;
-                        }
+                        ConvertArithmetic(Opcode.Add, in inst, lowBlock, methodInProgress);
                         break;
                     case Opcode.BitwiseNot:
                         if (methodInProgress.Locals[(int)inst.Left].Type.Equals(SimpleType.Bool))
@@ -135,6 +135,9 @@ namespace Cle.CodeGeneration
                         returns = true;
                         ConvertReturn(lowBlock, (int)inst.Left, highMethod, methodInProgress);
                         break;
+                    case Opcode.Subtract:
+                        ConvertArithmetic(Opcode.Subtract, in inst, lowBlock, methodInProgress);
+                        break;
                     default:
                         throw new NotImplementedException("Unimplemented opcode to lower: " + inst.Operation);
                 }
@@ -146,6 +149,21 @@ namespace Cle.CodeGeneration
             }
 
             return lowBlock;
+        }
+
+        private static void ConvertArithmetic(Opcode op, in Instruction inst, LowBlock lowBlock,
+            LowMethod<X64Register> methodInProgress)
+        {
+            if (methodInProgress.Locals[(int)inst.Left].Type.Equals(SimpleType.Int32) &&
+                methodInProgress.Locals[inst.Right].Type.Equals(SimpleType.Int32))
+            {
+                var lowOp = GetLoweredIntegerArithmeticOp(op);
+                lowBlock.Instructions.Add(new LowInstruction(lowOp, inst.Destination, (int)inst.Left, inst.Right, 0));
+            }
+            else
+            {
+                throw new NotImplementedException("Floating-point arithmetic: " + op);
+            }
         }
 
         private static void ConvertBranchIf(LowBlock lowBlock, BasicBlock highBlock, int valueIndex)
@@ -223,6 +241,19 @@ namespace Cle.CodeGeneration
                 });
 
                 lowBlock.Instructions.Add(new LowInstruction(LowOp.Move, dest, methodInProgress.Locals.Count - 1, 0, 0));
+            }
+        }
+
+        private static LowOp GetLoweredIntegerArithmeticOp(Opcode op)
+        {
+            switch (op)
+            {
+                case Opcode.Add:
+                    return LowOp.IntegerAdd;
+                case Opcode.Subtract:
+                    return LowOp.IntegerSubtract;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(op));
             }
         }
     }

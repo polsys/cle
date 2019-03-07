@@ -25,8 +25,9 @@ BB_0:
                 Assert.That(dumpString, Contains.Substring("Return 0 0 0 -> 0"));
 
                 // Locals
-                Assert.That(dumpString, Contains.Substring("; #0 int32 [rcx]"));
-                Assert.That(dumpString, Contains.Substring("; #1 int32 [rax]"));
+                Assert.That(dumpString, Contains.Substring("; #0 int32 [rax]"));
+                Assert.That(dumpString, Contains.Substring("; #1 int32 [rcx]"));
+                Assert.That(dumpString, Contains.Substring("; #2 int32 [rax]"));
             }
         }
     }

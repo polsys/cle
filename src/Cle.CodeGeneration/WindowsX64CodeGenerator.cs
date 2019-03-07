@@ -131,6 +131,9 @@ namespace Cle.CodeGeneration
                     case LowOp.IntegerAdd:
                         EmitIntegerBinaryOp(BinaryOp.Add, in inst, method);
                         break;
+                    case LowOp.IntegerSubtract:
+                        EmitIntegerBinaryOp(BinaryOp.Subtract, in inst, method);
+                        break;
                     case LowOp.Compare:
                         emitter.EmitCmp(method.Locals[inst.Left].Location, method.Locals[inst.Right].Location);
                         break;
@@ -254,6 +257,7 @@ namespace Cle.CodeGeneration
             var rightLocation = method.Locals[inst.Right].Location;
             var destLocation = method.Locals[inst.Dest].Location;
             var operandSize = method.Locals[inst.Dest].Type.SizeInBytes;
+            var isCommutative = op == BinaryOp.Add;
 
             if (leftLocation == destLocation)
             {
@@ -262,8 +266,15 @@ namespace Cle.CodeGeneration
             }
             else if (rightLocation == destLocation)
             {
-                // Still good: "op right, left"
-                emitter.EmitGeneralBinaryOp(op, rightLocation, leftLocation, operandSize);
+                if (isCommutative)
+                {
+                    // Still good: "op right, left"
+                    emitter.EmitGeneralBinaryOp(op, rightLocation, leftLocation, operandSize);
+                }
+                else
+                {
+                    throw new InvalidOperationException("Register allocator should not let this happen");
+                }
             }
             else
             {
@@ -307,7 +318,7 @@ namespace Cle.CodeGeneration
                     // Additionally, rsp is nonvolatile but it is handled separately
 
                     var reg = local.Location.Register;
-                    if (reg == X64Register.Rbx || reg >= X64Register.Rbp ||
+                    if (reg == X64Register.Rbx || reg == X64Register.Rbp ||
                         reg == X64Register.Rdi || reg == X64Register.Rsi ||
                         reg >= X64Register.R12 && reg <= X64Register.R15)
                     {

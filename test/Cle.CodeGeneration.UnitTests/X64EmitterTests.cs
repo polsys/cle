@@ -337,6 +337,19 @@ namespace Cle.CodeGeneration.UnitTests
         }
 
         [Test]
+        public void EmitGeneralBinaryOp_emits_32_bit_sub_between_basic_registers()
+        {
+            GetEmitter(out var stream, out var disassembly).EmitGeneralBinaryOp(
+                BinaryOp.Subtract,
+                new StorageLocation<X64Register>(X64Register.Rdi),
+                new StorageLocation<X64Register>(X64Register.Rsi),
+                4);
+
+            CollectionAssert.AreEqual(new byte[] { 0x2B, 0xFE }, stream.ToArray());
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("sub edi, esi"));
+        }
+
+        [Test]
         public void EmitGeneralBinaryOp_emits_64_bit_add_between_basic_registers()
         {
             GetEmitter(out var stream, out var disassembly).EmitGeneralBinaryOp(

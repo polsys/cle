@@ -157,6 +157,10 @@ namespace Cle.CodeGeneration
                     if (inst.UsesDest)
                         intervals[inst.Dest].Use(instIndex);
 
+                    // Prevent X64 trashing the right operand of subtraction (see associated unit test)
+                    if (inst.Op == LowOp.IntegerSubtract)
+                        intervals[inst.Right].Use(instIndex + 1);
+
                     // Calls trash some registers, so we need to add intervals for them
                     if (inst.Op == LowOp.Call)
                     {
