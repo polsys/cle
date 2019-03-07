@@ -103,11 +103,12 @@ namespace Cle.IntegrationTests
                 process.StartInfo.WorkingDirectory = Path.GetDirectoryName(_executablePath);
                 
                 Assert.That(process.Start(), Is.True);
-                if (!process.WaitForExit(timeoutMilliseconds))
-                {
-                    process.Kill();
-                    Assert.Fail("The process did not exit within the allocated time and was killed.");
-                }
+                process.WaitForExit(); // Testing the CI
+                //if (!process.WaitForExit(timeoutMilliseconds))
+                //{
+                //    process.Kill();
+                //    Assert.Fail("The process did not exit within the allocated time and was killed.");
+                //}
 
                 return new ExecutionResult(process.ExitCode);
             }
