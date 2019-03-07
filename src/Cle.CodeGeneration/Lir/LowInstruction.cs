@@ -21,10 +21,10 @@
         }
 
         public bool UsesLeft => Op > LowOp.LoadInt && Op < LowOp.SetIfEqual;
-        public bool UsesRight => Op == LowOp.Compare || Op == LowOp.IntegerAdd;
+        public bool UsesRight => Op == LowOp.Compare || Op == LowOp.IntegerAdd || Op == LowOp.IntegerSubtract;
 
         public bool UsesDest => Op == LowOp.LoadInt || Op == LowOp.Move ||
-                                Op == LowOp.IntegerAdd ||
+                                Op == LowOp.IntegerAdd || Op == LowOp.IntegerSubtract ||
                                 Op == LowOp.SetIfEqual || Op == LowOp.Jump ||
                                 Op == LowOp.JumpIfEqual || Op == LowOp.JumpIfNotEqual;
     }
@@ -55,6 +55,10 @@
         /// Sums the Left and Right locals and stores the result in Dest local.
         /// </summary>
         IntegerAdd,
+        /// <summary>
+        /// Subtracts the Right local from the Left local and stores the result in Dest local.
+        /// </summary>
+        IntegerSubtract,
 
         // Conditions
 

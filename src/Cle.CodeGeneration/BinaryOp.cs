@@ -6,6 +6,7 @@
     internal enum BinaryOp
     {
         Invalid,
-        Add
+        Add,
+        Subtract
     }
 }

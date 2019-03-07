@@ -91,6 +91,7 @@ LB_0:
         }
 
         [TestCase("Add", "IntegerAdd")]
+        [TestCase("Subtract", "IntegerSubtract")]
         public void Integer_arithmetic(string highOp, string expectedLowOp)
         {
             var source = $@"

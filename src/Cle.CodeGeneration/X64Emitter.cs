@@ -602,6 +602,8 @@ namespace Cle.CodeGeneration
             {
                 case BinaryOp.Add:
                     return "add";
+                case BinaryOp.Subtract:
+                    return "sub";
                 default:
                     return "???";
             }
@@ -613,6 +615,8 @@ namespace Cle.CodeGeneration
             {
                 case BinaryOp.Add:
                     return 0x03;
+                case BinaryOp.Subtract:
+                    return 0x2B;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(op), op.ToString());
             }

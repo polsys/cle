@@ -199,5 +199,35 @@ namespace Cle.CodeGeneration.UnitTests
                 Assert.That(local.Location.Register, Is.Not.EqualTo(X64Register.Rsp));
             }
         }
+
+        [Test]
+        public void Subtraction_destination_is_not_same_as_right()
+        {
+            var method = new LowMethod<X64Register>();
+            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32));
+            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32));
+            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32));
+            method.Blocks.Add(new LowBlock
+            {
+                Instructions =
+                {
+                    new LowInstruction(LowOp.LoadInt, 0, 0, 0, 1), // Load 1 -> #0
+                    new LowInstruction(LowOp.LoadInt, 1, 0, 0, 1), // Load 1 -> #1
+
+                    new LowInstruction(LowOp.IntegerSubtract, 2, 0, 1, 0), // Subtract #0 - #1 -> #2
+
+                    new LowInstruction(LowOp.Test, 0, 0, 0, 0), // Use #0
+                    new LowInstruction(LowOp.Test, 0, 2, 0, 0), // Use #2
+                    new LowInstruction(LowOp.Return, 0, 0, 0, 0)
+                }
+            });
+
+            X64RegisterAllocator.Allocate(method);
+
+            // It would be tempting to assign #1 and #2 the same register, but that
+            // is not good for x64: we would have to emit "mov r1, r0; sub r1, r1" where
+            // local #1 is stored in r1 but local #2 lives there up until the last instruction.
+            Assert.That(method.Locals[1].Location.Register, Is.Not.EqualTo(method.Locals[2].Location.Register));
+        }
     }
 }
