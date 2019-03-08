@@ -205,22 +205,44 @@ namespace Cle.CodeGeneration.UnitTests
         }
 
         [Test]
-        public void EmitCmp_emits_compare_between_basic_registers()
+        public void EmitCmp_emits_32_bit_compare_between_basic_registers()
+        {
+            GetEmitter(out var stream, out var disassembly).EmitCmp(
+                new StorageLocation<X64Register>(X64Register.Rbx),
+                new StorageLocation<X64Register>(X64Register.Rsp), 4);
+
+            CollectionAssert.AreEqual(new byte[] { 0x3B, 0xDC }, stream.ToArray());
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("cmp ebx, esp"));
+        }
+
+        [Test]
+        public void EmitCmp_emits_32_bit_compare_between_new_registers()
+        {
+            GetEmitter(out var stream, out var disassembly).EmitCmp(
+                new StorageLocation<X64Register>(X64Register.R10),
+                new StorageLocation<X64Register>(X64Register.R11), 4);
+
+            CollectionAssert.AreEqual(new byte[] { 0x45, 0x3B, 0xD3 }, stream.ToArray());
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("cmp r10d, r11d"));
+        }
+
+        [Test]
+        public void EmitCmp_emits_64_bit_compare_between_basic_registers()
         {
             GetEmitter(out var stream, out var disassembly).EmitCmp(
                 new StorageLocation<X64Register>(X64Register.Rax),
-                new StorageLocation<X64Register>(X64Register.Rbx));
+                new StorageLocation<X64Register>(X64Register.Rbx), 8);
 
             CollectionAssert.AreEqual(new byte[] { 0x48, 0x3B, 0xC3 }, stream.ToArray());
             Assert.That(disassembly.ToString().Trim(), Is.EqualTo("cmp rax, rbx"));
         }
 
         [Test]
-        public void EmitCmp_emits_compare_between_new_registers()
+        public void EmitCmp_emits_64_bit_compare_between_new_registers()
         {
             GetEmitter(out var stream, out var disassembly).EmitCmp(
                 new StorageLocation<X64Register>(X64Register.R8),
-                new StorageLocation<X64Register>(X64Register.R15));
+                new StorageLocation<X64Register>(X64Register.R15), 8);
 
             CollectionAssert.AreEqual(new byte[] { 0x4D, 0x3B, 0xC7 }, stream.ToArray());
             Assert.That(disassembly.ToString().Trim(), Is.EqualTo("cmp r8, r15"));
