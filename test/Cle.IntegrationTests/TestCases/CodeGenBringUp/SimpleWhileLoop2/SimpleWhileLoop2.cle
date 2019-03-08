@@ -1,0 +1,22 @@
+// As opposed to the SimpleWhileLoop test, the loop variable goes down by 2 each iteration.
+// This catches an issue with 64-bit compare used for 32-bit values.
+//
+// Expected return code: 36.
+// No console output expected.
+
+namespace SimpleWhileLoop2;
+
+[EntryPoint]
+public int32 Main()
+{
+    int32 i = 11; // Must be odd so that 0 is never reached
+    int32 sum = 0;
+    
+    while (i > 0)
+    {
+        sum = sum + i;
+        i = i - 2;
+    }
+    
+    return sum;
+}

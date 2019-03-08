@@ -46,7 +46,7 @@ BB_0:
 LB_0:
     mov eax, 2Ah
     mov ecx, 64h
-    cmp rax, rcx
+    cmp eax, ecx
     {expectedLowOp} al
     movzx rax, al
     ret
@@ -79,7 +79,7 @@ BB_0:
 LB_0:
     mov eax, 2Ah
     mov ecx, 64h
-    cmp rax, rcx
+    cmp eax, ecx
     {expectedLowOp} al
     movzx rax, al
     ret
