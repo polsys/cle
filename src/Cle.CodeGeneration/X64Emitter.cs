@@ -151,24 +151,24 @@ namespace Cle.CodeGeneration
         }
 
         /// <summary>
-        /// Emits a cmp instruction with the two operands.
-        /// The operands are considered to be full width.
+        /// Emits a cmp instruction with the two operands and specified operand width.
         /// </summary>
-        // TODO: Support specifying operand size
-        public void EmitCmp(StorageLocation<X64Register> left, StorageLocation<X64Register> right)
+        public void EmitCmp(StorageLocation<X64Register> left, StorageLocation<X64Register> right, int operandSize)
         {
+            if (operandSize != 4 && operandSize != 8)
+                throw new NotImplementedException("Other operand widths");
             if (!left.IsRegister || !right.IsRegister)
                 throw new NotImplementedException("Cmp on stack");
             if (left.Register >= X64Register.Xmm0 || right.Register >= X64Register.Xmm0)
                 throw new NotImplementedException("SIMD compare");
 
             // General-to-general register cmp
-            DisassembleRegReg("cmp", left.Register, right.Register, 8);
+            DisassembleRegReg("cmp", left.Register, right.Register, operandSize);
 
             var (encodedDest, needR) = GetRegisterEncoding(left.Register);
             var (encodedSrc, needB) = GetRegisterEncoding(right.Register);
 
-            EmitRexPrefixIfNeeded(true, needR, false, needB);
+            EmitRexPrefixIfNeeded(operandSize == 8, needR, false, needB);
             _outputStream.WriteByte(0x3B);
             EmitModRmForRegisterToRegister(encodedDest, encodedSrc);
         }

@@ -135,8 +135,13 @@ namespace Cle.CodeGeneration
                         EmitIntegerBinaryOp(BinaryOp.Subtract, in inst, method);
                         break;
                     case LowOp.Compare:
-                        emitter.EmitCmp(method.Locals[inst.Left].Location, method.Locals[inst.Right].Location);
+                    {
+                        // TODO: Can the left and right operands have different sizes?
+                        var operandSize = method.Locals[inst.Left].Type.SizeInBytes;
+
+                        emitter.EmitCmp(method.Locals[inst.Left].Location, method.Locals[inst.Right].Location, operandSize);
                         break;
+                    }
                     case LowOp.Test:
                     {
                         var srcDestLocation = method.Locals[inst.Left].Location;

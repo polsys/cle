@@ -41,7 +41,7 @@ BB_2:
 LB_0:
     mov eax, 2Ah
     mov ecx, 64h
-    cmp rax, rcx
+    cmp eax, ecx
     {expectedConditionalJump} LB_1
     jmp LB_2
 LB_1:
@@ -93,7 +93,7 @@ BB_2:
 LB_0:
     mov eax, 2Ah
     mov ecx, 64h
-    cmp rax, rcx
+    cmp eax, ecx
     {expectedConditionalJump} LB_1
     jmp LB_2
 LB_1:

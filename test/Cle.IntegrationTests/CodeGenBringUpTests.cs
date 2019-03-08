@@ -16,6 +16,7 @@ namespace Cle.IntegrationTests
         [TestCase("ReturnParameter", 100)]
         [TestCase("SimpleForwardPhi", 50)]
         [TestCase("SimpleWhileLoop", 45)]
+        [TestCase("SimpleWhileLoop2", 36)]
         public void CodeGenBringUp(string testCase, int expectedReturnCode)
         {
             new TestRunner(Path.Combine(BaseDirectory, testCase))
