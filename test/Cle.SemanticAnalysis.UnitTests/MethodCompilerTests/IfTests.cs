@@ -125,7 +125,9 @@ public int32 TheAnswer() {
 
             Assert.That(compiledMethod, Is.Not.Null);
             Assert.That(diagnostics.Diagnostics, Is.Empty);
-            
+
+            // BB_2 exists because direct BB_0 --> BB_3 would be a critical edge: BB_0 has two successors
+            // and BB_3 has two predecessors. This causes issues for SSA because the PHI cannot be resolved.
             AssertDisassembly(compiledMethod, @"
 ; #0   int32
 ; #1   bool
@@ -139,10 +141,14 @@ BB_0:
 BB_1:
     Load 1 -> #2
     CopyValue #2 -> #0
+    ==> BB_3
 
 BB_2:
+
+BB_3:
     Return #0");
         }
+
         [Test]
         public void If_and_else_both_assigning_to_variable()
         {
@@ -161,6 +167,8 @@ public int32 ComplexAnswer() {
             Assert.That(compiledMethod, Is.Not.Null);
             Assert.That(diagnostics.Diagnostics, Is.Empty);
 
+            // Here are no critical edges as BB_1 and BB_2, the predecessors of BB_3, have only a single
+            // successor each, and no other block has two predecessors.
             AssertDisassembly(compiledMethod, @"
 ; #0   int32
 ; #1   bool
@@ -348,7 +356,8 @@ public int32 TheAnswer() {
 
             Assert.That(compiledMethod, Is.Not.Null);
             Assert.That(diagnostics.Diagnostics, Is.Empty);
-            
+
+            // Although BB_5 has two predecessors, the edges are not critical since BB_1 and BB_3 do not branch
             AssertDisassembly(compiledMethod, @"
 ; #0   int32
 ; #1   bool

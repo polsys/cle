@@ -54,6 +54,8 @@ public bool Stupid() {
             Assert.That(compiledMethod, Is.Not.Null);
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             
+            // The empty BB_4 must exist because otherwise the BB_2 --> BB_5 edge would be critical:
+            // BB_2 has two successors and BB_5 has two predecessors (BB_3, and BB_2 via BB_4).
             AssertDisassembly(compiledMethod, @"
 ; #0   bool
 ; #1   bool
@@ -65,7 +67,7 @@ BB_0:
 BB_1:
     Load false -> #2
     BranchIf #2 ==> BB_2
-    ==> BB_5
+    ==> BB_6
 
 BB_2:
     BranchIf #0 ==> BB_3
@@ -73,11 +75,14 @@ BB_2:
 
 BB_3:
     CopyValue #0 -> #1
+    ==> BB_5
 
 BB_4:
-    ==> BB_1
 
 BB_5:
+    ==> BB_1
+
+BB_6:
     Return #1");
         }
 
