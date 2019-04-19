@@ -217,11 +217,16 @@ BB_0:
 
 BB_1:
     Load 1 -> #2
+    ==> BB_3
 
 BB_2:
+
+BB_3:
     PHI (#0, #2) -> #3
     Return #3";
 
+            // TODO: The "jmp LB_3" should be elided since the real jump amount is zero
+            //       This is not caught by the current heuristic that only compares the block indices
             const string expected = @"
 ; Test::Method
 LB_0:
@@ -232,7 +237,9 @@ LB_0:
     jmp LB_2
 LB_1:
     mov eax, 1h
+    jmp LB_3
 LB_2:
+LB_3:
     ret
 ";
             EmitAndAssertDisassembly(source, expected);

@@ -321,8 +321,25 @@ namespace Cle.SemanticAnalysis
             // It can be either an IfStatementSyntax (else if), BlockSyntax (else) or null (no else).
             if (ifSyntax.ElseSyntax is null)
             {
-                newBuilder = builder.CreateSuccessorBlock();
-                thenBuilder.SetSuccessor(newBuilder.Index);
+                // The block where the control flow merges back must not contain a critical edge, where
+                // a branch leads to a block with several predecessors. If the 'then' block returns, this
+                // won't happen; otherwise we must create a block for the negative branch.
+                // This is required for the SSA form because PHIs in the merger block must be resolved
+                // at the predecessors.
+                if (thenReturns)
+                {
+                    // Happy case: the 'then' branch does not merge back
+                    newBuilder = builder.CreateSuccessorBlock();
+                }
+                else
+                {
+                    // This block will contain PHI resolution for the pre-if values if newBuilder contains PHIs
+                    var negativeLandingBlock = builder.CreateSuccessorBlock();
+
+                    // This block is the real merger block
+                    newBuilder = negativeLandingBlock.CreateSuccessorBlock();
+                    thenBuilder.SetSuccessor(newBuilder.Index);
+                }
 
                 // Here, we cannot give a return guarantee unless the 'then' branch is always taken and returns
                 // TODO: Return guarantee for const conditions
