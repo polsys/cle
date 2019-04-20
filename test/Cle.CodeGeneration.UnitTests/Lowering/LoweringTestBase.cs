@@ -11,7 +11,7 @@ namespace Cle.CodeGeneration.UnitTests.Lowering
             where TRegister : struct, Enum
         {
             var dumpWriter = new StringWriter();
-            method.Dump(dumpWriter);
+            method.Dump(dumpWriter, true);
 
             Assert.That(dumpWriter.ToString().Replace("\r\n", "\n").Trim(), 
                 Is.EqualTo(expected.Replace("\r\n", "\n").Trim()));

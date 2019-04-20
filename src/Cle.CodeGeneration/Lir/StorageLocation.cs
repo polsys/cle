@@ -24,6 +24,9 @@ namespace Cle.CodeGeneration.Lir
             Register = register;
         }
 
+        public static implicit operator StorageLocation<TRegister>(TRegister register)
+            => new StorageLocation<TRegister>(register);
+
         public StorageLocation(int stackOffset)
         {
             _stackOffset = stackOffset + 1;

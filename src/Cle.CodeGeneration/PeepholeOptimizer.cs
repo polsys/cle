@@ -7,6 +7,7 @@ namespace Cle.CodeGeneration
 {
     /// <summary>
     /// Peephole optimization of LIR for the x64 architecture.
+    /// This optimization pass is run before register allocation.
     /// </summary>
     internal static class PeepholeOptimizer<TRegister>
         where TRegister: struct, Enum
@@ -36,7 +37,7 @@ namespace Cle.CodeGeneration
             // For example, the Return op implicitly uses the local stored in the return register
             for (var i = 0; i < method.Locals.Count; i++)
             {
-                if (method.Locals[i].Location.IsSet)
+                if (method.Locals[i].RequiredLocation.IsSet)
                     uses[i] += 100; // Distinguish from ordinary locals
             }
 

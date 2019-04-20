@@ -8,11 +8,12 @@ namespace Cle.CodeGeneration.Lir
     {
         public readonly TypeDefinition Type;
 
-        public StorageLocation<TRegister> Location;
+        public readonly StorageLocation<TRegister> RequiredLocation;
 
-        public LowLocal(TypeDefinition type)
+        public LowLocal(TypeDefinition type, StorageLocation<TRegister> requiredLocation = default)
         {
             Type = type;
+            RequiredLocation = requiredLocation;
         }
     }
 }

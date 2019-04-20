@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using Cle.CodeGeneration.Lir;
+using Cle.CodeGeneration.RegisterAllocation;
 using Cle.Common.TypeSystem;
 using Cle.SemanticAnalysis.IR;
 using JetBrains.Annotations;
@@ -70,22 +71,22 @@ namespace Cle.CodeGeneration
             // Perform peephole optimization
             PeepholeOptimizer<X64Register>.Optimize(loweredMethod);
 
-            // Allocate registers for locals (with special casing for parameters)
-            X64RegisterAllocator.Allocate(loweredMethod);
-            DetermineRegistersToSave(loweredMethod);
-
             // Debug log the lowering
             if (!(dumpWriter is null))
             {
-                DebugLog(loweredMethod, method.FullName, dumpWriter);
+                DebugLogBeforeAllocation(loweredMethod, method.FullName, dumpWriter);
             }
 
+            // Allocate registers for locals (with special casing for parameters)
+            var (allocatedMethod, allocationInfo) = X64RegisterAllocator.Allocate(loweredMethod);
+            DetermineRegistersToSave(allocationInfo);
+
             // Emit the lowered IR
-            for (var i = 0; i < loweredMethod.Blocks.Count; i++)
+            for (var i = 0; i < allocatedMethod.Blocks.Count; i++)
             {
                 _peWriter.Emitter.StartBlock(i, out var position);
                 _blockPositions.Add(position);
-                EmitBlock(i, loweredMethod, method);
+                EmitBlock(i, allocatedMethod, allocationInfo, method);
             }
 
             // Apply fixups
@@ -95,7 +96,8 @@ namespace Cle.CodeGeneration
             }
         }
 
-        private void EmitBlock(int blockIndex, LowMethod<X64Register> method, CompiledMethod highMethod)
+        private void EmitBlock(int blockIndex, LowMethod<X64Register> method,
+            AllocationInfo<X64Register> allocation, CompiledMethod highMethod)
         {
             var block = method.Blocks[blockIndex];
             var emitter = _peWriter.Emitter;
@@ -112,59 +114,61 @@ namespace Cle.CodeGeneration
                 switch (inst.Op)
                 {
                     case LowOp.LoadInt:
-                        emitter.EmitLoad(method.Locals[inst.Dest].Location, inst.Data);
+                        emitter.EmitLoad(allocation.Get(inst.Dest).location, inst.Data);
                         break;
                     case LowOp.Move:
-                    {
-                        var sourceLocation = method.Locals[inst.Left].Location;
-                        var destLocal = method.Locals[inst.Dest];
-                        var destLocation = destLocal.Location;
-                        // Move booleans always as 4 byte values so that we don't need to care about zero extension
-                        var operandSize = destLocal.Type.Equals(SimpleType.Bool) ? 4 : destLocal.Type.SizeInBytes;
-
-                        if (sourceLocation != destLocation)
                         {
-                            emitter.EmitMov(destLocation, sourceLocation, operandSize);
+                            var (sourceLocation, _) = allocation.Get(inst.Left);
+                            var (destLocation, destLocalIndex) = allocation.Get(inst.Dest);
+                            var destLocal = method.Locals[destLocalIndex];
+
+                            // Move booleans always as 4 byte values so that we don't need to care about zero extension
+                            var operandSize = destLocal.Type.Equals(SimpleType.Bool) ? 4 : destLocal.Type.SizeInBytes;
+
+                            if (sourceLocation != destLocation)
+                            {
+                                emitter.EmitMov(destLocation, sourceLocation, operandSize);
+                            }
+                            break;
                         }
-                        break;
-                    }
                     case LowOp.IntegerAdd:
-                        EmitIntegerBinaryOp(BinaryOp.Add, in inst, method);
+                        EmitIntegerBinaryOp(BinaryOp.Add, in inst, method, allocation);
                         break;
                     case LowOp.IntegerSubtract:
-                        EmitIntegerBinaryOp(BinaryOp.Subtract, in inst, method);
+                        EmitIntegerBinaryOp(BinaryOp.Subtract, in inst, method, allocation);
                         break;
                     case LowOp.Compare:
-                    {
-                        // TODO: Can the left and right operands have different sizes?
-                        var operandSize = method.Locals[inst.Left].Type.SizeInBytes;
+                        {
+                            // TODO: Can the left and right operands have different sizes?
+                            var (leftLocation, leftLocalIndex) = allocation.Get(inst.Left);
+                            var operandSize = method.Locals[leftLocalIndex].Type.SizeInBytes;
 
-                        emitter.EmitCmp(method.Locals[inst.Left].Location, method.Locals[inst.Right].Location, operandSize);
-                        break;
-                    }
+                            emitter.EmitCmp(leftLocation, allocation.Get(inst.Right).location, operandSize);
+                            break;
+                        }
                     case LowOp.Test:
-                    {
-                        var srcDestLocation = method.Locals[inst.Left].Location;
-                        emitter.EmitTest(srcDestLocation, srcDestLocation);
-                        break;
-                    }
+                        {
+                            var srcDestLocation = allocation.Get(inst.Left).location;
+                            emitter.EmitTest(srcDestLocation, srcDestLocation);
+                            break;
+                        }
                     case LowOp.SetIfEqual:
-                        EmitConditionalSet(X64Condition.Equal, method.Locals[inst.Dest].Location);
+                        EmitConditionalSet(X64Condition.Equal, allocation.Get(inst.Dest).location);
                         break;
                     case LowOp.SetIfNotEqual:
-                        EmitConditionalSet(X64Condition.NotEqual, method.Locals[inst.Dest].Location);
+                        EmitConditionalSet(X64Condition.NotEqual, allocation.Get(inst.Dest).location);
                         break;
                     case LowOp.SetIfLess:
-                        EmitConditionalSet(X64Condition.Less, method.Locals[inst.Dest].Location);
+                        EmitConditionalSet(X64Condition.Less, allocation.Get(inst.Dest).location);
                         break;
                     case LowOp.SetIfLessOrEqual:
-                        EmitConditionalSet(X64Condition.LessOrEqual, method.Locals[inst.Dest].Location);
+                        EmitConditionalSet(X64Condition.LessOrEqual, allocation.Get(inst.Dest).location);
                         break;
                     case LowOp.SetIfGreater:
-                        EmitConditionalSet(X64Condition.Greater, method.Locals[inst.Dest].Location);
+                        EmitConditionalSet(X64Condition.Greater, allocation.Get(inst.Dest).location);
                         break;
                     case LowOp.SetIfGreaterOrEqual:
-                        EmitConditionalSet(X64Condition.GreaterOrEqual, method.Locals[inst.Dest].Location);
+                        EmitConditionalSet(X64Condition.GreaterOrEqual, allocation.Get(inst.Dest).location);
                         break;
                     case LowOp.Call:
                     {
@@ -254,14 +258,15 @@ namespace Cle.CodeGeneration
             emitter.EmitZeroExtendFromByte(destLocation);
         }
 
-        private void EmitIntegerBinaryOp(BinaryOp op, in LowInstruction inst, LowMethod<X64Register> method)
+        private void EmitIntegerBinaryOp(BinaryOp op, in LowInstruction inst,
+            LowMethod<X64Register> method, AllocationInfo<X64Register> allocation)
         {
             var emitter = _peWriter.Emitter;
 
-            var leftLocation = method.Locals[inst.Left].Location;
-            var rightLocation = method.Locals[inst.Right].Location;
-            var destLocation = method.Locals[inst.Dest].Location;
-            var operandSize = method.Locals[inst.Dest].Type.SizeInBytes;
+            var (leftLocation, _) = allocation.Get(inst.Left);
+            var (rightLocation, _) = allocation.Get(inst.Right);
+            var (destLocation, destLocalIndex) = allocation.Get(inst.Dest);
+            var operandSize = method.Locals[destLocalIndex].Type.SizeInBytes;
             var isCommutative = op == BinaryOp.Add;
 
             if (leftLocation == destLocation)
@@ -310,24 +315,27 @@ namespace Cle.CodeGeneration
             }
         }
 
-        private void DetermineRegistersToSave(LowMethod<X64Register> loweredMethod)
+        private void DetermineRegistersToSave(AllocationInfo<X64Register> allocation)
         {
             _savedRegisters.Clear();
 
-            foreach (var local in loweredMethod.Locals)
+            for (var i = 0; i < allocation.IntervalCount; i++)
             {
-                if (local.Location.IsRegister)
+                var (location, localIndex) = allocation.Get(i);
+
+                // No need to store if localIndex == -1, because the interval is just a temp blocker
+                if (location.IsRegister && localIndex >= 0)
                 {
                     // rbx, rbp, rdi, rsi, and r12-15 are nonvolatile
                     // TODO: xmm6-15 are nonvolatile as well
                     // Additionally, rsp is nonvolatile but it is handled separately
 
-                    var reg = local.Location.Register;
+                    var reg = location.Register;
                     if (reg == X64Register.Rbx || reg == X64Register.Rbp ||
                         reg == X64Register.Rdi || reg == X64Register.Rsi ||
                         reg >= X64Register.R12 && reg <= X64Register.R15)
                     {
-                        // O(#locals * #saved registers)
+                        // O(#intervals * #saved registers)
                         if (!_savedRegisters.Contains(reg))
                             _savedRegisters.Add(reg);
                     }
@@ -335,14 +343,14 @@ namespace Cle.CodeGeneration
             }
         }
 
-        private static void DebugLog([NotNull] LowMethod<X64Register> loweredMethod, string methodFullName,
-            [NotNull] TextWriter dumpWriter)
+        private static void DebugLogBeforeAllocation([NotNull] LowMethod<X64Register> loweredMethod,
+            [NotNull] string methodFullName, [NotNull] TextWriter dumpWriter)
         {
             // Dump the LIR
             dumpWriter.Write("; Lowered IR for ");
             dumpWriter.WriteLine(methodFullName);
 
-            loweredMethod.Dump(dumpWriter);
+            loweredMethod.Dump(dumpWriter, true);
             dumpWriter.WriteLine();
             dumpWriter.WriteLine();
         }

@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using Cle.CodeGeneration.Lir;
 using JetBrains.Annotations;
 
-namespace Cle.CodeGeneration
+using Interval = Cle.CodeGeneration.RegisterAllocation.Interval<Cle.CodeGeneration.Lir.X64Register>;
+
+namespace Cle.CodeGeneration.RegisterAllocation
 {
     /// <summary>
     /// Register allocator for the x64 architecture.
@@ -33,13 +35,16 @@ namespace Cle.CodeGeneration
         };
 
         /// <summary>
-        /// Allocates registers for the given method.
+        /// Allocates registers for the given method, and returns a method instance rewritten to reference
+        /// intervals instead of locals. The interval to local map is also returned.
+        /// The local variable list is preserved, but the indices do not match with the instructions as
+        /// before the allocation.
         /// </summary>
         /// <param name="method">
-        /// This method instance is mutated in place.
-        /// The allocation decisions are reflected in the <see cref="LowMethod{TRegister}.Locals"/> list.
+        /// The method must be in SSA form with critical edges broken.
         /// </param>
-        public static void Allocate([NotNull] LowMethod<X64Register> method)
+        public static (LowMethod<X64Register> allocatedMethod, AllocationInfo<X64Register> allocationInfo)
+            Allocate([NotNull] LowMethod<X64Register> method)
         {
             /* TODO: This is a quick-and-dirty linear scan register allocator for the initial bring-up!
              * Features:
@@ -54,7 +59,7 @@ namespace Cle.CodeGeneration
             var localToAllocatedLocalMap = new int[method.Locals.Count];
             for (var i = 0; i < method.Locals.Count; i++)
             {
-                intervals.Add(new Interval { LocalIndex = i, Register = method.Locals[i].Location.Register });
+                intervals.Add(new Interval { LocalIndex = i, Register = method.Locals[i].RequiredLocation.Register });
                 localToAllocatedLocalMap[i] = i;
             }
 
@@ -99,20 +104,30 @@ namespace Cle.CodeGeneration
                 AllocateInterval(intervalIndex, intervals, registerUsers, freeSince);
             }
 
-            // Propagate the allocation decisions to locals
-            // In the latter loop, Phis are unmerged
+            // Return the allocation decisions
+            // TODO: Actually rewrite the method - this is a temporary WIP solution
+            var tempIntervalList = new Interval<X64Register>[method.Locals.Count];
             foreach (var interval in intervals)
             {
-                // Some intervals are temporaries (for example, for calls) and are not associated with a local
                 if (interval.LocalIndex >= 0)
                 {
-                    method.Locals[interval.LocalIndex].Location = new StorageLocation<X64Register>(interval.Register);
+                    tempIntervalList[interval.LocalIndex] = interval;
                 }
             }
             for (var i = 0; i < localToAllocatedLocalMap.Length; i++)
             {
-                method.Locals[i].Location = method.Locals[localToAllocatedLocalMap[i]].Location;
+                var copySource = tempIntervalList[localToAllocatedLocalMap[i]];
+                tempIntervalList[i] = new Interval<X64Register>()
+                {
+                    Start = copySource.Start,
+                    End = copySource.End,
+                    LocalIndex = i,
+                    Register = copySource.Register
+                };
             }
+
+            var allocationInfo = new AllocationInfo<X64Register>(new List<Interval<X64Register>>(tempIntervalList));
+            return (method, allocationInfo);
         }
 
         private static void ComputeLiveIntervals(LowMethod<X64Register> method, List<Interval> intervals, int[] localToAllocatedLocalMap)
@@ -242,42 +257,6 @@ namespace Cle.CodeGeneration
         {
             registerUsers[registerIndex] = intervalIndex;
             freeSince[registerIndex] = int.MaxValue;
-        }
-
-        /// <summary>
-        /// A MUTABLE CLASS for local live intervals.
-        /// This is a class to ease sharing intervals between locals.
-        /// TODO: Pooling
-        /// </summary>
-        private class Interval : IComparable<Interval>
-        {
-            public int Start = -1;
-            public int End = -1;
-            public int LocalIndex = -1;
-            public X64Register Register;
-
-            /// <summary>
-            /// Updates the start and end positions.
-            /// </summary>
-            public void Use(int index)
-            {
-                Start = Start == -1 ? index : Math.Min(Start, index);
-                End = Math.Max(End, index);
-            }
-
-            /// <summary>
-            /// Extends the lifetime of this interval to include the given interval.
-            /// </summary>
-            public void MergeWith(Interval other)
-            {
-                Use(other.Start);
-                Use(other.End);
-            }
-
-            public int CompareTo(Interval other)
-            {
-                return Start.CompareTo(other.Start);
-            }
         }
     }
 }

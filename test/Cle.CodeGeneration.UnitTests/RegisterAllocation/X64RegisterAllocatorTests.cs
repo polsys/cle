@@ -1,10 +1,11 @@
 using System.Collections.Immutable;
 using Cle.CodeGeneration.Lir;
+using Cle.CodeGeneration.RegisterAllocation;
 using Cle.Common.TypeSystem;
 using Cle.SemanticAnalysis.IR;
 using NUnit.Framework;
 
-namespace Cle.CodeGeneration.UnitTests
+namespace Cle.CodeGeneration.UnitTests.RegisterAllocation
 {
     internal class X64RegisterAllocatorTests
     {
@@ -25,11 +26,14 @@ namespace Cle.CodeGeneration.UnitTests
                 }
             });
 
-            X64RegisterAllocator.Allocate(method);
+            var (rewritten, allocationMap) = X64RegisterAllocator.Allocate(method);
 
-            Assert.That(method.Locals[0].Location.IsSet, Is.True);
-            Assert.That(method.Locals[1].Location.IsSet, Is.True);
-            Assert.That(method.Locals[0].Location, Is.Not.EqualTo(method.Locals[1].Location));
+            Assert.That(allocationMap.Get(0).localIndex, Is.EqualTo(0));
+            Assert.That(allocationMap.Get(1).localIndex, Is.EqualTo(1));
+
+            Assert.That(allocationMap.Get(0).location.IsSet, Is.True);
+            Assert.That(allocationMap.Get(1).location.IsSet, Is.True);
+            Assert.That(allocationMap.Get(0).location, Is.Not.EqualTo(allocationMap.Get(1).location));
         }
 
         [Test]
@@ -49,11 +53,14 @@ namespace Cle.CodeGeneration.UnitTests
                 }
             });
 
-            X64RegisterAllocator.Allocate(method);
+            var (rewritten, allocationMap) = X64RegisterAllocator.Allocate(method);
 
-            Assert.That(method.Locals[0].Location.IsSet, Is.True);
-            Assert.That(method.Locals[1].Location.IsSet, Is.True);
-            Assert.That(method.Locals[0].Location, Is.EqualTo(method.Locals[1].Location));
+            Assert.That(allocationMap.Get(0).localIndex, Is.EqualTo(0));
+            Assert.That(allocationMap.Get(1).localIndex, Is.EqualTo(1));
+
+            Assert.That(allocationMap.Get(0).location.IsSet, Is.True);
+            Assert.That(allocationMap.Get(1).location.IsSet, Is.True);
+            Assert.That(allocationMap.Get(0).location, Is.EqualTo(allocationMap.Get(1).location));
         }
 
         [TestCase(X64Register.Rax)] // Allocated by default for #0
@@ -62,8 +69,7 @@ namespace Cle.CodeGeneration.UnitTests
         {
             var method = new LowMethod<X64Register>();
             method.Locals.Add(new LowLocal<X64Register>(SimpleType.Bool));
-            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Bool)
-                { Location = new StorageLocation<X64Register>(required) });
+            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Bool, required));
             method.Blocks.Add(new LowBlock
             {
                 Instructions =
@@ -75,11 +81,14 @@ namespace Cle.CodeGeneration.UnitTests
                 }
             });
 
-            X64RegisterAllocator.Allocate(method);
+            var (rewritten, allocationMap) = X64RegisterAllocator.Allocate(method);
 
-            Assert.That(method.Locals[0].Location.IsSet, Is.True);
-            Assert.That(method.Locals[1].Location.IsSet, Is.True);
-            Assert.That(method.Locals[1].Location.Register, Is.EqualTo(required));
+            Assert.That(allocationMap.Get(0).localIndex, Is.EqualTo(0));
+            Assert.That(allocationMap.Get(1).localIndex, Is.EqualTo(1));
+
+            Assert.That(allocationMap.Get(0).location.IsSet, Is.True);
+            Assert.That(allocationMap.Get(1).location.IsSet, Is.True);
+            Assert.That(allocationMap.Get(1).location.Register, Is.EqualTo(required));
         }
 
         [Test]
@@ -100,13 +109,15 @@ namespace Cle.CodeGeneration.UnitTests
                 Phis = new[] { new Phi(0, ImmutableList<int>.Empty.Add(2)) }
             });
 
-            X64RegisterAllocator.Allocate(method);
+            var (rewritten, allocationMap) = X64RegisterAllocator.Allocate(method);
 
-            Assert.That(method.Locals[0].Location.IsSet, Is.True);
-            Assert.That(method.Locals[1].Location.IsSet, Is.True);
-            Assert.That(method.Locals[2].Location.IsSet, Is.True);
-            Assert.That(method.Locals[0].Location, Is.EqualTo(method.Locals[2].Location));
-            Assert.That(method.Locals[0].Location, Is.Not.EqualTo(method.Locals[1].Location));
+            Assert.That(allocationMap.Get(0).localIndex, Is.EqualTo(0));
+            Assert.That(allocationMap.Get(1).localIndex, Is.EqualTo(1));
+
+            Assert.That(allocationMap.Get(0).location.IsSet, Is.True);
+            Assert.That(allocationMap.Get(1).location.IsSet, Is.True);
+            Assert.That(allocationMap.Get(0).location, Is.EqualTo(allocationMap.Get(2).location));
+            Assert.That(allocationMap.Get(0).location, Is.Not.EqualTo(allocationMap.Get(1).location));
         }
 
         [Test]
@@ -137,19 +148,19 @@ namespace Cle.CodeGeneration.UnitTests
                 Phis = new[] { new Phi(4, ImmutableList<int>.Empty.Add(0).Add(1)) }
             });
 
-            X64RegisterAllocator.Allocate(method);
+            var (rewritten, allocationMap) = X64RegisterAllocator.Allocate(method);
 
-            Assert.That(method.Locals[0].Location.IsSet, Is.True);
-            Assert.That(method.Locals[1].Location.IsSet, Is.True);
-            Assert.That(method.Locals[2].Location.IsSet, Is.True);
-            Assert.That(method.Locals[3].Location.IsSet, Is.True);
-            Assert.That(method.Locals[4].Location.IsSet, Is.True);
+            for (var i = 0; i < 5; i++)
+            {
+                Assert.That(allocationMap.Get(i).localIndex, Is.EqualTo(i));
+                Assert.That(allocationMap.Get(i).location.IsSet, Is.True);
+            }
 
-            Assert.That(method.Locals[0].Location, Is.EqualTo(method.Locals[4].Location));
-            Assert.That(method.Locals[1].Location, Is.EqualTo(method.Locals[4].Location));
-            Assert.That(method.Locals[1].Location, Is.EqualTo(method.Locals[3].Location));
+            Assert.That(allocationMap.Get(0).location, Is.EqualTo(allocationMap.Get(1).location));
+            Assert.That(allocationMap.Get(0).location, Is.EqualTo(allocationMap.Get(3).location));
+            Assert.That(allocationMap.Get(0).location, Is.EqualTo(allocationMap.Get(4).location));
 
-            Assert.That(method.Locals[0].Location, Is.Not.EqualTo(method.Locals[2].Location));
+            Assert.That(allocationMap.Get(0).location, Is.Not.EqualTo(allocationMap.Get(2).location));
         }
 
         [Test]
@@ -182,21 +193,27 @@ namespace Cle.CodeGeneration.UnitTests
                 }
             });
 
-            X64RegisterAllocator.Allocate(method);
+            var (rewritten, allocationMap) = X64RegisterAllocator.Allocate(method);
 
-            foreach (var local in method.Locals)
+            // No local variable should be assigned to a blocked register
+            for (var i = 0; i < allocationMap.IntervalCount; i++)
             {
-                Assert.That(local.Location.IsSet, Is.True);
-                Assert.That(local.Location.Register, Is.Not.EqualTo(X64Register.Rax));
-                Assert.That(local.Location.Register, Is.Not.EqualTo(X64Register.Rcx));
-                Assert.That(local.Location.Register, Is.Not.EqualTo(X64Register.Rdx));
-                Assert.That(local.Location.Register, Is.Not.EqualTo(X64Register.R8));
-                Assert.That(local.Location.Register, Is.Not.EqualTo(X64Register.R9));
-                Assert.That(local.Location.Register, Is.Not.EqualTo(X64Register.R10));
-                Assert.That(local.Location.Register, Is.Not.EqualTo(X64Register.R11));
+                var (location, localIndex) = allocationMap.Get(i);
+
+                if (localIndex == -1)
+                    continue;
+
+                Assert.That(location.IsSet, Is.True);
+                Assert.That(location.Register, Is.Not.EqualTo(X64Register.Rax));
+                Assert.That(location.Register, Is.Not.EqualTo(X64Register.Rcx));
+                Assert.That(location.Register, Is.Not.EqualTo(X64Register.Rdx));
+                Assert.That(location.Register, Is.Not.EqualTo(X64Register.R8));
+                Assert.That(location.Register, Is.Not.EqualTo(X64Register.R9));
+                Assert.That(location.Register, Is.Not.EqualTo(X64Register.R10));
+                Assert.That(location.Register, Is.Not.EqualTo(X64Register.R11));
 
                 // ..and as a general sanity check, do not allocate the stack pointer!
-                Assert.That(local.Location.Register, Is.Not.EqualTo(X64Register.Rsp));
+                Assert.That(location.Register, Is.Not.EqualTo(X64Register.Rsp));
             }
         }
 
@@ -222,12 +239,13 @@ namespace Cle.CodeGeneration.UnitTests
                 }
             });
 
-            X64RegisterAllocator.Allocate(method);
+            var (rewritten, allocationMap) = X64RegisterAllocator.Allocate(method);
 
             // It would be tempting to assign #1 and #2 the same register, but that
             // is not good for x64: we would have to emit "mov r1, r0; sub r1, r1" where
             // local #1 is stored in r1 but local #2 lives there up until the last instruction.
-            Assert.That(method.Locals[1].Location.Register, Is.Not.EqualTo(method.Locals[2].Location.Register));
+            Assert.That(allocationMap.Get(1).location.Register,
+                Is.Not.EqualTo(allocationMap.Get(2).location.Register));
         }
     }
 }

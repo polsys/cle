@@ -99,12 +99,10 @@ LB_0:
         public void Unnecessary_temporary_moves_are_folded()
         {
             var method = new LowMethod<X64Register>();
-            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32)
-                { Location = new StorageLocation<X64Register>(X64Register.Rax) });
+            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32, X64Register.Rax));
             method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32));
             method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32));
-            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32)
-                { Location = new StorageLocation<X64Register>(X64Register.Rax) });
+            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32, X64Register.Rax));
             method.Blocks.Add(new LowBlock
             {
                 Instructions =
@@ -130,12 +128,10 @@ LB_0:
         public void Necessary_temporary_move_is_not_folded()
         {
             var method = new LowMethod<X64Register>();
-            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32)
-                { Location = new StorageLocation<X64Register>(X64Register.Rax) });
+            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32, X64Register.Rax));
             method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32));
             method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32));
-            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32)
-                { Location = new StorageLocation<X64Register>(X64Register.Rax) });
+            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32, X64Register.Rax));
             method.Blocks.Add(new LowBlock
             {
                 Instructions =
@@ -165,8 +161,7 @@ LB_0:
         {
             var method = new LowMethod<X64Register>();
             method.Locals.Add(new LowLocal<X64Register>(SimpleType.Bool));
-            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Bool)
-                { Location = new StorageLocation<X64Register>(X64Register.Rax) });
+            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Bool, X64Register.Rax));
             method.Blocks.Add(new LowBlock
             {
                 Instructions =
@@ -191,8 +186,7 @@ LB_0:
         public void SetIfEqual_and_move_are_not_folded_if_original_local_is_used()
         {
             var method = new LowMethod<X64Register>();
-            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Bool)
-                { Location = new StorageLocation<X64Register>(X64Register.Rax) });
+            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Bool, X64Register.Rax));
             method.Locals.Add(new LowLocal<X64Register>(SimpleType.Bool));
             method.Blocks.Add(new LowBlock
             {
@@ -279,8 +273,7 @@ LB_0:
             var method = new LowMethod<X64Register>();
             method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32));
             method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32));
-            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Bool)
-                { Location = new StorageLocation<X64Register>(X64Register.Rax) });
+            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Bool, X64Register.Rax));
             method.Blocks.Add(new LowBlock
             {
                 Instructions =
@@ -313,8 +306,7 @@ LB_0:
             method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32));
             method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32));
             method.Locals.Add(new LowLocal<X64Register>(SimpleType.Bool));
-            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Bool)
-                { Location = new StorageLocation<X64Register>(X64Register.Rax) });
+            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Bool, X64Register.Rax));
             method.Blocks.Add(new LowBlock
             {
                 Instructions =
@@ -349,8 +341,7 @@ LB_0:
             var method = new LowMethod<X64Register>();
             method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32));
             method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32));
-            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Bool)
-                { Location = new StorageLocation<X64Register>(X64Register.Rax) });
+            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Bool, X64Register.Rax));
             method.Locals.Add(new LowLocal<X64Register>(SimpleType.Bool));
             method.Blocks.Add(new LowBlock
             {
@@ -385,7 +376,7 @@ LB_0:
             PeepholeOptimizer<X64Register>.Optimize(method);
 
             var dumpWriter = new StringWriter();
-            method.Dump(dumpWriter);
+            method.Dump(dumpWriter, true);
 
             Assert.That(dumpWriter.ToString().Replace("\r\n", "\n").Trim(),
                 Is.EqualTo(expected.Replace("\r\n", "\n").Trim()));
@@ -394,7 +385,7 @@ LB_0:
         private static void OptimizeAndVerifyUnchanged(LowMethod<X64Register> method)
         {
             var expected = new StringWriter();
-            method.Dump(expected);
+            method.Dump(expected, true);
 
             OptimizeAndVerify(method, expected.ToString());
         }
