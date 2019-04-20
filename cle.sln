@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.26124.0
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.28803.156
 MinimumVisualStudioVersion = 15.0.26124.0
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{A14775F6-0FFF-449E-8160-D31C668A441A}"
 EndProject
@@ -21,19 +21,19 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cle.Compiler.UnitTests", "t
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cle.Benchmarks", "test\Cle.Benchmarks\Cle.Benchmarks.csproj", "{A150652B-4F9C-4BAA-9134-C6AF2A579E70}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cle.SemanticAnalysis", "src\Cle.SemanticAnalysis\Cle.SemanticAnalysis.csproj", "{2132E910-AA45-44D9-95FE-F4D3A0C1D0EE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cle.SemanticAnalysis", "src\Cle.SemanticAnalysis\Cle.SemanticAnalysis.csproj", "{2132E910-AA45-44D9-95FE-F4D3A0C1D0EE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cle.SemanticAnalysis.UnitTests", "test\Cle.SemanticAnalysis.UnitTests\Cle.SemanticAnalysis.UnitTests.csproj", "{DE0352C7-509B-4BAE-B9E2-5EA4343E788B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cle.SemanticAnalysis.UnitTests", "test\Cle.SemanticAnalysis.UnitTests\Cle.SemanticAnalysis.UnitTests.csproj", "{DE0352C7-509B-4BAE-B9E2-5EA4343E788B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cle.UnitTests.Common", "test\Cle.UnitTests.Common\Cle.UnitTests.Common.csproj", "{50038DC7-5193-47CD-A789-E289BE181CC0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cle.UnitTests.Common", "test\Cle.UnitTests.Common\Cle.UnitTests.Common.csproj", "{50038DC7-5193-47CD-A789-E289BE181CC0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cle.Frontend.UnitTests", "test\Cle.Frontend.UnitTests\Cle.Frontend.UnitTests.csproj", "{9C8387AA-EB58-4819-AAF5-16B6A6CFD348}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cle.Frontend.UnitTests", "test\Cle.Frontend.UnitTests\Cle.Frontend.UnitTests.csproj", "{9C8387AA-EB58-4819-AAF5-16B6A6CFD348}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cle.CodeGeneration", "src\Cle.CodeGeneration\Cle.CodeGeneration.csproj", "{17745E6B-C653-4901-AF80-354DEDF216C9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cle.CodeGeneration", "src\Cle.CodeGeneration\Cle.CodeGeneration.csproj", "{17745E6B-C653-4901-AF80-354DEDF216C9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cle.CodeGeneration.UnitTests", "test\Cle.CodeGeneration.UnitTests\Cle.CodeGeneration.UnitTests.csproj", "{7D8A881D-B443-4A88-8F18-AF6D22038389}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cle.CodeGeneration.UnitTests", "test\Cle.CodeGeneration.UnitTests\Cle.CodeGeneration.UnitTests.csproj", "{7D8A881D-B443-4A88-8F18-AF6D22038389}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cle.IntegrationTests", "test\Cle.IntegrationTests\Cle.IntegrationTests.csproj", "{8EDA47F3-EC94-45B0-8F51-CB397A84EB6B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cle.IntegrationTests", "test\Cle.IntegrationTests\Cle.IntegrationTests.csproj", "{8EDA47F3-EC94-45B0-8F51-CB397A84EB6B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

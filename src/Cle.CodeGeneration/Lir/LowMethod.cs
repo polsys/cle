@@ -23,12 +23,17 @@ namespace Cle.CodeGeneration.Lir
         /// <summary>
         /// Prints a debugging representation of this method to the given writer.
         /// </summary>
-        public void Dump([NotNull] TextWriter writer)
+        /// <param name="writer">A writer instance.</param>
+        /// <param name="printLocals">If true, the locals and their required locations will be printed.</param>
+        public void Dump([NotNull] TextWriter writer, bool printLocals)
         {
-            for (var i = 0; i < Locals.Count; i++)
+            if (printLocals)
             {
-                var local = Locals[i];
-                writer.WriteLine($"; #{i} {local.Type.TypeName} [{local.Location}]");
+                for (var i = 0; i < Locals.Count; i++)
+                {
+                    var local = Locals[i];
+                    writer.WriteLine($"; #{i} {local.Type.TypeName} [{local.RequiredLocation}]");
+                }
             }
 
             for (var i = 0; i < Blocks.Count; i++)

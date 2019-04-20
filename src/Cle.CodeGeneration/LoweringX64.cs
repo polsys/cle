@@ -80,10 +80,8 @@ namespace Cle.CodeGeneration
                 // This assumes that the first paramCount locals are the parameters
                 for (var i = 0; i < paramCount; i++)
                 {
-                    methodInProgress.Locals.Add(new LowLocal<X64Register>(highMethod.Values[i].Type)
-                    {
-                        Location = GetLocationForParameter(i)
-                    });
+                    methodInProgress.Locals.Add(
+                        new LowLocal<X64Register>(highMethod.Values[i].Type, GetLocationForParameter(i)));
                     var tempIndex = methodInProgress.Locals.Count - 1;
 
                     lowBlock.Instructions.Add(new LowInstruction(LowOp.Move, i, tempIndex, 0, 0));
@@ -204,8 +202,7 @@ namespace Cle.CodeGeneration
             if (!returnValue.Type.Equals(SimpleType.Void))
             {
                 var dest = methodInProgress.Locals.Count;
-                methodInProgress.Locals.Add(new LowLocal<X64Register>(returnValue.Type)
-                    { Location = new StorageLocation<X64Register>(X64Register.Rax) });
+                methodInProgress.Locals.Add(new LowLocal<X64Register>(returnValue.Type, X64Register.Rax));
 
                 lowBlock.Instructions.Add(new LowInstruction(LowOp.Move, dest, valueIndex, 0, 0));
             }
@@ -222,10 +219,8 @@ namespace Cle.CodeGeneration
             for (var i = 0; i < callInfo.ParameterIndices.Length; i++)
             {
                 var paramIndex = callInfo.ParameterIndices[i];
-                methodInProgress.Locals.Add(new LowLocal<X64Register>(methodInProgress.Locals[paramIndex].Type)
-                {
-                    Location = GetLocationForParameter(i)
-                });
+                methodInProgress.Locals.Add(new LowLocal<X64Register>(methodInProgress.Locals[paramIndex].Type,
+                   GetLocationForParameter(i)));
 
                 lowBlock.Instructions.Add(new LowInstruction(LowOp.Move, methodInProgress.Locals.Count - 1, paramIndex, 0, 0));
             }
@@ -235,10 +230,8 @@ namespace Cle.CodeGeneration
             // Then, unless the method returns void, do the same for the return value
             if (!methodInProgress.Locals[dest].Type.Equals(SimpleType.Void))
             {
-                methodInProgress.Locals.Add(new LowLocal<X64Register>(methodInProgress.Locals[dest].Type)
-                {
-                    Location = new StorageLocation<X64Register>(X64Register.Rax)
-                });
+                methodInProgress.Locals.Add(
+                    new LowLocal<X64Register>(methodInProgress.Locals[dest].Type, X64Register.Rax));
 
                 lowBlock.Instructions.Add(new LowInstruction(LowOp.Move, dest, methodInProgress.Locals.Count - 1, 0, 0));
             }
