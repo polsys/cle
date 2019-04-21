@@ -38,7 +38,11 @@ namespace Cle.CodeGeneration
 
                 if (highBlock is null)
                 {
-                    lowMethod.Blocks.Add(new LowBlock());
+                    lowMethod.Blocks.Add(new LowBlock()
+                    {
+                        Predecessors = Array.Empty<int>(),
+                        Successors = Array.Empty<int>()
+                    });
                 }
                 else
                 {
@@ -71,8 +75,23 @@ namespace Cle.CodeGeneration
         {
             var lowBlock = new LowBlock
             {
-                Phis = highBlock.Phis
+                Phis = highBlock.Phis,
+                Predecessors = highBlock.Predecessors
             };
+
+            // Initialize the list of successors
+            if (highBlock.AlternativeSuccessor >= 0)
+            {
+                lowBlock.Successors = new[] { highBlock.AlternativeSuccessor, highBlock.DefaultSuccessor };
+            }
+            else if (highBlock.DefaultSuccessor >= 0)
+            {
+                lowBlock.Successors = new[] { highBlock.DefaultSuccessor };
+            }
+            else
+            {
+                lowBlock.Successors = Array.Empty<int>();
+            }
 
             // At the start of the first block, we must copy parameters from fixed-location temps to freely assigned locals
             if (isFirstBlock)
