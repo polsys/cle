@@ -56,6 +56,13 @@ LB_2:
     Return 6 0 0 -> 0
 ";
             AssertDump(lowered, expected);
+
+            Assert.That(lowered.Blocks[0].Predecessors, Is.Empty);
+            Assert.That(lowered.Blocks[0].Successors, Is.EqualTo(new int[] { 1, 2 }));
+            Assert.That(lowered.Blocks[1].Predecessors, Is.EqualTo(new int[] { 0 }));
+            Assert.That(lowered.Blocks[1].Successors, Is.Empty);
+            Assert.That(lowered.Blocks[2].Predecessors, Is.EqualTo(new int[] { 0 }));
+            Assert.That(lowered.Blocks[2].Successors, Is.Empty);
         }
 
         [Test]
@@ -100,6 +107,34 @@ LB_2:
     Return 4 0 0 -> 0
 ";
             AssertDump(lowered, expected);
+        }
+
+        [Test]
+        public void Empty_block_is_properly_lowered()
+        {
+            const string source = @"
+; #0 void
+BB_0:
+    Return #0
+BB_1:
+";
+            var method = MethodAssembler.Assemble(source, "Test::Method");
+            var lowered = LoweringX64.Lower(method);
+
+            const string expected = @"
+; #0 void [?]
+; #1 void [rax]
+LB_0:
+    LoadInt 0 0 0 -> 1
+    Return 1 0 0 -> 0
+LB_1:
+";
+            AssertDump(lowered, expected);
+
+            Assert.That(lowered.Blocks[0].Predecessors, Is.Empty);
+            Assert.That(lowered.Blocks[1].Predecessors, Is.Empty);
+            Assert.That(lowered.Blocks[0].Successors, Is.Empty);
+            Assert.That(lowered.Blocks[1].Successors, Is.Empty);
         }
     }
 }
