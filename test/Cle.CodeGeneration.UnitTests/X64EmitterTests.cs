@@ -147,6 +147,17 @@ namespace Cle.CodeGeneration.UnitTests
         }
 
         [Test]
+        public void EmitExchange_swaps_new_and_basic_register()
+        {
+            GetEmitter(out var stream, out var disassembly).EmitExchange(
+                new StorageLocation<X64Register>(X64Register.R13),
+                new StorageLocation<X64Register>(X64Register.Rcx));
+
+            CollectionAssert.AreEqual(new byte[] { 0x4C, 0x87, 0xE9 }, stream.ToArray());
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("xchg r13, rcx"));
+        }
+
+        [Test]
         public void EmitSetcc_emits_setne_to_basic_register()
         {
             GetEmitter(out var stream, out var disassembly).EmitSetcc(

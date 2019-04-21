@@ -131,6 +131,9 @@ namespace Cle.CodeGeneration
                             }
                             break;
                         }
+                    case LowOp.Swap:
+                        emitter.EmitExchange(allocation.Get(inst.Left).location, allocation.Get(inst.Right).location);
+                        break;
                     case LowOp.IntegerAdd:
                         EmitIntegerBinaryOp(BinaryOp.Add, in inst, method, allocation);
                         break;
