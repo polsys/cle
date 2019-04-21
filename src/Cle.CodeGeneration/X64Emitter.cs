@@ -122,6 +122,27 @@ namespace Cle.CodeGeneration
         }
 
         /// <summary>
+        /// Emits a full-width xchg instruction between the two registers.
+        /// </summary>
+        // TODO: This could also support the 32-bit encoding to potentially save a prefix
+        public void EmitExchange(StorageLocation<X64Register> left, StorageLocation<X64Register> right)
+        {
+            if (!right.IsRegister || !left.IsRegister)
+                throw new NotImplementedException("Xchg to/from stack");
+            if (right.Register >= X64Register.Xmm0 || left.Register >= X64Register.Xmm0)
+                throw new NotImplementedException("Xchg to/from XMM registers");
+
+            DisassembleRegReg("xchg", left.Register, right.Register, 8);
+
+            var (encodedLeft, needR) = GetRegisterEncoding(left.Register);
+            var (encodedRight, needB) = GetRegisterEncoding(right.Register);
+
+            EmitRexPrefixIfNeeded(true, needR, false, needB);
+            _outputStream.WriteByte(0x87);
+            EmitModRmForRegisterToRegister(encodedLeft, encodedRight);
+        }
+
+        /// <summary>
         /// Emits a general-purpose binary operation with the specified operand width.
         /// </summary>
         /// <param name="op">The binary operation to emit.</param>

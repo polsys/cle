@@ -30,7 +30,8 @@ namespace Cle.CodeGeneration.Lir
         /// <summary>
         /// Returns whether <see cref="Right"/> refers to a local.
         /// </summary>
-        public bool UsesRight => Op == LowOp.Compare || Op == LowOp.IntegerAdd || Op == LowOp.IntegerSubtract;
+        public bool UsesRight => Op == LowOp.Swap || Op == LowOp.Compare ||
+            Op == LowOp.IntegerAdd || Op == LowOp.IntegerSubtract;
 
         /// <summary>
         /// Returns whether <see cref="Dest"/> refers to a local.
@@ -99,6 +100,10 @@ namespace Cle.CodeGeneration.Lir
         /// Moves the value in Left to Dest.
         /// </summary>
         Move,
+        /// <summary>
+        /// Swaps Left and Right.
+        /// </summary>
+        Swap,
 
         // Arithmetic
 
