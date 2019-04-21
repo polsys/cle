@@ -41,7 +41,7 @@ namespace Cle.CodeGeneration.Lir
                 writer.WriteLine("LB_" + i + ":");
                 foreach (var instr in Blocks[i].Instructions)
                 {
-                    writer.WriteLine($"    {instr.Op} {instr.Left} {instr.Right} {instr.Data} -> {instr.Dest}");
+                    writer.WriteLine("    " + instr);
                 }
             }
         }

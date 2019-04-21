@@ -15,6 +15,7 @@ namespace Cle.CodeGeneration.UnitTests.RegisterAllocation
             var method = new LowMethod<X64Register>();
             method.Locals.Add(new LowLocal<X64Register>(SimpleType.Bool));
             method.Locals.Add(new LowLocal<X64Register>(SimpleType.Bool));
+            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Void, X64Register.Rax));
             method.Blocks.Add(new LowBlock
             {
                 Instructions =
@@ -22,7 +23,8 @@ namespace Cle.CodeGeneration.UnitTests.RegisterAllocation
                     new LowInstruction(LowOp.LoadInt, 0, 0, 0, 1), // Load 1 -> #0
                     new LowInstruction(LowOp.LoadInt, 1, 0, 0, 1), // Load 1 -> #1
                     new LowInstruction(LowOp.Compare, 0, 0, 1, 0), // Compare #0, #1
-                    new LowInstruction(LowOp.Return, 0, 0, 0, 0)
+                    new LowInstruction(LowOp.LoadInt, 2, 0, 0, 0), // Initialize void return
+                    new LowInstruction(LowOp.Return, 2, 0, 0, 0)
                 }
             });
 
@@ -30,10 +32,12 @@ namespace Cle.CodeGeneration.UnitTests.RegisterAllocation
 
             Assert.That(allocationMap.Get(0).localIndex, Is.EqualTo(0));
             Assert.That(allocationMap.Get(1).localIndex, Is.EqualTo(1));
+            Assert.That(allocationMap.Get(2).localIndex, Is.EqualTo(2));
 
             Assert.That(allocationMap.Get(0).location.IsSet, Is.True);
             Assert.That(allocationMap.Get(1).location.IsSet, Is.True);
             Assert.That(allocationMap.Get(0).location, Is.Not.EqualTo(allocationMap.Get(1).location));
+            Assert.That(allocationMap.Get(2).location.Register, Is.EqualTo(X64Register.Rax));
         }
 
         [Test]
@@ -42,6 +46,7 @@ namespace Cle.CodeGeneration.UnitTests.RegisterAllocation
             var method = new LowMethod<X64Register>();
             method.Locals.Add(new LowLocal<X64Register>(SimpleType.Bool));
             method.Locals.Add(new LowLocal<X64Register>(SimpleType.Bool));
+            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Void, X64Register.Rax));
             method.Blocks.Add(new LowBlock
             {
                 Instructions =
@@ -49,7 +54,8 @@ namespace Cle.CodeGeneration.UnitTests.RegisterAllocation
                     new LowInstruction(LowOp.LoadInt, 0, 0, 0, 1), // Load 1 -> #0
                     new LowInstruction(LowOp.Move, 1, 0, 0, 0), // Move #0 -> #1
                     new LowInstruction(LowOp.Test, 0, 1, 0, 0), // Test #1
-                    new LowInstruction(LowOp.Return, 0, 0, 0, 0)
+                    new LowInstruction(LowOp.LoadInt, 2, 0, 0, 0), // Initialize void return
+                    new LowInstruction(LowOp.Return, 0, 2, 0, 0)
                 }
             });
 
@@ -57,6 +63,7 @@ namespace Cle.CodeGeneration.UnitTests.RegisterAllocation
 
             Assert.That(allocationMap.Get(0).localIndex, Is.EqualTo(0));
             Assert.That(allocationMap.Get(1).localIndex, Is.EqualTo(1));
+            Assert.That(allocationMap.Get(2).localIndex, Is.EqualTo(2));
 
             Assert.That(allocationMap.Get(0).location.IsSet, Is.True);
             Assert.That(allocationMap.Get(1).location.IsSet, Is.True);
@@ -77,7 +84,7 @@ namespace Cle.CodeGeneration.UnitTests.RegisterAllocation
                     new LowInstruction(LowOp.LoadInt, 0, 0, 0, 1), // Load 1 -> #0
                     new LowInstruction(LowOp.Move, 1, 0, 0, 0), // Move #0 -> #1
                     new LowInstruction(LowOp.Compare, 0, 1, 0, 0), // Compare #1, #0
-                    new LowInstruction(LowOp.Return, 0, 0, 0, 0)
+                    new LowInstruction(LowOp.Return, 0, 0, 0, 0) // Return #0
                 }
             });
 
@@ -172,6 +179,7 @@ namespace Cle.CodeGeneration.UnitTests.RegisterAllocation
             method.Locals.Add(new LowLocal<X64Register>(SimpleType.Bool));
             method.Locals.Add(new LowLocal<X64Register>(SimpleType.Bool));
             method.Locals.Add(new LowLocal<X64Register>(SimpleType.Bool));
+            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Void, X64Register.Rax));
             method.Blocks.Add(new LowBlock
             {
                 Instructions =
@@ -182,14 +190,14 @@ namespace Cle.CodeGeneration.UnitTests.RegisterAllocation
                     new LowInstruction(LowOp.LoadInt, 3, 0, 0, 1), // Load 1 -> #3
                     new LowInstruction(LowOp.LoadInt, 4, 0, 0, 1), // Load 1 -> #4
 
-                    new LowInstruction(LowOp.Call, 0, 0, 0, 1234), // Call - this trashes rax, rcx, rdx, r8 and r9
+                    new LowInstruction(LowOp.Call, 5, 0, 0, 1234), // Call - this trashes rax, rcx, rdx, r8 and r9
 
                     new LowInstruction(LowOp.Test, 0, 0, 0, 0), // Test #0
                     new LowInstruction(LowOp.Test, 0, 1, 0, 0), // Test #1
                     new LowInstruction(LowOp.Test, 0, 2, 0, 0), // Test #2
                     new LowInstruction(LowOp.Test, 0, 3, 0, 0), // Test #3
                     new LowInstruction(LowOp.Test, 0, 4, 0, 0), // Test #4
-                    new LowInstruction(LowOp.Return, 0, 0, 0, 0)
+                    new LowInstruction(LowOp.Return, 5, 0, 0, 0)
                 }
             });
 
@@ -202,6 +210,12 @@ namespace Cle.CodeGeneration.UnitTests.RegisterAllocation
 
                 if (localIndex == -1)
                     continue;
+
+                if (localIndex == 5)
+                {
+                    Assert.That(location.Register, Is.EqualTo(X64Register.Rax));
+                    continue;
+                }
 
                 Assert.That(location.IsSet, Is.True);
                 Assert.That(location.Register, Is.Not.EqualTo(X64Register.Rax));
@@ -224,6 +238,7 @@ namespace Cle.CodeGeneration.UnitTests.RegisterAllocation
             method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32));
             method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32));
             method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32));
+            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32, X64Register.Rax));
             method.Blocks.Add(new LowBlock
             {
                 Instructions =
@@ -234,8 +249,8 @@ namespace Cle.CodeGeneration.UnitTests.RegisterAllocation
                     new LowInstruction(LowOp.IntegerSubtract, 2, 0, 1, 0), // Subtract #0 - #1 -> #2
 
                     new LowInstruction(LowOp.Test, 0, 0, 0, 0), // Use #0
-                    new LowInstruction(LowOp.Test, 0, 2, 0, 0), // Use #2
-                    new LowInstruction(LowOp.Return, 0, 0, 0, 0)
+                    new LowInstruction(LowOp.Move, 3, 2, 0, 0), // Use #2
+                    new LowInstruction(LowOp.Return, 3, 0, 0, 0)
                 }
             });
 

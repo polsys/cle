@@ -23,7 +23,7 @@ BB_0:
 LB_0:
     LoadInt 0 0 1234 -> 0
     Move 0 0 0 -> 1
-    Return 0 0 0 -> 0
+    Return 1 0 0 -> 0
 ";
             AssertDump(lowered, expected);
         }
@@ -51,7 +51,7 @@ LB_0:
     Test 0 0 0 -> 0
     SetIfEqual 0 0 0 -> 1
     Move 1 0 0 -> 2
-    Return 0 0 0 -> 0
+    Return 2 0 0 -> 0
 ";
             AssertDump(lowered, expected);
         }
@@ -85,7 +85,7 @@ LB_0:
     Compare 0 1 0 -> 0
     {expectedLowOp} 0 0 0 -> 2
     Move 2 0 0 -> 3
-    Return 0 0 0 -> 0
+    Return 3 0 0 -> 0
 ";
             AssertDump(lowered, expected);
         }
@@ -117,7 +117,7 @@ LB_0:
     LoadInt 0 0 5678 -> 1
     {expectedLowOp} 0 1 0 -> 2
     Move 2 0 0 -> 3
-    Return 0 0 0 -> 0
+    Return 3 0 0 -> 0
 ";
             AssertDump(lowered, expected);
         }

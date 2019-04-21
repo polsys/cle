@@ -179,7 +179,7 @@ namespace Cle.CodeGeneration.RegisterAllocation
                     // Calls trash some registers, so we need to add intervals for them
                     if (inst.Op == LowOp.Call)
                     {
-                        intervals.Add(new Interval { Start = instIndex, End = instIndex, Register = X64Register.Rax });
+                        // RAX is already reserved as the call result is stored in a local
                         intervals.Add(new Interval { Start = instIndex, End = instIndex, Register = X64Register.Rcx });
                         intervals.Add(new Interval { Start = instIndex, End = instIndex, Register = X64Register.Rdx });
                         intervals.Add(new Interval { Start = instIndex, End = instIndex, Register = X64Register.R8 });

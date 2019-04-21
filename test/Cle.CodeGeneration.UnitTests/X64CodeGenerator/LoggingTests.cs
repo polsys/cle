@@ -22,7 +22,7 @@ BB_0:
                 var dumpString = dumpWriter.ToString();
 
                 // Dumped LIR
-                Assert.That(dumpString, Contains.Substring("Return 0 0 0 -> 0"));
+                Assert.That(dumpString, Contains.Substring("Return 2 0 0 -> 0"));
 
                 // Locals
                 // #0 has no forced position, the others have
