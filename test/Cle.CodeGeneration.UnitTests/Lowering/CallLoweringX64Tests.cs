@@ -24,10 +24,14 @@ BB_0:
 ; #0 void [?]
 ; #1 void [?]
 ; #2 void [?]
+; #3 void [rax]
+; #4 void [rax]
+; #5 void [rax]
 LB_0:
-    Call 0 0 100 -> 0
-    Call 1 0 100 -> 0
-    Return 0 0 0 -> 0
+    Call 0 0 100 -> 3
+    Call 1 0 100 -> 4
+    LoadInt 0 0 0 -> 5
+    Return 5 0 0 -> 0
 ";
             AssertDump(lowered, expected);
         }
@@ -64,7 +68,7 @@ LB_0:
     Move 6 0 0 -> 2
     Move 7 0 0 -> 3
     Move 0 0 0 -> 8
-    Return 0 0 0 -> 0
+    Return 8 0 0 -> 0
 ";
             AssertDump(lowered, expected);
         }
@@ -103,10 +107,10 @@ LB_0:
     Move 0 0 0 -> 6
     Move 2 0 0 -> 7
     Move 3 0 0 -> 8
-    Call 0 0 100 -> 0
+    Call 0 0 100 -> 9
     Move 9 0 0 -> 4
     Move 4 0 0 -> 10
-    Return 0 0 0 -> 0
+    Return 10 0 0 -> 0
 ";
             AssertDump(lowered, expected);
         }

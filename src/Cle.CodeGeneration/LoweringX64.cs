@@ -196,18 +196,25 @@ namespace Cle.CodeGeneration
             // into
             //   Move x -> return_reg
             //   Return,
-            // unless this is a void method (in which case the return value is undefined).
+            // unless this is a void method, in which case the return value is zeroed.
+            // (The zeroing is needed because the register allocator expects uses to be preceded
+            // by definitions.)
+            // TODO: Replace the zeroing with a dummy use that leaves the value undefined
             var returnValue = highMethod.Values[valueIndex];
 
-            if (!returnValue.Type.Equals(SimpleType.Void))
-            {
-                var dest = methodInProgress.Locals.Count;
-                methodInProgress.Locals.Add(new LowLocal<X64Register>(returnValue.Type, X64Register.Rax));
+            var dest = methodInProgress.Locals.Count;
+            methodInProgress.Locals.Add(new LowLocal<X64Register>(returnValue.Type, X64Register.Rax));
 
+            if (returnValue.Type.Equals(SimpleType.Void))
+            {
+                lowBlock.Instructions.Add(new LowInstruction(LowOp.LoadInt, dest, 0, 0, 0));
+            }
+            else
+            {
                 lowBlock.Instructions.Add(new LowInstruction(LowOp.Move, dest, valueIndex, 0, 0));
             }
 
-            lowBlock.Instructions.Add(new LowInstruction(LowOp.Return, 0, 0, 0, 0));
+            lowBlock.Instructions.Add(new LowInstruction(LowOp.Return, 0, dest, 0, 0));
         }
 
         private static void ConvertCall(LowBlock lowBlock, MethodCallInfo callInfo, int callInfoIndex, ushort dest,
@@ -225,15 +232,15 @@ namespace Cle.CodeGeneration
                 lowBlock.Instructions.Add(new LowInstruction(LowOp.Move, methodInProgress.Locals.Count - 1, paramIndex, 0, 0));
             }
 
-            lowBlock.Instructions.Add(new LowInstruction(LowOp.Call, 0, callInfoIndex, 0, (uint)callInfo.CalleeIndex));
+            methodInProgress.Locals.Add(new LowLocal<X64Register>(methodInProgress.Locals[dest].Type, X64Register.Rax));
+            var destLocal = methodInProgress.Locals.Count - 1;
+            lowBlock.Instructions.Add(new LowInstruction(LowOp.Call, destLocal,
+                callInfoIndex, 0, (uint)callInfo.CalleeIndex));
 
             // Then, unless the method returns void, do the same for the return value
             if (!methodInProgress.Locals[dest].Type.Equals(SimpleType.Void))
             {
-                methodInProgress.Locals.Add(
-                    new LowLocal<X64Register>(methodInProgress.Locals[dest].Type, X64Register.Rax));
-
-                lowBlock.Instructions.Add(new LowInstruction(LowOp.Move, dest, methodInProgress.Locals.Count - 1, 0, 0));
+                lowBlock.Instructions.Add(new LowInstruction(LowOp.Move, dest, destLocal, 0, 0));
             }
         }
 

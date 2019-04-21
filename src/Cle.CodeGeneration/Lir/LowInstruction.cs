@@ -1,9 +1,11 @@
-﻿namespace Cle.CodeGeneration.Lir
+﻿using System;
+
+namespace Cle.CodeGeneration.Lir
 {
     /// <summary>
     /// LIR instruction with opcode and four operands (three sources, one destination).
     /// </summary>
-    internal readonly struct LowInstruction
+    internal readonly struct LowInstruction : IEquatable<LowInstruction>
     {
         public readonly LowOp Op;
         public readonly int Dest;
@@ -20,13 +22,62 @@
             Data = data;
         }
 
-        public bool UsesLeft => Op > LowOp.LoadInt && Op < LowOp.SetIfEqual;
+        /// <summary>
+        /// Returns whether <see cref="Left"/> refers to a local.
+        /// </summary>
+        public bool UsesLeft => Op > LowOp.LoadInt && Op < LowOp.SetIfEqual || Op == LowOp.Return;
+
+        /// <summary>
+        /// Returns whether <see cref="Right"/> refers to a local.
+        /// </summary>
         public bool UsesRight => Op == LowOp.Compare || Op == LowOp.IntegerAdd || Op == LowOp.IntegerSubtract;
 
+        /// <summary>
+        /// Returns whether <see cref="Dest"/> refers to a local.
+        /// </summary>
         public bool UsesDest => Op == LowOp.LoadInt || Op == LowOp.Move ||
                                 Op == LowOp.IntegerAdd || Op == LowOp.IntegerSubtract ||
-                                Op == LowOp.SetIfEqual || Op == LowOp.Jump ||
-                                Op == LowOp.JumpIfEqual || Op == LowOp.JumpIfNotEqual;
+                                Op == LowOp.SetIfEqual || Op == LowOp.Call;
+
+        public override bool Equals(object obj)
+        {
+            return obj is LowInstruction instruction && Equals(instruction);
+        }
+
+        public bool Equals(LowInstruction other)
+        {
+            return Op == other.Op &&
+                   Dest == other.Dest &&
+                   Left == other.Left &&
+                   Right == other.Right &&
+                   Data == other.Data;
+        }
+
+        public override int GetHashCode()
+        {
+            var hashCode = 1623468473;
+            hashCode = hashCode * -1521134295 + Op.GetHashCode();
+            hashCode = hashCode * -1521134295 + Dest.GetHashCode();
+            hashCode = hashCode * -1521134295 + Left.GetHashCode();
+            hashCode = hashCode * -1521134295 + Right.GetHashCode();
+            hashCode = hashCode * -1521134295 + Data.GetHashCode();
+            return hashCode;
+        }
+
+        public static bool operator ==(LowInstruction left, LowInstruction right)
+        {
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(LowInstruction left, LowInstruction right)
+        {
+            return !(left == right);
+        }
+
+        public override string ToString()
+        {
+            return $"{Op} {Left} {Right} {Data} -> {Dest}";
+        }
     }
 
     internal enum LowOp
@@ -128,12 +179,12 @@
         /// <summary>
         /// Calls the method indexed by Data.
         /// The Left operand contains the call info index for disassembly purposes.
-        /// The return value is implicitly stored in the register with the correct location.
+        /// The return value is stored in Dest - this local must be in the fixed return location.
         /// </summary>
         Call,
         /// <summary>
         /// Exits the method.
-        /// Has no operands - the return value is assumed to be in the correct location.
+        /// The left operand is returned - this local must also be in the fixed return location.
         /// </summary>
         Return,
     }

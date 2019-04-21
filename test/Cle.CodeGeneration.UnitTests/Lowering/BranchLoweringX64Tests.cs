@@ -49,11 +49,11 @@ LB_0:
 LB_1:
     LoadInt 0 0 1 -> 3
     Move 3 0 0 -> 5
-    Return 0 0 0 -> 0
+    Return 5 0 0 -> 0
 LB_2:
     LoadInt 0 0 2 -> 4
     Move 4 0 0 -> 6
-    Return 0 0 0 -> 0
+    Return 6 0 0 -> 0
 ";
             AssertDump(lowered, expected);
         }
@@ -93,11 +93,11 @@ LB_0:
 LB_1:
     LoadInt 0 0 1 -> 1
     Move 1 0 0 -> 3
-    Return 0 0 0 -> 0
+    Return 3 0 0 -> 0
 LB_2:
     LoadInt 0 0 2 -> 2
     Move 2 0 0 -> 4
-    Return 0 0 0 -> 0
+    Return 4 0 0 -> 0
 ";
             AssertDump(lowered, expected);
         }

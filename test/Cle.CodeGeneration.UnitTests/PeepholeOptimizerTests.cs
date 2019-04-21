@@ -15,7 +15,7 @@ namespace Cle.CodeGeneration.UnitTests
             {
                 Instructions =
                 {
-                    new LowInstruction(LowOp.Return, 0, 0, 0, 0)
+                    new LowInstruction(LowOp.Nop, 0, 0, 0, 0)
                 }
             });
 
@@ -168,7 +168,7 @@ LB_0:
                 {
                     new LowInstruction(LowOp.SetIfEqual, 0, 0, 0, 0), // SetIfEqual #0
                     new LowInstruction(LowOp.Move, 1, 0, 0, 0), // Move #0 -> #1
-                    new LowInstruction(LowOp.Return, 0, 0, 0, 0) // Return
+                    new LowInstruction(LowOp.Return, 0, 1, 0, 0) // Return
                 }
             });
 
@@ -177,7 +177,7 @@ LB_0:
 ; #1 bool [rax]
 LB_0:
     SetIfEqual 0 0 0 -> 1
-    Return 0 0 0 -> 0
+    Return 1 0 0 -> 0
 ";
             OptimizeAndVerify(method, expected);
         }
@@ -317,7 +317,7 @@ LB_0:
                     new LowInstruction(LowOp.SetIfEqual, 3, 0, 0, 0), // SetIfZero #3 (negation, part 2)
                     new LowInstruction(LowOp.Test, 0, 3, 0, 0), // Test #3
                     new LowInstruction(LowOp.JumpIfNotEqual, 1, 0, 0, 0), // JumpIfNotEqual (not zero) LB_1
-                    new LowInstruction(LowOp.Return, 0, 0, 0, 0), // Return (#3)
+                    new LowInstruction(LowOp.Return, 0, 3, 0, 0), // Return (#3)
                 }
             });
 
@@ -330,7 +330,7 @@ LB_0:
     Compare 0 1 0 -> 0
     SetIfNotEqual 0 0 0 -> 3
     JumpIfNotEqual 0 0 0 -> 1
-    Return 0 0 0 -> 0
+    Return 3 0 0 -> 0
 ";
             OptimizeAndVerify(method, expected);
         }
@@ -353,7 +353,7 @@ LB_0:
                     new LowInstruction(LowOp.SetIfEqual, 3, 0, 0, 0), // SetIfZero #3 (negation, part 2)
                     new LowInstruction(LowOp.Test, 0, 3, 0, 0), // Test #3
                     new LowInstruction(LowOp.JumpIfNotEqual, 1, 0, 0, 0), // JumpIfNotEqual (not zero) LB_1
-                    new LowInstruction(LowOp.Return, 0, 0, 0, 0), // Return (#3)
+                    new LowInstruction(LowOp.Return, 0, 2, 0, 0), // Return #2
                 }
             });
 
@@ -366,7 +366,7 @@ LB_0:
     Compare 0 1 0 -> 0
     SetIfEqual 0 0 0 -> 2
     JumpIfNotEqual 0 0 0 -> 1
-    Return 0 0 0 -> 0
+    Return 2 0 0 -> 0
 ";
             OptimizeAndVerify(method, expected);
         }
