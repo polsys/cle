@@ -100,15 +100,15 @@ namespace Cle.CodeGeneration
                         block.RemoveAt(currentPos);
                         return true;
                     }
-                    else if (current.Op == LowOp.SetIfEqual && next.Left == current.Dest && localUses[current.Dest] == 1)
+                    else if (IsConditionalSet(current.Op) && next.Left == current.Dest && localUses[current.Dest] == 1)
                     {
                         // When #0 is used only in the move instruction
                         // ----
-                        // SetIfEqual -> #0
+                        // SetIfXXX -> #0
                         // Move #0 -> #1
                         // ----
-                        // SetIfEqual -> #1
-                        block[currentPos + 1] = new LowInstruction(LowOp.SetIfEqual, next.Dest, 0, 0, 0);
+                        // SetIfXXX -> #1
+                        block[currentPos + 1] = new LowInstruction(current.Op, next.Dest, 0, 0, 0);
                         block.RemoveAt(currentPos);
                         return true;
                     }

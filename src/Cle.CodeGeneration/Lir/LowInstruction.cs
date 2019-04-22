@@ -38,7 +38,8 @@ namespace Cle.CodeGeneration.Lir
         /// </summary>
         public bool UsesDest => Op == LowOp.LoadInt || Op == LowOp.Move ||
                                 Op == LowOp.IntegerAdd || Op == LowOp.IntegerSubtract ||
-                                Op == LowOp.SetIfEqual || Op == LowOp.Call;
+                                (Op >= LowOp.SetIfEqual && Op <= LowOp.SetIfGreaterOrEqual) || 
+                                Op == LowOp.Call;
 
         public override bool Equals(object obj)
         {

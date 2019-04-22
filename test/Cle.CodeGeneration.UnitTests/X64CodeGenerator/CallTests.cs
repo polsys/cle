@@ -44,13 +44,11 @@ BB_0:
     Call Test::DoSomething(#2, #3) -> #0
     Return #1";
             
-            // TODO: There should be no register shuffling (LSRA should have a register hint)
             const string expected = @"
 ; Test::Method
 LB_0:
-    mov eax, 1h
+    mov ecx, 1h
     mov edx, 1h
-    mov ecx, eax
     call Test::DoSomething
     mov eax, 0h
     ret
