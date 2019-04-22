@@ -15,10 +15,21 @@ namespace Cle.CodeGeneration.Lir
         where TRegister : struct, Enum
     {
         [NotNull, ItemNotNull]
-        public readonly List<LowLocal<TRegister>> Locals = new List<LowLocal<TRegister>>();
+        public readonly List<LowLocal<TRegister>> Locals;
 
         [NotNull, ItemNotNull]
-        public readonly List<LowBlock> Blocks = new List<LowBlock>();
+        public readonly List<LowBlock> Blocks;
+
+        public LowMethod()
+            : this(new List<LowLocal<TRegister>>(), new List<LowBlock>())
+        {
+        }
+
+        public LowMethod(List<LowLocal<TRegister>> locals, List<LowBlock> blocks)
+        {
+            Locals = locals;
+            Blocks = blocks;
+        }
 
         /// <summary>
         /// Prints a debugging representation of this method to the given writer.
