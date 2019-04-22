@@ -12,11 +12,14 @@ namespace Cle.IntegrationTests
         [TestCase("FunctionCallWithTwoInt32Params", 15)]
         [TestCase("FunctionCallWithVoid", 100)]
         [TestCase("IntEquality", 100)]
+        [TestCase("LargeIf", 32)]
         [TestCase("ReturnInt", 42)]
         [TestCase("ReturnParameter", 100)]
         [TestCase("SimpleForwardPhi", 50)]
         [TestCase("SimpleWhileLoop", 45)]
         [TestCase("SimpleWhileLoop2", 36)]
+        [TestCase("SwapAndReturnSmaller1", 10)]
+        [TestCase("SwapAndReturnSmaller2", 15)]
         public void CodeGenBringUp(string testCase, int expectedReturnCode)
         {
             new TestRunner(Path.Combine(BaseDirectory, testCase))

@@ -8,6 +8,7 @@ namespace Cle.IntegrationTests
         private const string BaseDirectory = "TestCases/Functional";
         private const int ExecutionTimeOutMilliseconds = 1000;
 
+        [TestCase("IterativeFibonacci", 55)]
         [TestCase("RecursiveFibonacci", 55)]
         public void Functional(string testCase, int expectedReturnCode)
         {

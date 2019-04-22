@@ -1,0 +1,23 @@
+// Two Phi functions feeding each other in a loop.
+//
+// Expected return code: 15.
+// No console output expected.
+
+namespace SwapAndReturnSmaller;
+
+[EntryPoint]
+public int32 Main()
+{
+    // The loop is NOT executed - the opposite is tested by SwapAndReturnSmaller1
+    int32 a = 15;
+    int32 b = 30;
+    
+    while (a > b)
+    {
+        int32 temp = a;
+        a = b;
+        b = temp;
+    }
+
+    return a;
+}

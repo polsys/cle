@@ -1,0 +1,47 @@
+// This test verifies the compilation of a large PHI function.
+//
+// Expected return code: 32.
+// No console output expected.
+
+namespace LargeIf;
+
+[EntryPoint]
+public int32 Main()
+{
+    return Pow2(5);
+}
+
+public int32 Pow2(int32 n)
+{
+    int32 result = 1;
+    
+    if (n == 1) {
+        result = 2;
+    }
+    else if (n == 2) {
+        result = 4;
+    }
+    else if (n == 3) {
+        result = 8;
+    }
+    else if (n == 4) {
+        result = 16;
+    }
+    else if (n == 5) {
+        result = 32;
+    }
+    else if (n == 6) {
+        result = 64;
+    }
+    else if (n == 7) {
+        result = 128;
+    }
+    else if (n == 8) {
+        result = 256;
+    }
+    else if (n > 8) {
+        result = -1; // Just call it an overflow
+    }
+    
+    return result;
+}
