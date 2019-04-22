@@ -39,9 +39,9 @@ BB_2:
             var expected = $@"
 ; Test::Method
 LB_0:
-    mov eax, 2Ah
-    mov ecx, 64h
-    cmp eax, ecx
+    mov ecx, 2Ah
+    mov edx, 64h
+    cmp ecx, edx
     {expectedConditionalJump} LB_1
     jmp LB_2
 LB_1:
@@ -91,9 +91,9 @@ BB_2:
             var expected = $@"
 ; Test::Method
 LB_0:
-    mov eax, 2Ah
-    mov ecx, 64h
-    cmp eax, ecx
+    mov ecx, 2Ah
+    mov edx, 64h
+    cmp ecx, edx
     {expectedConditionalJump} LB_1
     jmp LB_2
 LB_1:
@@ -135,8 +135,8 @@ BB_2:
             const string expected = @"
 ; Test::Method
 LB_0:
-    mov eax, 1h
-    test rax, rax
+    mov ecx, 1h
+    test rcx, rcx
     jne LB_1
     jmp LB_2
 LB_1:
@@ -180,8 +180,8 @@ BB_2:
             const string expected = @"
 ; Test::Method
 LB_0:
-    mov eax, 1h
-    test rax, rax
+    mov ecx, 1h
+    test rcx, rcx
     je LB_1
     jmp LB_2
 LB_1:
@@ -230,16 +230,17 @@ BB_3:
             const string expected = @"
 ; Test::Method
 LB_0:
-    mov eax, 0h
-    mov ecx, 1h
-    test rcx, rcx
+    mov ecx, 0h
+    mov edx, 1h
+    test rdx, rdx
     jne LB_1
     jmp LB_2
 LB_1:
-    mov eax, 1h
+    mov ecx, 1h
     jmp LB_3
 LB_2:
 LB_3:
+    mov eax, ecx
     ret
 ";
             EmitAndAssertDisassembly(source, expected);

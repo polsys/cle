@@ -44,9 +44,9 @@ BB_0:
             var expected = $@"
 ; Test::Method
 LB_0:
-    mov eax, 2Ah
-    mov ecx, 64h
-    cmp eax, ecx
+    mov ecx, 2Ah
+    mov edx, 64h
+    cmp ecx, edx
     {expectedLowOp} al
     movzx rax, al
     ret
@@ -77,9 +77,9 @@ BB_0:
             var expected = $@"
 ; Test::Method
 LB_0:
-    mov eax, 2Ah
-    mov ecx, 64h
-    cmp eax, ecx
+    mov ecx, 2Ah
+    mov edx, 64h
+    cmp ecx, edx
     {expectedLowOp} al
     movzx rax, al
     ret
@@ -115,13 +115,14 @@ BB_0:
             var expected = $@"
 ; Test::Method
 LB_0:
-    mov eax, 2Ah
-    mov ecx, 64h
-    mov edx, eax
-    {expectedAsmOp} edx, ecx
-    {expectedAsmOp} edx, eax
+    mov ecx, 2Ah
+    mov edx, 64h
+    mov eax, ecx
     {expectedAsmOp} eax, edx
     {expectedAsmOp} eax, ecx
+    {expectedAsmOp} ecx, eax
+    {expectedAsmOp} ecx, edx
+    mov eax, ecx
     ret
 ";
             EmitAndAssertDisassembly(source, expected);
@@ -155,14 +156,15 @@ BB_0:
             var expected = $@"
 ; Test::Method
 LB_0:
-    mov eax, 2Ah
-    mov ecx, 64h
-    mov edx, eax
-    {expectedAsmOp} edx, ecx
-    mov r8d, eax
-    {expectedAsmOp} r8d, edx
-    {expectedAsmOp} eax, r8d
-    {expectedAsmOp} eax, ecx
+    mov ecx, 2Ah
+    mov edx, 64h
+    mov eax, ecx
+    {expectedAsmOp} eax, edx
+    mov r8d, ecx
+    {expectedAsmOp} r8d, eax
+    {expectedAsmOp} ecx, r8d
+    {expectedAsmOp} ecx, edx
+    mov eax, ecx
     ret
 ";
             EmitAndAssertDisassembly(source, expected);

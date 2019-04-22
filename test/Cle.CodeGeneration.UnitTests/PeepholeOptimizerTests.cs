@@ -156,8 +156,10 @@ LB_0:
             OptimizeAndVerify(method, expected);
         }
 
-        [Test]
-        public void SetIfEqual_and_move_are_folded()
+        [TestCase(LowOp.SetIfEqual)]
+        [TestCase(LowOp.SetIfNotEqual)]
+        [TestCase(LowOp.SetIfGreater)]
+        public void SetIfX_and_move_are_folded(LowOp op)
         {
             var method = new LowMethod<X64Register>();
             method.Locals.Add(new LowLocal<X64Register>(SimpleType.Bool));
@@ -166,17 +168,17 @@ LB_0:
             {
                 Instructions =
                 {
-                    new LowInstruction(LowOp.SetIfEqual, 0, 0, 0, 0), // SetIfEqual #0
+                    new LowInstruction(op, 0, 0, 0, 0), // SetIfX #0
                     new LowInstruction(LowOp.Move, 1, 0, 0, 0), // Move #0 -> #1
                     new LowInstruction(LowOp.Return, 0, 1, 0, 0) // Return
                 }
             });
 
-            const string expected = @"
+            var expected = $@"
 ; #0 bool [?]
 ; #1 bool [rax]
 LB_0:
-    SetIfEqual 0 0 0 -> 1
+    {op} 0 0 0 -> 1
     Return 1 0 0 -> 0
 ";
             OptimizeAndVerify(method, expected);
