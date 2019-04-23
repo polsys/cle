@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using Cle.CodeGeneration.Lir;
+using JetBrains.Annotations;
 
 namespace Cle.CodeGeneration.RegisterAllocation
 {
@@ -13,10 +15,11 @@ namespace Cle.CodeGeneration.RegisterAllocation
     {
         public int IntervalCount => _intervals.Count;
 
+        [NotNull, ItemNotNull]
         private readonly List<Interval<TRegister>> _intervals;
 
         /// <param name="intervals">The list must match the value numbers in low instructions.</param>
-        internal AllocationInfo(List<Interval<TRegister>> intervals)
+        internal AllocationInfo([NotNull, ItemNotNull] List<Interval<TRegister>> intervals)
         {
             _intervals = intervals;
         }
@@ -30,6 +33,14 @@ namespace Cle.CodeGeneration.RegisterAllocation
         {
             var interval = _intervals[index];
             return (new StorageLocation<TRegister>(interval.Register), interval.LocalIndex);
+        }
+
+        internal void Dump([NotNull] TextWriter dumpWriter)
+        {
+            foreach (var interval in _intervals)
+            {
+                dumpWriter.WriteLine("; " + interval);
+            }
         }
     }
 }
