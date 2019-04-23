@@ -56,7 +56,7 @@ namespace Cle.CodeGeneration
             // If the operand can fit into a 32 bit immediate, emit a 32-bit load
             if (bytes <= uint.MaxValue)
             {
-                _disassemblyWriter?.WriteLine($"{Indent}mov {Get32BitRegisterName(dest.Register)}, {bytes:X}h");
+                _disassemblyWriter?.WriteLine($"{Indent}mov {Get32BitRegisterName(dest.Register)}, 0x{bytes:X}");
 
                 EmitRexPrefixIfNeeded(false, false, false, needB);
                 _outputStream.WriteByte((byte)(0xB8 | registerEncoding));
@@ -64,7 +64,7 @@ namespace Cle.CodeGeneration
             }
             else
             {
-                _disassemblyWriter?.WriteLine($"{Indent}mov {GetRegisterName(dest.Register)}, {bytes:X}h");
+                _disassemblyWriter?.WriteLine($"{Indent}mov {GetRegisterName(dest.Register)}, 0x{bytes:X}");
 
                 EmitRexPrefixIfNeeded(true, false, false, needB);
                 _outputStream.WriteByte((byte)(0xB8 | registerEncoding));

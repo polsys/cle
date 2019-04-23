@@ -45,7 +45,7 @@ namespace Cle.CodeGeneration.UnitTests
                 0x18);
 
             CollectionAssert.AreEqual(new byte[] { 0xBA, 0x18, 0x00, 0x00, 0x00 }, stream.ToArray());
-            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("mov edx, 18h"));
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("mov edx, 0x18"));
         }
 
         [Test]
@@ -56,7 +56,7 @@ namespace Cle.CodeGeneration.UnitTests
                 0xFFFFFFFF);
 
             CollectionAssert.AreEqual(new byte[] { 0x41, 0xBF, 0xFF, 0xFF, 0xFF, 0xFF }, stream.ToArray());
-            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("mov r15d, FFFFFFFFh"));
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("mov r15d, 0xFFFFFFFF"));
         }
 
         [Test]
@@ -67,7 +67,7 @@ namespace Cle.CodeGeneration.UnitTests
                 0x3F00000000000001);
 
             CollectionAssert.AreEqual(new byte[] { 0x48, 0xB8, 0x01, 0, 0, 0, 0, 0, 0, 0x3F }, stream.ToArray());
-            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("mov rax, 3F00000000000001h"));
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("mov rax, 0x3F00000000000001"));
         }
 
         [Test]
@@ -79,7 +79,7 @@ namespace Cle.CodeGeneration.UnitTests
 
             CollectionAssert.AreEqual(new byte[] { 0x49, 0xBF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F },
                 stream.ToArray());
-            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("mov r15, 7FFFFFFFFFFFFFFFh"));
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("mov r15, 0x7FFFFFFFFFFFFFFF"));
         }
 
         [Test]

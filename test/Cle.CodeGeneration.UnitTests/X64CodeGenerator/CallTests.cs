@@ -22,7 +22,7 @@ BB_0:
 ; Test::Method
 LB_0:
     call Test::DoNothing
-    mov eax, 0h
+    mov eax, 0x0
     ret
 ";
             EmitAndAssertDisassembly(source, expected);
@@ -47,10 +47,10 @@ BB_0:
             const string expected = @"
 ; Test::Method
 LB_0:
-    mov ecx, 1h
-    mov edx, 1h
+    mov ecx, 0x1
+    mov edx, 0x1
     call Test::DoSomething
-    mov eax, 0h
+    mov eax, 0x0
     ret
 ";
             EmitAndAssertDisassembly(source, expected);
