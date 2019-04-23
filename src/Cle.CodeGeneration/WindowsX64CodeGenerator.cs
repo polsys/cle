@@ -72,7 +72,7 @@ namespace Cle.CodeGeneration
             PeepholeOptimizer<X64Register>.Optimize(loweredMethod);
 
             // Debug log the lowering
-            if (!(dumpWriter is null))
+            if (dumpWriter is object)
             {
                 DebugLogBeforeAllocation(loweredMethod, method.FullName, dumpWriter);
             }
@@ -80,6 +80,11 @@ namespace Cle.CodeGeneration
             // Allocate registers for locals (with special casing for parameters)
             var (allocatedMethod, allocationInfo) = X64RegisterAllocator.Allocate(loweredMethod);
             DetermineRegistersToSave(allocationInfo);
+
+            if (dumpWriter is object)
+            {
+                DebugLogAfterAllocation(allocatedMethod, allocationInfo, dumpWriter);
+            }
 
             // Emit the lowered IR
             for (var i = 0; i < allocatedMethod.Blocks.Count; i++)
@@ -349,11 +354,22 @@ namespace Cle.CodeGeneration
         private static void DebugLogBeforeAllocation([NotNull] LowMethod<X64Register> loweredMethod,
             [NotNull] string methodFullName, [NotNull] TextWriter dumpWriter)
         {
-            // Dump the LIR
+            // Dump the LIR with locals
             dumpWriter.Write("; Lowered IR for ");
             dumpWriter.WriteLine(methodFullName);
 
             loweredMethod.Dump(dumpWriter, true);
+            dumpWriter.WriteLine();
+            dumpWriter.WriteLine();
+        }
+
+        private static void DebugLogAfterAllocation([NotNull] LowMethod<X64Register> allocatedMethod,
+            [NotNull] AllocationInfo<X64Register> allocationInfo, [NotNull] TextWriter dumpWriter)
+        {
+            dumpWriter.WriteLine("; After register allocation");
+
+            allocationInfo.Dump(dumpWriter);
+            allocatedMethod.Dump(dumpWriter, false);
             dumpWriter.WriteLine();
             dumpWriter.WriteLine();
         }
