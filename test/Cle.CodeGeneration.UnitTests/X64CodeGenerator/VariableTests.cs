@@ -17,7 +17,7 @@ BB_0:
             const string expected = @"
 ; Test::Method
 LB_0:
-    mov eax, 2Ah
+    mov eax, 0x2A
     ret
 ";
             EmitAndAssertDisassembly(source, expected);
@@ -44,8 +44,8 @@ BB_0:
             var expected = $@"
 ; Test::Method
 LB_0:
-    mov ecx, 2Ah
-    mov edx, 64h
+    mov ecx, 0x2A
+    mov edx, 0x64
     cmp ecx, edx
     {expectedLowOp} al
     movzx rax, al
@@ -77,8 +77,8 @@ BB_0:
             var expected = $@"
 ; Test::Method
 LB_0:
-    mov ecx, 2Ah
-    mov edx, 64h
+    mov ecx, 0x2A
+    mov edx, 0x64
     cmp ecx, edx
     {expectedLowOp} al
     movzx rax, al
@@ -115,8 +115,8 @@ BB_0:
             var expected = $@"
 ; Test::Method
 LB_0:
-    mov ecx, 2Ah
-    mov edx, 64h
+    mov ecx, 0x2A
+    mov edx, 0x64
     mov eax, ecx
     {expectedAsmOp} eax, edx
     {expectedAsmOp} eax, ecx
@@ -156,8 +156,8 @@ BB_0:
             var expected = $@"
 ; Test::Method
 LB_0:
-    mov ecx, 2Ah
-    mov edx, 64h
+    mov ecx, 0x2A
+    mov edx, 0x64
     mov eax, ecx
     {expectedAsmOp} eax, edx
     mov r8d, ecx
