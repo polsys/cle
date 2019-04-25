@@ -371,6 +371,46 @@ LB_0:
                 Is.Not.EqualTo(allocationMap.Get(2).location.Register));
         }
 
+        [TestCase(LowOp.IntegerDivide)]
+        [TestCase(LowOp.IntegerModulo)]
+        public void Division_reserves_rdx(LowOp op)
+        {
+            var method = new LowMethod<X64Register>();
+            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32));
+            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32));
+            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32, X64Register.Rax));
+            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32, X64Register.Rax));
+            method.Blocks.Add(new LowBlock
+            {
+                Instructions =
+                {
+                    new LowInstruction(LowOp.LoadInt, 0, 0, 0, 1), // Load 1 -> #0
+                    new LowInstruction(LowOp.LoadInt, 1, 0, 0, 1), // Load 1 -> #1
+                    new LowInstruction(LowOp.LoadInt, 2, 0, 0, 1), // Load 1 -> #2
+
+                    new LowInstruction(op, 3, 2, 2, 0), // Divide #2 / #2 -> #3
+
+                    new LowInstruction(LowOp.Test, 0, 0, 0, 0), // Use #0
+                    new LowInstruction(LowOp.Move, 0, 1, 0, 0), // Use #1
+                    new LowInstruction(LowOp.Return, 0, 3, 0, 0)
+                },
+                Predecessors = Array.Empty<int>(),
+                Successors = Array.Empty<int>()
+            });
+
+            var (_, allocationMap) = X64RegisterAllocator.Allocate(method);
+
+            // RDX holds the upper part of dividend and therefore must be reserved
+            for (var i = 0; i < allocationMap.IntervalCount; i++)
+            {
+                var (location, localIndex) = allocationMap.Get(i);
+                if (localIndex >= 0)
+                {
+                    Assert.That(location.Register, Is.Not.EqualTo(X64Register.Rdx));
+                }
+            }
+        }
+
         private static void AssertDump(LowMethod<X64Register> method, string expected)
         {
             var dumpWriter = new StringWriter();

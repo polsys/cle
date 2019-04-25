@@ -92,6 +92,7 @@ LB_0:
 
         [TestCase("Add", "IntegerAdd")]
         [TestCase("Subtract", "IntegerSubtract")]
+        [TestCase("Multiply", "IntegerMultiply")]
         public void Integer_arithmetic(string highOp, string expectedLowOp)
         {
             var source = $@"
@@ -118,6 +119,80 @@ LB_0:
     {expectedLowOp} 0 1 0 -> 2
     Move 2 0 0 -> 3
     Return 3 0 0 -> 0
+";
+            AssertDump(lowered, expected);
+        }
+
+        [Test]
+        public void Integer_division()
+        {
+            const string source = @"
+; #0 int32
+; #1 int32
+; #2 int32
+BB_0:
+    Load 1234 -> #0
+    Load 56 -> #1
+    Divide #0 / #1 -> #2
+    Return #2
+";
+            var method = MethodAssembler.Assemble(source, "Test::Method");
+            var lowered = LoweringX64.Lower(method);
+
+            // The dividend and result must be in RAX
+            const string expected = @"
+; #0 int32 [?]
+; #1 int32 [?]
+; #2 int32 [?]
+; #3 int32 [rax]
+; #4 int32 [rax]
+; #5 int32 [rax]
+LB_0:
+    LoadInt 0 0 1234 -> 0
+    LoadInt 0 0 56 -> 1
+    Move 0 0 0 -> 3
+    IntegerSignedDivide 3 1 0 -> 4
+    IntegerDivide 3 1 0 -> 4
+    Move 4 0 0 -> 2
+    Move 2 0 0 -> 5
+    Return 5 0 0 -> 0
+";
+            AssertDump(lowered, expected);
+        }
+
+        [Test]
+        public void Integer_modulo()
+        {
+            const string source = @"
+; #0 int32
+; #1 int32
+; #2 int32
+BB_0:
+    Load 1234 -> #0
+    Load 56 -> #1
+    Modulo #0 % #1 -> #2
+    Return #2
+";
+            var method = MethodAssembler.Assemble(source, "Test::Method");
+            var lowered = LoweringX64.Lower(method);
+
+            // The dividend must be in RAX and the result in RDX
+            const string expected = @"
+; #0 int32 [?]
+; #1 int32 [?]
+; #2 int32 [?]
+; #3 int32 [rax]
+; #4 int32 [rdx]
+; #5 int32 [rax]
+LB_0:
+    LoadInt 0 0 1234 -> 0
+    LoadInt 0 0 56 -> 1
+    Move 0 0 0 -> 3
+    IntegerSignedModulo 3 1 0 -> 4
+    IntegerModulo 3 1 0 -> 4
+    Move 4 0 0 -> 2
+    Move 2 0 0 -> 5
+    Return 5 0 0 -> 0
 ";
             AssertDump(lowered, expected);
         }

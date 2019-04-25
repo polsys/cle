@@ -175,6 +175,14 @@ namespace Cle.CodeGeneration.RegisterAllocation
                         intervals[latestIntervalForLocal[inst.Right]].Use(instIndex + 1);
                     }
 
+                    // In integer division, the dividend is stored in RDX:RAX.
+                    // The lower part is already handled since the source is a fixed temporary,
+                    // but we must prevent RDX from being used for the divisor.
+                    if (inst.Op == LowOp.IntegerDivide || inst.Op == LowOp.IntegerModulo)
+                    {
+                        intervals.Add(new Interval { Start = instIndex - 1, End = instIndex, Register = X64Register.Rdx });
+                    }
+
                     // Calls trash some registers, so we need to add intervals for them
                     if (inst.Op == LowOp.Call)
                     {

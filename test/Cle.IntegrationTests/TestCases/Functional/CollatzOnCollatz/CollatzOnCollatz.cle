@@ -1,0 +1,35 @@
+// Collatz conjecture: Given a positive integer as an initial term, generate a sequence:
+//   - If the previous term N is even, the next term is N/2
+//   - If the previous term N is odd, the next term is 3N + 1
+// The conjecture states that this sequence always contains 1, for any initial term.
+// The function Collatz computes the number of iterations before 1 is reached.
+// The program computes the iteration count of 9 (19), and then the iteration count of the result (20).
+//
+// Expected return code: 20.
+// No console output expected.
+
+namespace CollatzOnCollatz;
+
+[EntryPoint]
+public int32 Main()
+{
+    return Collatz(Collatz(9));
+}
+
+private int32 Collatz(int32 num)
+{
+    int32 i = 0;
+    while (num != 1)
+    {
+        i = i + 1;
+        if (num % 2 == 0)
+        {
+            num = num / 2;
+        }
+        else
+        {
+            num = 3*num + 1;
+        }
+    }
+    return i;
+}

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using Cle.CodeGeneration.Lir;
 using Cle.CodeGeneration.RegisterAllocation;
@@ -145,6 +146,27 @@ namespace Cle.CodeGeneration
                     case LowOp.IntegerSubtract:
                         EmitIntegerBinaryOp(BinaryOp.Subtract, in inst, method, allocation);
                         break;
+                    case LowOp.IntegerMultiply:
+                        EmitIntegerBinaryOp(BinaryOp.Multiply, in inst, method, allocation);
+                        break;
+                    case LowOp.IntegerDivide:
+                    case LowOp.IntegerModulo:
+                        {
+                            // The dividend is already guaranteed to be in RAX, and RDX is reserved.
+                            // We must sign-extend RAX to RDX and then emit the division instruction.
+                            // The desired result is either in RAX (divide) or RDX (modulo).
+                            var (leftLocation, leftLocalIndex) = allocation.Get(inst.Left);
+                            var (rightLocation, _) = allocation.Get(inst.Right);
+                            var operandSize = method.Locals[leftLocalIndex].Type.SizeInBytes;
+
+                            Debug.Assert(leftLocation.Register == X64Register.Rax);
+                            Debug.Assert(allocation.Get(inst.Dest).location.Register == X64Register.Rax ||
+                                allocation.Get(inst.Dest).location.Register == X64Register.Rdx);
+
+                            emitter.EmitExtendRaxToRdx(operandSize);
+                            emitter.EmitSignedDivide(rightLocation, operandSize);
+                            break;
+                        }
                     case LowOp.Compare:
                         {
                             // TODO: Can the left and right operands have different sizes?
@@ -275,7 +297,7 @@ namespace Cle.CodeGeneration
             var (rightLocation, _) = allocation.Get(inst.Right);
             var (destLocation, destLocalIndex) = allocation.Get(inst.Dest);
             var operandSize = method.Locals[destLocalIndex].Type.SizeInBytes;
-            var isCommutative = op == BinaryOp.Add;
+            var isCommutative = op == BinaryOp.Add || op == BinaryOp.Multiply;
 
             if (leftLocation == destLocation)
             {

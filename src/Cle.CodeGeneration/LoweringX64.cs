@@ -136,6 +136,9 @@ namespace Cle.CodeGeneration
                         ConvertCall(lowBlock, highMethod.CallInfos[(int)inst.Left], (int)inst.Left, inst.Destination,
                             methodInProgress);
                         break;
+                    case Opcode.Divide:
+                        ConvertDivisionOrModulo(Opcode.Divide, in inst, lowBlock, methodInProgress);
+                        break;
                     case Opcode.Equal:
                         ConvertCompare(in inst, LowOp.SetIfEqual, lowBlock);
                         break;
@@ -147,6 +150,12 @@ namespace Cle.CodeGeneration
                         break;
                     case Opcode.Load:
                         lowBlock.Instructions.Add(new LowInstruction(LowOp.LoadInt, inst.Destination, 0, 0, inst.Left));
+                        break;
+                    case Opcode.Multiply:
+                        ConvertArithmetic(Opcode.Multiply, in inst, lowBlock, methodInProgress);
+                        break;
+                    case Opcode.Modulo:
+                        ConvertDivisionOrModulo(Opcode.Modulo, in inst, lowBlock, methodInProgress);
                         break;
                     case Opcode.Return:
                         returns = true;
@@ -180,6 +189,46 @@ namespace Cle.CodeGeneration
             else
             {
                 throw new NotImplementedException("Floating-point arithmetic: " + op);
+            }
+        }
+
+        private static void ConvertDivisionOrModulo(Opcode op, in Instruction inst, LowBlock lowBlock,
+            LowMethod<X64Register> methodInProgress)
+        {
+            if (!methodInProgress.Locals[(int)inst.Left].Type.Equals(SimpleType.Int32) &&
+                !methodInProgress.Locals[inst.Right].Type.Equals(SimpleType.Int32))
+            {
+                throw new NotImplementedException("Non-int32 arithmetic: " + op);
+            }
+
+            // On x64, the dividend is stored in edx:eax and after the operation, the result in eax
+            // and the remainder in edx. Therefore we must emit fixed-location temporaries.
+
+            var dividendIndex = methodInProgress.Locals.Count;
+            methodInProgress.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32, X64Register.Rax));
+            lowBlock.Instructions.Add(new LowInstruction(LowOp.Move, dividendIndex, (int)inst.Left, 0, 0));
+
+            var resultIndex = methodInProgress.Locals.Count;
+
+            if (op == Opcode.Divide)
+            {
+                methodInProgress.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32, X64Register.Rax));
+
+                lowBlock.Instructions.Add(new LowInstruction(
+                    LowOp.IntegerDivide, resultIndex, dividendIndex, inst.Right, 0));
+                lowBlock.Instructions.Add(new LowInstruction(LowOp.Move, inst.Destination, resultIndex, 0, 0));
+            }
+            else if (op == Opcode.Modulo)
+            {
+                methodInProgress.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32, X64Register.Rdx));
+
+                lowBlock.Instructions.Add(new LowInstruction(
+                    LowOp.IntegerModulo, resultIndex, dividendIndex, inst.Right, 0));
+                lowBlock.Instructions.Add(new LowInstruction(LowOp.Move, inst.Destination, resultIndex, 0, 0));
+            }
+            else
+            {
+                throw new ArgumentOutOfRangeException(nameof(op));
             }
         }
 
@@ -271,6 +320,8 @@ namespace Cle.CodeGeneration
                     return LowOp.IntegerAdd;
                 case Opcode.Subtract:
                     return LowOp.IntegerSubtract;
+                case Opcode.Multiply:
+                    return LowOp.IntegerMultiply;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(op));
             }
