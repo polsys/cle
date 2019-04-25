@@ -31,13 +31,13 @@ namespace Cle.CodeGeneration.Lir
         /// Returns whether <see cref="Right"/> refers to a local.
         /// </summary>
         public bool UsesRight => Op == LowOp.Swap || Op == LowOp.Compare ||
-            Op == LowOp.IntegerAdd || Op == LowOp.IntegerSubtract;
+            (Op >= LowOp.IntegerAdd && Op <= LowOp.IntegerModulo);
 
         /// <summary>
         /// Returns whether <see cref="Dest"/> refers to a local.
         /// </summary>
         public bool UsesDest => Op == LowOp.LoadInt || Op == LowOp.Move ||
-                                Op == LowOp.IntegerAdd || Op == LowOp.IntegerSubtract ||
+                                (Op >= LowOp.IntegerAdd && Op <= LowOp.IntegerModulo) ||
                                 (Op >= LowOp.SetIfEqual && Op <= LowOp.SetIfGreaterOrEqual) || 
                                 Op == LowOp.Call;
 
@@ -116,6 +116,20 @@ namespace Cle.CodeGeneration.Lir
         /// Subtracts the Right local from the Left local and stores the result in Dest local.
         /// </summary>
         IntegerSubtract,
+        /// <summary>
+        /// Multiplies the Left and Right locals and stores the result in Dest local.
+        /// </summary>
+        IntegerMultiply,
+        /// <summary>
+        /// Divides the Left local by the Right local and stores the result in Dest local.
+        /// The signedness of the division depends on the type of the locals.
+        /// The Left and Dest locals must be stored in the proper location.
+        /// </summary>
+        IntegerDivide,
+        /// <summary>
+        /// As <see cref="IntegerDivide"/>.
+        /// </summary>
+        IntegerModulo,
 
         // Conditions
 

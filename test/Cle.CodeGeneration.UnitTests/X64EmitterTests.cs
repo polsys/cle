@@ -383,6 +383,19 @@ namespace Cle.CodeGeneration.UnitTests
         }
 
         [Test]
+        public void EmitGeneralBinaryOp_emits_32_bit_imul_between_basic_registers()
+        {
+            GetEmitter(out var stream, out var disassembly).EmitGeneralBinaryOp(
+                BinaryOp.Multiply,
+                new StorageLocation<X64Register>(X64Register.Rbp),
+                new StorageLocation<X64Register>(X64Register.Rax),
+                4);
+
+            CollectionAssert.AreEqual(new byte[] { 0x0F, 0xAF, 0xE8 }, stream.ToArray());
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("imul ebp, eax"));
+        }
+
+        [Test]
         public void EmitGeneralBinaryOp_emits_64_bit_add_between_basic_registers()
         {
             GetEmitter(out var stream, out var disassembly).EmitGeneralBinaryOp(
@@ -419,6 +432,46 @@ namespace Cle.CodeGeneration.UnitTests
 
             CollectionAssert.AreEqual(new byte[] { 0x4C, 0x03, 0xC6 }, stream.ToArray());
             Assert.That(disassembly.ToString().Trim(), Is.EqualTo("add r8, rsi"));
+        }
+
+        [Test]
+        public void EmitSignedDivide_emits_32_bit_divide_by_new_register()
+        {
+            GetEmitter(out var stream, out var disassembly).EmitSignedDivide(
+                new StorageLocation<X64Register>(X64Register.Rbx),
+                4);
+
+            CollectionAssert.AreEqual(new byte[] { 0xF7, 0xFB }, stream.ToArray());
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("idiv ebx"));
+        }
+
+        [Test]
+        public void EmitSignedDivide_emits_64_bit_divide_by_new_register()
+        {
+            GetEmitter(out var stream, out var disassembly).EmitSignedDivide(
+                new StorageLocation<X64Register>(X64Register.R14),
+                8);
+
+            CollectionAssert.AreEqual(new byte[] { 0x49, 0xF7, 0xFE }, stream.ToArray());
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("idiv r14"));
+        }
+
+        [Test]
+        public void EmitExtendRaxToRdx_emits_32_bit_sign_extension()
+        {
+            GetEmitter(out var stream, out var disassembly).EmitExtendRaxToRdx(4);
+
+            CollectionAssert.AreEqual(new byte[] { 0x99 }, stream.ToArray());
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("cdq"));
+        }
+
+        [Test]
+        public void EmitExtendRaxToRdx_emits_64_bit_sign_extension()
+        {
+            GetEmitter(out var stream, out var disassembly).EmitExtendRaxToRdx(8);
+
+            CollectionAssert.AreEqual(new byte[] { 0x48, 0x99 }, stream.ToArray());
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("cqo"));
         }
 
         private static X64Emitter GetEmitter(out MemoryStream stream, out StringWriter disassembly)

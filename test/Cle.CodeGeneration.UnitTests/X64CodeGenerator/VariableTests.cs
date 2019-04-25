@@ -88,6 +88,7 @@ LB_0:
         }
         
         [TestCase("Add", "add")]
+        [TestCase("Multiply", "imul")]
         public void Basic_commutative_int32_arithmetic(string highOp, string expectedAsmOp)
         {
             // int32 a = 42;
@@ -165,6 +166,64 @@ LB_0:
     {expectedAsmOp} ecx, r8d
     {expectedAsmOp} ecx, edx
     mov eax, ecx
+    ret
+";
+            EmitAndAssertDisassembly(source, expected);
+        }
+
+        [Test]
+        public void Signed_integer_division()
+        {
+            const string source = @"
+; #0   int32
+; #1   int32
+; #2   int32
+BB_0:
+    Load 42 -> #0
+    Load 10 -> #1
+    Divide #0 / #1 -> #2
+    Return #2
+";
+
+            // The x64 signed division instruction requires the dividend/destination to be in edx:eax
+            // The cdq instruction sign-extends eax to edx
+            const string expected = @"
+; Test::Method
+LB_0:
+    mov ecx, 0x2A
+    mov r8d, 0xA
+    mov eax, ecx
+    cdq
+    idiv r8d
+    ret
+";
+            EmitAndAssertDisassembly(source, expected);
+        }
+
+        [Test]
+        public void Signed_integer_modulo()
+        {
+            const string source = @"
+; #0   int32
+; #1   int32
+; #2   int32
+BB_0:
+    Load 42 -> #0
+    Load 10 -> #1
+    Modulo #0 % #1 -> #2
+    Return #2
+";
+
+            // As above, but the division remainder is stored in edx
+            const string expected = @"
+; Test::Method
+LB_0:
+    mov ecx, 0x2A
+    mov r8d, 0xA
+    mov eax, ecx
+    cdq
+    idiv r8d
+    mov eax, edx
     ret
 ";
             EmitAndAssertDisassembly(source, expected);

@@ -147,7 +147,7 @@ namespace Cle.CodeGeneration
         /// </summary>
         /// <param name="op">The binary operation to emit.</param>
         /// <param name="srcDest">The left location, used both as a source and a destination. Must not be an XMM register.</param>
-        /// <param name="right">The left location, used as a source. Must not be an XMM register.</param>
+        /// <param name="right">The right location, used as a source. Must not be an XMM register.</param>
         /// <param name="operandSize">The operand width in bytes.</param>
         public void EmitGeneralBinaryOp(BinaryOp op, StorageLocation<X64Register> srcDest,
             StorageLocation<X64Register> right, int operandSize)
@@ -167,8 +167,53 @@ namespace Cle.CodeGeneration
             var (encodedRight, needB) = GetRegisterEncoding(right.Register);
 
             EmitRexPrefixIfNeeded(operandSize == 8, needR, false, needB);
-            _outputStream.WriteByte(GetGeneralBinaryOpcode(op));
+            WriteGeneralBinaryOpcode(op);
             EmitModRmForRegisterToRegister(encodedLeft, encodedRight);
+        }
+
+        /// <summary>
+        /// Emits a signed divide instruction with the specified width.
+        /// The dividend must be stored in RDX:RAX.
+        /// To sign-extend RAX to RDX, use
+        /// </summary>
+        /// <param name="op">The binary operation to emit.</param>
+        /// <param name="right">The right location, used as a source. Must not be an XMM register.</param>
+        /// <param name="operandSize">The operand width in bytes.</param>
+        public void EmitSignedDivide(StorageLocation<X64Register> right, int operandSize)
+        {
+            if (operandSize != 4 && operandSize != 8)
+                throw new NotImplementedException("Other operand widths");
+
+            if (!right.IsRegister)
+                throw new NotImplementedException("Divisor on stack");
+            if (right.Register >= X64Register.Xmm0)
+                throw new InvalidOperationException("Trying to emit a general-purpose op on a SIMD register.");
+            
+            var (encodedRight, needB) = GetRegisterEncoding(right.Register);
+
+            if (_disassemblyWriter is object)
+            {
+                var regName = operandSize == 8 ? GetRegisterName(right.Register) : Get32BitRegisterName(right.Register);
+                _disassemblyWriter?.WriteLine($"{Indent}idiv {regName}");
+            }
+            
+            EmitRexPrefixIfNeeded(operandSize == 8, false, false, needB);
+            _outputStream.WriteByte(0xF7);
+            _outputStream.WriteByte((byte)(0b1111_1000 | encodedRight));
+        }
+
+        /// <summary>
+        /// Emits a cdq or cqo instruction.
+        /// </summary>
+        public void EmitExtendRaxToRdx(int operandSize)
+        {
+            if (operandSize != 4 && operandSize != 8)
+                throw new NotImplementedException("Other operand widths");
+
+            _disassemblyWriter?.WriteLine(Indent + (operandSize == 8 ? "cqo" : "cdq"));
+
+            EmitRexPrefixIfNeeded(operandSize == 8, false, false, false);
+            _outputStream.WriteByte(0x99);
         }
 
         /// <summary>
@@ -625,19 +670,27 @@ namespace Cle.CodeGeneration
                     return "add";
                 case BinaryOp.Subtract:
                     return "sub";
+                case BinaryOp.Multiply:
+                    return "imul";
                 default:
                     return "???";
             }
         }
 
-        private static byte GetGeneralBinaryOpcode(BinaryOp op)
+        private void WriteGeneralBinaryOpcode(BinaryOp op)
         {
             switch (op)
             {
                 case BinaryOp.Add:
-                    return 0x03;
+                    _outputStream.WriteByte(0x03);
+                    break;
                 case BinaryOp.Subtract:
-                    return 0x2B;
+                    _outputStream.WriteByte(0x2B);
+                    break;
+                case BinaryOp.Multiply:
+                    _outputStream.WriteByte(0x0F);
+                    _outputStream.WriteByte(0xAF);
+                    break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(op), op.ToString());
             }
