@@ -143,6 +143,43 @@ namespace Cle.CodeGeneration
         }
 
         /// <summary>
+        /// Emits a general-purpose unary operation with the specified operand width.
+        /// </summary>
+        /// <param name="op">The unary operation to emit.</param>
+        /// <param name="srcDest">The location used both as a source and a destination. Must not be an XMM register.</param>
+        /// <param name="operandSize">The operand width in bytes.</param>
+        public void EmitGeneralUnaryOp(UnaryOp op, StorageLocation<X64Register> srcDest, int operandSize)
+        {
+            if (operandSize != 4 && operandSize != 8)
+                throw new NotImplementedException("Other operand widths");
+
+            if (!srcDest.IsRegister)
+                throw new NotImplementedException("Unary op on stack");
+            if (srcDest.Register >= X64Register.Xmm0)
+                throw new InvalidOperationException("Trying to emit a general-purpose op on a SIMD register.");
+            
+            DisassembleSingleReg(GetGeneralUnaryName(op), srcDest.Register, operandSize);
+
+            var (encodedReg, needB) = GetRegisterEncoding(srcDest.Register);
+
+            EmitRexPrefixIfNeeded(operandSize == 8, false, false, needB);
+            WriteGeneralUnaryOpcode(op);
+
+            // Some of the unary ops are only distinguished by the reg field in ModRM
+            switch (op)
+            {
+                case UnaryOp.Not:
+                    _outputStream.WriteByte((byte)(0b1101_0000 | encodedReg));
+                    break;
+                case UnaryOp.Negate:
+                    _outputStream.WriteByte((byte)(0b1101_1000 | encodedReg));
+                    break;
+                default:
+                    throw new NotImplementedException("Unimplemented unary op");
+            }
+        }
+
+        /// <summary>
         /// Emits a general-purpose binary operation with the specified operand width.
         /// </summary>
         /// <param name="op">The binary operation to emit.</param>
@@ -191,12 +228,8 @@ namespace Cle.CodeGeneration
             
             var (encodedRight, needB) = GetRegisterEncoding(right.Register);
 
-            if (_disassemblyWriter is object)
-            {
-                var regName = operandSize == 8 ? GetRegisterName(right.Register) : Get32BitRegisterName(right.Register);
-                _disassemblyWriter?.WriteLine($"{Indent}idiv {regName}");
-            }
-            
+            DisassembleSingleReg("idiv", right.Register, operandSize);
+
             EmitRexPrefixIfNeeded(operandSize == 8, false, false, needB);
             _outputStream.WriteByte(0xF7);
             _outputStream.WriteByte((byte)(0b1111_1000 | encodedRight));
@@ -438,6 +471,29 @@ namespace Cle.CodeGeneration
             position = (int)_outputStream.Position;
         }
 
+        private void DisassembleSingleReg(string opcode, X64Register reg, int operandSize)
+        {
+            if (_disassemblyWriter is null)
+                return;
+
+            var regName = "?";
+
+            switch (operandSize)
+            {
+                case 1:
+                    regName = Get8BitRegisterName(reg);
+                    break;
+                case 4:
+                    regName = Get32BitRegisterName(reg);
+                    break;
+                case 8:
+                    regName = GetRegisterName(reg);
+                    break;
+            }
+
+            _disassemblyWriter.WriteLine($"{Indent}{opcode} {regName}");
+        }
+
         private void DisassembleRegReg(string opcode, X64Register left, X64Register right, int operandSize)
         {
             if (_disassemblyWriter is null)
@@ -662,6 +718,19 @@ namespace Cle.CodeGeneration
             }
         }
 
+        private static string GetGeneralUnaryName(UnaryOp op)
+        {
+            switch (op)
+            {
+                case UnaryOp.Not:
+                    return "not";
+                case UnaryOp.Negate:
+                    return "neg";
+                default:
+                    return "???";
+            }
+        }
+
         private static string GetGeneralBinaryName(BinaryOp op)
         {
             switch (op)
@@ -672,8 +741,27 @@ namespace Cle.CodeGeneration
                     return "sub";
                 case BinaryOp.Multiply:
                     return "imul";
+                case BinaryOp.BitwiseAnd:
+                    return "and";
+                case BinaryOp.BitwiseOr:
+                    return "or";
+                case BinaryOp.BitwiseXor:
+                    return "xor";
                 default:
                     return "???";
+            }
+        }
+
+        private void WriteGeneralUnaryOpcode(UnaryOp op)
+        {
+            switch (op)
+            {
+                case UnaryOp.Not:
+                case UnaryOp.Negate:
+                    _outputStream.WriteByte(0xF7);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(op), op.ToString());
             }
         }
 
@@ -690,6 +778,15 @@ namespace Cle.CodeGeneration
                 case BinaryOp.Multiply:
                     _outputStream.WriteByte(0x0F);
                     _outputStream.WriteByte(0xAF);
+                    break;
+                case BinaryOp.BitwiseAnd:
+                    _outputStream.WriteByte(0x23);
+                    break;
+                case BinaryOp.BitwiseOr:
+                    _outputStream.WriteByte(0x0B);
+                    break;
+                case BinaryOp.BitwiseXor:
+                    _outputStream.WriteByte(0x33);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(op), op.ToString());

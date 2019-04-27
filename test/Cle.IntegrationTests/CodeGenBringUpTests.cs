@@ -11,6 +11,8 @@ namespace Cle.IntegrationTests
         [TestCase("FunctionCallWithBoolParamAndResult", 100)]
         [TestCase("FunctionCallWithTwoInt32Params", 15)]
         [TestCase("FunctionCallWithVoid", 100)]
+        [TestCase("Int32Arithmetic", 8)]
+        [TestCase("Int32BitOps", 273)]
         [TestCase("IntEquality", 100)]
         [TestCase("LargeIf", 32)]
         [TestCase("ReturnInt", 42)]

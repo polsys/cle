@@ -93,7 +93,10 @@ LB_0:
         [TestCase("Add", "IntegerAdd")]
         [TestCase("Subtract", "IntegerSubtract")]
         [TestCase("Multiply", "IntegerMultiply")]
-        public void Integer_arithmetic(string highOp, string expectedLowOp)
+        [TestCase("BitwiseAnd", "BitwiseAnd")]
+        [TestCase("BitwiseOr", "BitwiseOr")]
+        [TestCase("BitwiseXor", "BitwiseXor")]
+        public void Integer_binary_arithmetic(string highOp, string expectedLowOp)
         {
             var source = $@"
 ; #0 int32
@@ -119,6 +122,34 @@ LB_0:
     {expectedLowOp} 0 1 0 -> 2
     Move 2 0 0 -> 3
     Return 3 0 0 -> 0
+";
+            AssertDump(lowered, expected);
+        }
+
+        [TestCase("ArithmeticNegate", "IntegerNegate")]
+        [TestCase("BitwiseNot", "BitwiseNot")]
+        public void Integer_unary_arithmetic(string highOp, string expectedLowOp)
+        {
+            var source = $@"
+; #0 int32
+; #1 int32
+BB_0:
+    Load 1234 -> #0
+    {highOp} #0 -> #1
+    Return #1
+";
+            var method = MethodAssembler.Assemble(source, "Test::Method");
+            var lowered = LoweringX64.Lower(method);
+
+            var expected = $@"
+; #0 int32 [?]
+; #1 int32 [?]
+; #2 int32 [rax]
+LB_0:
+    LoadInt 0 0 1234 -> 0
+    {expectedLowOp} 0 0 0 -> 1
+    Move 1 0 0 -> 2
+    Return 2 0 0 -> 0
 ";
             AssertDump(lowered, expected);
         }
@@ -151,7 +182,6 @@ LB_0:
     LoadInt 0 0 1234 -> 0
     LoadInt 0 0 56 -> 1
     Move 0 0 0 -> 3
-    IntegerSignedDivide 3 1 0 -> 4
     IntegerDivide 3 1 0 -> 4
     Move 4 0 0 -> 2
     Move 2 0 0 -> 5
@@ -188,7 +218,6 @@ LB_0:
     LoadInt 0 0 1234 -> 0
     LoadInt 0 0 56 -> 1
     Move 0 0 0 -> 3
-    IntegerSignedModulo 3 1 0 -> 4
     IntegerModulo 3 1 0 -> 4
     Move 4 0 0 -> 2
     Move 2 0 0 -> 5

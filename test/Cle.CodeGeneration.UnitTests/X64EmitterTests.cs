@@ -357,6 +357,30 @@ namespace Cle.CodeGeneration.UnitTests
         }
 
         [Test]
+        public void EmitGeneralUnaryOp_emits_32_bit_neg_of_new_register()
+        {
+            GetEmitter(out var stream, out var disassembly).EmitGeneralUnaryOp(
+                UnaryOp.Negate,
+                new StorageLocation<X64Register>(X64Register.R12),
+                4);
+
+            CollectionAssert.AreEqual(new byte[] { 0x41, 0xF7, 0xDC }, stream.ToArray());
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("neg r12d"));
+        }
+
+        [Test]
+        public void EmitGeneralUnaryOp_emits_64_bit_not_of_basic_register()
+        {
+            GetEmitter(out var stream, out var disassembly).EmitGeneralUnaryOp(
+                UnaryOp.Not,
+                new StorageLocation<X64Register>(X64Register.Rcx),
+                8);
+
+            CollectionAssert.AreEqual(new byte[] { 0x48, 0xF7, 0xD1 }, stream.ToArray());
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("not rcx"));
+        }
+
+        [Test]
         public void EmitGeneralBinaryOp_emits_32_bit_add_between_basic_registers()
         {
             GetEmitter(out var stream, out var disassembly).EmitGeneralBinaryOp(
@@ -367,32 +391,6 @@ namespace Cle.CodeGeneration.UnitTests
 
             CollectionAssert.AreEqual(new byte[] { 0x03, 0xC3 }, stream.ToArray());
             Assert.That(disassembly.ToString().Trim(), Is.EqualTo("add eax, ebx"));
-        }
-
-        [Test]
-        public void EmitGeneralBinaryOp_emits_32_bit_sub_between_basic_registers()
-        {
-            GetEmitter(out var stream, out var disassembly).EmitGeneralBinaryOp(
-                BinaryOp.Subtract,
-                new StorageLocation<X64Register>(X64Register.Rdi),
-                new StorageLocation<X64Register>(X64Register.Rsi),
-                4);
-
-            CollectionAssert.AreEqual(new byte[] { 0x2B, 0xFE }, stream.ToArray());
-            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("sub edi, esi"));
-        }
-
-        [Test]
-        public void EmitGeneralBinaryOp_emits_32_bit_imul_between_basic_registers()
-        {
-            GetEmitter(out var stream, out var disassembly).EmitGeneralBinaryOp(
-                BinaryOp.Multiply,
-                new StorageLocation<X64Register>(X64Register.Rbp),
-                new StorageLocation<X64Register>(X64Register.Rax),
-                4);
-
-            CollectionAssert.AreEqual(new byte[] { 0x0F, 0xAF, 0xE8 }, stream.ToArray());
-            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("imul ebp, eax"));
         }
 
         [Test]
@@ -432,6 +430,71 @@ namespace Cle.CodeGeneration.UnitTests
 
             CollectionAssert.AreEqual(new byte[] { 0x4C, 0x03, 0xC6 }, stream.ToArray());
             Assert.That(disassembly.ToString().Trim(), Is.EqualTo("add r8, rsi"));
+        }
+
+        [Test]
+        public void EmitGeneralBinaryOp_emits_32_bit_sub_between_basic_registers()
+        {
+            GetEmitter(out var stream, out var disassembly).EmitGeneralBinaryOp(
+                BinaryOp.Subtract,
+                new StorageLocation<X64Register>(X64Register.Rdi),
+                new StorageLocation<X64Register>(X64Register.Rsi),
+                4);
+
+            CollectionAssert.AreEqual(new byte[] { 0x2B, 0xFE }, stream.ToArray());
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("sub edi, esi"));
+        }
+
+        [Test]
+        public void EmitGeneralBinaryOp_emits_32_bit_imul_between_basic_registers()
+        {
+            GetEmitter(out var stream, out var disassembly).EmitGeneralBinaryOp(
+                BinaryOp.Multiply,
+                new StorageLocation<X64Register>(X64Register.Rbp),
+                new StorageLocation<X64Register>(X64Register.Rax),
+                4);
+
+            CollectionAssert.AreEqual(new byte[] { 0x0F, 0xAF, 0xE8 }, stream.ToArray());
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("imul ebp, eax"));
+        }
+
+        [Test]
+        public void EmitGeneralBinaryOp_emits_64_bit_and_between_new_registers()
+        {
+            GetEmitter(out var stream, out var disassembly).EmitGeneralBinaryOp(
+                BinaryOp.BitwiseAnd,
+                new StorageLocation<X64Register>(X64Register.R10),
+                new StorageLocation<X64Register>(X64Register.R11),
+                8);
+
+            CollectionAssert.AreEqual(new byte[] { 0x4D, 0x23, 0xD3 }, stream.ToArray());
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("and r10, r11"));
+        }
+
+        [Test]
+        public void EmitGeneralBinaryOp_emits_32_bit_or_between_basic_registers()
+        {
+            GetEmitter(out var stream, out var disassembly).EmitGeneralBinaryOp(
+                BinaryOp.BitwiseOr,
+                new StorageLocation<X64Register>(X64Register.Rcx),
+                new StorageLocation<X64Register>(X64Register.Rdx),
+                4);
+
+            CollectionAssert.AreEqual(new byte[] { 0x0B, 0xCA }, stream.ToArray());
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("or ecx, edx"));
+        }
+
+        [Test]
+        public void EmitGeneralBinaryOp_emits_32_bit_xor_of_single_basic_register()
+        {
+            GetEmitter(out var stream, out var disassembly).EmitGeneralBinaryOp(
+                BinaryOp.BitwiseXor,
+                new StorageLocation<X64Register>(X64Register.Rax),
+                new StorageLocation<X64Register>(X64Register.Rax),
+                4);
+
+            CollectionAssert.AreEqual(new byte[] { 0x33, 0xC0 }, stream.ToArray());
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("xor eax, eax"));
         }
 
         [Test]

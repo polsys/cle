@@ -10,5 +10,8 @@
         Add,
         Subtract,
         Multiply,
+        BitwiseAnd,
+        BitwiseOr,
+        BitwiseXor
     }
 }

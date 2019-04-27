@@ -31,13 +31,13 @@ namespace Cle.CodeGeneration.Lir
         /// Returns whether <see cref="Right"/> refers to a local.
         /// </summary>
         public bool UsesRight => Op == LowOp.Swap || Op == LowOp.Compare ||
-            (Op >= LowOp.IntegerAdd && Op <= LowOp.IntegerModulo);
+            (Op >= LowOp.IntegerAdd && Op <= LowOp.BitwiseXor);
 
         /// <summary>
         /// Returns whether <see cref="Dest"/> refers to a local.
         /// </summary>
         public bool UsesDest => Op == LowOp.LoadInt || Op == LowOp.Move ||
-                                (Op >= LowOp.IntegerAdd && Op <= LowOp.IntegerModulo) ||
+                                (Op >= LowOp.IntegerAdd && Op <= LowOp.BitwiseNot) ||
                                 (Op >= LowOp.SetIfEqual && Op <= LowOp.SetIfGreaterOrEqual) || 
                                 Op == LowOp.Call;
 
@@ -106,7 +106,7 @@ namespace Cle.CodeGeneration.Lir
         /// </summary>
         Swap,
 
-        // Arithmetic
+        // Arithmetic - binary operations
 
         /// <summary>
         /// Sums the Left and Right locals and stores the result in Dest local.
@@ -130,6 +130,29 @@ namespace Cle.CodeGeneration.Lir
         /// As <see cref="IntegerDivide"/>.
         /// </summary>
         IntegerModulo,
+        /// <summary>
+        /// Performs a bitwise AND of the Left and Right locals and stores the result in Dest local.
+        /// </summary>
+        BitwiseAnd,
+        /// <summary>
+        /// Performs a bitwise OR of the Left and Right locals and stores the result in Dest local.
+        /// </summary>
+        BitwiseOr,
+        /// <summary>
+        /// Performs a bitwise XOR of the Left and Right locals and stores the result in Dest local.
+        /// </summary>
+        BitwiseXor,
+
+        // Arithmetic - unary operations
+
+        /// <summary>
+        /// Stores the negated value of the Left local in the Dest local.
+        /// </summary>
+        IntegerNegate,
+        /// <summary>
+        /// Stores the bitwise NOT of the Left local in the Dest local.
+        /// </summary>
+        BitwiseNot,
 
         // Conditions
 

@@ -167,6 +167,21 @@ namespace Cle.CodeGeneration
                             emitter.EmitSignedDivide(rightLocation, operandSize);
                             break;
                         }
+                    case LowOp.IntegerNegate:
+                        EmitIntegerUnaryOp(UnaryOp.Negate, in inst, method, allocation);
+                        break;
+                    case LowOp.BitwiseNot:
+                        EmitIntegerUnaryOp(UnaryOp.Not, in inst, method, allocation);
+                        break;
+                    case LowOp.BitwiseAnd:
+                        EmitIntegerBinaryOp(BinaryOp.BitwiseAnd, in inst, method, allocation);
+                        break;
+                    case LowOp.BitwiseOr:
+                        EmitIntegerBinaryOp(BinaryOp.BitwiseOr, in inst, method, allocation);
+                        break;
+                    case LowOp.BitwiseXor:
+                        EmitIntegerBinaryOp(BinaryOp.BitwiseXor, in inst, method, allocation);
+                        break;
                     case LowOp.Compare:
                         {
                             // TODO: Can the left and right operands have different sizes?
@@ -297,7 +312,7 @@ namespace Cle.CodeGeneration
             var (rightLocation, _) = allocation.Get(inst.Right);
             var (destLocation, destLocalIndex) = allocation.Get(inst.Dest);
             var operandSize = method.Locals[destLocalIndex].Type.SizeInBytes;
-            var isCommutative = op == BinaryOp.Add || op == BinaryOp.Multiply;
+            var isCommutative = op != BinaryOp.Subtract;
 
             if (leftLocation == destLocation)
             {
@@ -321,6 +336,28 @@ namespace Cle.CodeGeneration
                 // We have to do a temporary move first
                 emitter.EmitMov(destLocation, leftLocation, operandSize);
                 emitter.EmitGeneralBinaryOp(op, destLocation, rightLocation, operandSize);
+            }
+        }
+
+        private void EmitIntegerUnaryOp(UnaryOp op, in LowInstruction inst,
+            LowMethod<X64Register> method, AllocationInfo<X64Register> allocation)
+        {
+            var emitter = _peWriter.Emitter;
+
+            var (srcLocation, _) = allocation.Get(inst.Left);
+            var (destLocation, destLocalIndex) = allocation.Get(inst.Dest);
+            var operandSize = method.Locals[destLocalIndex].Type.SizeInBytes;
+
+            if (srcLocation == destLocation)
+            {
+                // We can just emit "op left"
+                emitter.EmitGeneralUnaryOp(op, srcLocation, operandSize);
+            }
+            else
+            {
+                // We have to do a temporary move first
+                emitter.EmitMov(destLocation, srcLocation, operandSize);
+                emitter.EmitGeneralUnaryOp(op, destLocation, operandSize);
             }
         }
 
