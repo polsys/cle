@@ -22,7 +22,7 @@ BB_0:
 ; Test::Method
 LB_0:
     call Test::DoNothing
-    mov eax, 0x0
+    xor eax, eax
     ret
 ";
             EmitAndAssertDisassembly(source, expected);
@@ -50,7 +50,7 @@ LB_0:
     mov ecx, 0x1
     mov edx, 0x1
     call Test::DoSomething
-    mov eax, 0x0
+    xor eax, eax
     ret
 ";
             EmitAndAssertDisassembly(source, expected);
