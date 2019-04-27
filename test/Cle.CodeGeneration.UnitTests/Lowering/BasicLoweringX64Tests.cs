@@ -56,6 +56,39 @@ LB_0:
             AssertDump(lowered, expected);
         }
 
+        [TestCase("BitwiseAnd", "BitwiseAnd")]
+        [TestCase("BitwiseOr", "BitwiseOr")]
+        [TestCase("BitwiseXor", "BitwiseXor")]
+        public void Boolean_binary_ops(string highOp, string expectedLowOp)
+        {
+            var source = $@"
+; #0 bool
+; #1 bool
+; #2 bool
+BB_0:
+    Load true -> #0
+    Load false -> #1
+    {highOp} #0 ?? #1 -> #2
+    Return #2
+";
+            var method = MethodAssembler.Assemble(source, "Test::Method");
+            var lowered = LoweringX64.Lower(method);
+
+            var expected = $@"
+; #0 bool [?]
+; #1 bool [?]
+; #2 bool [?]
+; #3 bool [rax]
+LB_0:
+    LoadInt 0 0 1 -> 0
+    LoadInt 0 0 0 -> 1
+    {expectedLowOp} 0 1 0 -> 2
+    Move 2 0 0 -> 3
+    Return 3 0 0 -> 0
+";
+            AssertDump(lowered, expected);
+        }
+
         [TestCase("Equal", "SetIfEqual")]
         [TestCase("Less", "SetIfLess")]
         [TestCase("LessOrEqual", "SetIfLessOrEqual")]

@@ -8,6 +8,7 @@ namespace Cle.IntegrationTests
         private const string BaseDirectory = "TestCases/CodeGenBringUp";
         private const int ExecutionTimeOutMilliseconds = 1000;
 
+        [TestCase("BoolOps", 100)]
         [TestCase("FunctionCallWithBoolParamAndResult", 100)]
         [TestCase("FunctionCallWithTwoInt32Params", 15)]
         [TestCase("FunctionCallWithVoid", 100)]
