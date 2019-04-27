@@ -7,7 +7,8 @@ namespace Cle.CodeGeneration
 {
     /// <summary>
     /// Peephole optimization of LIR for the x64 architecture.
-    /// This optimization pass is run before register allocation.
+    /// This optimization pass is run before register allocation and is therefore limited to
+    /// optimizations that preserve SSA form.
     /// </summary>
     internal static class PeepholeOptimizer<TRegister>
         where TRegister: struct, Enum

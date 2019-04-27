@@ -120,8 +120,20 @@ namespace Cle.CodeGeneration
                 switch (inst.Op)
                 {
                     case LowOp.LoadInt:
-                        emitter.EmitLoad(allocation.Get(inst.Dest).location, inst.Data);
-                        break;
+                        {
+                            var destLocation = allocation.Get(inst.Dest).location;
+                            if (inst.Data == 0)
+                            {
+                                // "xor reg, reg" is the preferred way to zero a register on x64. This optimization
+                                // is not done by the peephole optimizer because it would break the SSA form.
+                                emitter.EmitGeneralBinaryOp(BinaryOp.BitwiseXor, destLocation, destLocation, 4);
+                            }
+                            else
+                            {
+                                emitter.EmitLoad(destLocation, inst.Data);
+                            }
+                            break;
+                        }
                     case LowOp.Move:
                         {
                             var (sourceLocation, _) = allocation.Get(inst.Left);

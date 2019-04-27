@@ -45,7 +45,7 @@ LB_0:
     {expectedConditionalJump} LB_1
     jmp LB_2
 LB_1:
-    mov eax, 0x0
+    xor eax, eax
     ret
 LB_2:
     mov eax, 0x1
@@ -97,7 +97,7 @@ LB_0:
     {expectedConditionalJump} LB_1
     jmp LB_2
 LB_1:
-    mov eax, 0x0
+    xor eax, eax
     ret
 LB_2:
     mov eax, 0x1
@@ -140,7 +140,7 @@ LB_0:
     jne LB_1
     jmp LB_2
 LB_1:
-    mov eax, 0x0
+    xor eax, eax
     ret
 LB_2:
     mov eax, 0x1
@@ -185,7 +185,7 @@ LB_0:
     je LB_1
     jmp LB_2
 LB_1:
-    mov eax, 0x0
+    xor eax, eax
     ret
 LB_2:
     mov eax, 0x1
@@ -230,7 +230,7 @@ BB_3:
             const string expected = @"
 ; Test::Method
 LB_0:
-    mov ecx, 0x0
+    xor ecx, ecx
     mov edx, 0x1
     test rdx, rdx
     jne LB_1
