@@ -1,0 +1,27 @@
+// This test verifies Boolean operators in a complex expression.
+//
+// Expected return code: 100.
+// No console output expected.
+
+namespace Int32BitOps;
+
+[EntryPoint]
+public int32 Main()
+{
+    bool a = true;
+    bool b = false;
+    
+    if (Xor(a, b) == (a ^ b))
+    {
+        return 100;
+    }
+    else
+    {
+        return 0;
+    }
+}
+
+public bool Xor(bool a, bool b)
+{
+    return (a | b) & !(a & b);
+}

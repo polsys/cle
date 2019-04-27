@@ -86,7 +86,40 @@ LB_0:
 ";
             EmitAndAssertDisassembly(source, expected);
         }
-        
+
+        [Test]
+        public void Bool_arithmetic_and_comparison()
+        {
+            // return 42;
+            const string source = @"
+; #0   bool
+; #1   bool
+; #2   bool
+; #3   bool
+; #4   bool
+BB_0:
+    Load true -> #0
+    Load true -> #1
+    BitwiseAnd #0 & #1 -> #2
+    Load false -> #3
+    Equal #2 == #3 -> #4
+    Return #4
+";
+            const string expected = @"
+; Test::Method
+LB_0:
+    mov ecx, 0x1
+    mov edx, 0x1
+    and ecx, edx
+    xor edx, edx
+    cmp ecx, edx
+    sete al
+    movzx rax, al
+    ret
+";
+            EmitAndAssertDisassembly(source, expected);
+        }
+
         [TestCase("Add", "add")]
         [TestCase("Multiply", "imul")]
         [TestCase("BitwiseAnd", "and")]

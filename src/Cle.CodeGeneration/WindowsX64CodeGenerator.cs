@@ -198,7 +198,8 @@ namespace Cle.CodeGeneration
                         {
                             // TODO: Can the left and right operands have different sizes?
                             var (leftLocation, leftLocalIndex) = allocation.Get(inst.Left);
-                            var operandSize = method.Locals[leftLocalIndex].Type.SizeInBytes;
+                            var leftLocal = method.Locals[leftLocalIndex];
+                            var operandSize = leftLocal.Type.Equals(SimpleType.Bool) ? 4 : leftLocal.Type.SizeInBytes;
 
                             emitter.EmitCmp(leftLocation, allocation.Get(inst.Right).location, operandSize);
                             break;
@@ -323,8 +324,12 @@ namespace Cle.CodeGeneration
             var (leftLocation, _) = allocation.Get(inst.Left);
             var (rightLocation, _) = allocation.Get(inst.Right);
             var (destLocation, destLocalIndex) = allocation.Get(inst.Dest);
-            var operandSize = method.Locals[destLocalIndex].Type.SizeInBytes;
             var isCommutative = op != BinaryOp.Subtract;
+
+            // Despite the name, this function also handles bools.
+            // For arithmetic, they are most efficiently handled as 32-bit integers.
+            var destLocal = method.Locals[destLocalIndex];
+            var operandSize = destLocal.Type.Equals(SimpleType.Bool) ? 4 : destLocal.Type.SizeInBytes;
 
             if (leftLocation == destLocation)
             {

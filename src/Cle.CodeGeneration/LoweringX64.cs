@@ -182,9 +182,20 @@ namespace Cle.CodeGeneration
         private static void ConvertBinaryArithmetic(Opcode op, in Instruction inst, LowBlock lowBlock,
             LowMethod<X64Register> methodInProgress)
         {
-            if (methodInProgress.Locals[(int)inst.Left].Type.Equals(SimpleType.Int32) &&
-                methodInProgress.Locals[inst.Right].Type.Equals(SimpleType.Int32))
+            var leftType = methodInProgress.Locals[(int)inst.Left].Type;
+            var rightType = methodInProgress.Locals[inst.Right].Type;
+
+            if (leftType.Equals(SimpleType.Int32) && rightType.Equals(SimpleType.Int32))
             {
+                var lowOp = GetLoweredIntegerArithmeticOp(op);
+                lowBlock.Instructions.Add(new LowInstruction(lowOp, inst.Destination, (int)inst.Left, inst.Right, 0));
+            }
+            else if (leftType.Equals(SimpleType.Bool) && rightType.Equals(SimpleType.Bool))
+            {
+                // These Boolean operations work the same as integers, since bool values are always
+                // assumed to have their upper 31 bits set to zero.
+                Debug.Assert(op == Opcode.BitwiseAnd || op == Opcode.BitwiseOr || op == Opcode.BitwiseXor);
+
                 var lowOp = GetLoweredIntegerArithmeticOp(op);
                 lowBlock.Instructions.Add(new LowInstruction(lowOp, inst.Destination, (int)inst.Left, inst.Right, 0));
             }
