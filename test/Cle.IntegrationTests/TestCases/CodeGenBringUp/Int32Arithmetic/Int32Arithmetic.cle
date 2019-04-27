@@ -1,0 +1,18 @@
+// This test verifies int32 arithmetic operators in a complex expression.
+// In optimizing builds, this test case reduces to a constant return.
+//
+// Expected return code: 8.
+// No console output expected.
+
+namespace Int32Arithmetic;
+
+[EntryPoint]
+public int32 Main()
+{
+    return DoMath(10, 24, 3, 5);
+}
+
+public int32 DoMath(int32 a, int32 b, int32 c, int32 d)
+{
+    return -((a-b) * c / d);
+}

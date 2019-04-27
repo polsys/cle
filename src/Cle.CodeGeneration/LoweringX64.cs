@@ -114,7 +114,15 @@ namespace Cle.CodeGeneration
                 switch (inst.Operation)
                 {
                     case Opcode.Add:
-                        ConvertArithmetic(Opcode.Add, in inst, lowBlock, methodInProgress);
+                    case Opcode.BitwiseAnd:
+                    case Opcode.BitwiseOr:
+                    case Opcode.BitwiseXor:
+                    case Opcode.Multiply:
+                    case Opcode.Subtract:
+                        ConvertBinaryArithmetic(inst.Operation, in inst, lowBlock, methodInProgress);
+                        break;
+                    case Opcode.ArithmeticNegate:
+                        ConvertUnaryArithmetic(Opcode.ArithmeticNegate, in inst, lowBlock, methodInProgress);
                         break;
                     case Opcode.BitwiseNot:
                         if (methodInProgress.Locals[(int)inst.Left].Type.Equals(SimpleType.Bool))
@@ -126,7 +134,7 @@ namespace Cle.CodeGeneration
                         }
                         else
                         {
-                            goto default;
+                            ConvertUnaryArithmetic(Opcode.BitwiseNot, in inst, lowBlock, methodInProgress);
                         }
                         break;
                     case Opcode.BranchIf:
@@ -151,18 +159,12 @@ namespace Cle.CodeGeneration
                     case Opcode.Load:
                         lowBlock.Instructions.Add(new LowInstruction(LowOp.LoadInt, inst.Destination, 0, 0, inst.Left));
                         break;
-                    case Opcode.Multiply:
-                        ConvertArithmetic(Opcode.Multiply, in inst, lowBlock, methodInProgress);
-                        break;
                     case Opcode.Modulo:
                         ConvertDivisionOrModulo(Opcode.Modulo, in inst, lowBlock, methodInProgress);
                         break;
                     case Opcode.Return:
                         returns = true;
                         ConvertReturn(lowBlock, (int)inst.Left, highMethod, methodInProgress);
-                        break;
-                    case Opcode.Subtract:
-                        ConvertArithmetic(Opcode.Subtract, in inst, lowBlock, methodInProgress);
                         break;
                     default:
                         throw new NotImplementedException("Unimplemented opcode to lower: " + inst.Operation);
@@ -177,7 +179,7 @@ namespace Cle.CodeGeneration
             return lowBlock;
         }
 
-        private static void ConvertArithmetic(Opcode op, in Instruction inst, LowBlock lowBlock,
+        private static void ConvertBinaryArithmetic(Opcode op, in Instruction inst, LowBlock lowBlock,
             LowMethod<X64Register> methodInProgress)
         {
             if (methodInProgress.Locals[(int)inst.Left].Type.Equals(SimpleType.Int32) &&
@@ -185,6 +187,20 @@ namespace Cle.CodeGeneration
             {
                 var lowOp = GetLoweredIntegerArithmeticOp(op);
                 lowBlock.Instructions.Add(new LowInstruction(lowOp, inst.Destination, (int)inst.Left, inst.Right, 0));
+            }
+            else
+            {
+                throw new NotImplementedException("Floating-point arithmetic: " + op);
+            }
+        }
+
+        private static void ConvertUnaryArithmetic(Opcode op, in Instruction inst, LowBlock lowBlock,
+            LowMethod<X64Register> methodInProgress)
+        {
+            if (methodInProgress.Locals[(int)inst.Left].Type.Equals(SimpleType.Int32))
+            {
+                var lowOp = GetLoweredIntegerArithmeticOp(op);
+                lowBlock.Instructions.Add(new LowInstruction(lowOp, inst.Destination, (int)inst.Left, 0, 0));
             }
             else
             {
@@ -318,6 +334,16 @@ namespace Cle.CodeGeneration
             {
                 case Opcode.Add:
                     return LowOp.IntegerAdd;
+                case Opcode.ArithmeticNegate:
+                    return LowOp.IntegerNegate;
+                case Opcode.BitwiseAnd:
+                    return LowOp.BitwiseAnd;
+                case Opcode.BitwiseNot:
+                    return LowOp.BitwiseNot;
+                case Opcode.BitwiseOr:
+                    return LowOp.BitwiseOr;
+                case Opcode.BitwiseXor:
+                    return LowOp.BitwiseXor;
                 case Opcode.Subtract:
                     return LowOp.IntegerSubtract;
                 case Opcode.Multiply:

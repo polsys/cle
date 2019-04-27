@@ -89,6 +89,9 @@ LB_0:
         
         [TestCase("Add", "add")]
         [TestCase("Multiply", "imul")]
+        [TestCase("BitwiseAnd", "and")]
+        [TestCase("BitwiseOr", "or")]
+        [TestCase("BitwiseXor", "xor")]
         public void Basic_commutative_int32_arithmetic(string highOp, string expectedAsmOp)
         {
             // int32 a = 42;
@@ -165,6 +168,40 @@ LB_0:
     {expectedAsmOp} r8d, eax
     {expectedAsmOp} ecx, r8d
     {expectedAsmOp} ecx, edx
+    mov eax, ecx
+    ret
+";
+            EmitAndAssertDisassembly(source, expected);
+        }
+        
+        [TestCase("ArithmeticNegate", "neg")]
+        [TestCase("BitwiseNot", "not")]
+        public void Basic_unary_int32_arithmetic(string highOp, string expectedAsmOp)
+        {
+            // int32 a = 42;
+            // int32 b = -a; // Destination different from source
+            // int32 c = -a; // Destination can be same as source
+            // return b + c; // Use both operation results
+            var source = $@"
+; #0   int32
+; #1   int32
+; #2   int32
+; #3   int32
+BB_0:
+    Load 43 -> #0
+    {highOp} #0 -> #1
+    {highOp} #0 -> #2
+    Add #1 + #2 -> #3
+    Return #3
+";
+            var expected = $@"
+; Test::Method
+LB_0:
+    mov ecx, 0x2B
+    mov edx, ecx
+    {expectedAsmOp} edx
+    {expectedAsmOp} ecx
+    add ecx, edx
     mov eax, ecx
     ret
 ";
