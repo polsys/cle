@@ -169,8 +169,10 @@ namespace Cle.CodeGeneration.RegisterAllocation
                         live.Add(inst.Right);
                     }
 
-                    // Prevent X64 trashing the right operand of subtraction (see associated unit test)
-                    if (inst.Op == LowOp.IntegerSubtract)
+                    // Prevent X64 trashing the right operand of subtraction/shift (see associated unit test)
+                    // Additionally, the right operand of shift is fixed to RCX, but Lowering has handled that
+                    if (inst.Op == LowOp.IntegerSubtract ||
+                        inst.Op == LowOp.ShiftLeft || inst.Op == LowOp.ShiftArithmeticRight)
                     {
                         intervals[latestIntervalForLocal[inst.Right]].Use(instIndex + 1);
                     }

@@ -119,10 +119,10 @@ namespace Cle.CodeGeneration
                     case Opcode.BitwiseXor:
                     case Opcode.Multiply:
                     case Opcode.Subtract:
-                        ConvertBinaryArithmetic(inst.Operation, in inst, lowBlock, methodInProgress);
+                        ConvertBinaryArithmetic(in inst, lowBlock, methodInProgress);
                         break;
                     case Opcode.ArithmeticNegate:
-                        ConvertUnaryArithmetic(Opcode.ArithmeticNegate, in inst, lowBlock, methodInProgress);
+                        ConvertUnaryArithmetic(in inst, lowBlock, methodInProgress);
                         break;
                     case Opcode.BitwiseNot:
                         if (methodInProgress.Locals[(int)inst.Left].Type.Equals(SimpleType.Bool))
@@ -134,7 +134,7 @@ namespace Cle.CodeGeneration
                         }
                         else
                         {
-                            ConvertUnaryArithmetic(Opcode.BitwiseNot, in inst, lowBlock, methodInProgress);
+                            ConvertUnaryArithmetic(in inst, lowBlock, methodInProgress);
                         }
                         break;
                     case Opcode.BranchIf:
@@ -145,7 +145,7 @@ namespace Cle.CodeGeneration
                             methodInProgress);
                         break;
                     case Opcode.Divide:
-                        ConvertDivisionOrModulo(Opcode.Divide, in inst, lowBlock, methodInProgress);
+                        ConvertDivisionOrModulo(in inst, lowBlock, methodInProgress);
                         break;
                     case Opcode.Equal:
                         ConvertCompare(in inst, LowOp.SetIfEqual, lowBlock);
@@ -160,11 +160,15 @@ namespace Cle.CodeGeneration
                         lowBlock.Instructions.Add(new LowInstruction(LowOp.LoadInt, inst.Destination, 0, 0, inst.Left));
                         break;
                     case Opcode.Modulo:
-                        ConvertDivisionOrModulo(Opcode.Modulo, in inst, lowBlock, methodInProgress);
+                        ConvertDivisionOrModulo(in inst, lowBlock, methodInProgress);
                         break;
                     case Opcode.Return:
                         returns = true;
                         ConvertReturn(lowBlock, (int)inst.Left, highMethod, methodInProgress);
+                        break;
+                    case Opcode.ShiftLeft:
+                    case Opcode.ShiftRight:
+                        ConvertShift(in inst, lowBlock, methodInProgress);
                         break;
                     default:
                         throw new NotImplementedException("Unimplemented opcode to lower: " + inst.Operation);
@@ -179,9 +183,10 @@ namespace Cle.CodeGeneration
             return lowBlock;
         }
 
-        private static void ConvertBinaryArithmetic(Opcode op, in Instruction inst, LowBlock lowBlock,
+        private static void ConvertBinaryArithmetic(in Instruction inst, LowBlock lowBlock,
             LowMethod<X64Register> methodInProgress)
         {
+            var op = inst.Operation;
             var leftType = methodInProgress.Locals[(int)inst.Left].Type;
             var rightType = methodInProgress.Locals[inst.Right].Type;
 
@@ -205,9 +210,11 @@ namespace Cle.CodeGeneration
             }
         }
 
-        private static void ConvertUnaryArithmetic(Opcode op, in Instruction inst, LowBlock lowBlock,
+        private static void ConvertUnaryArithmetic(in Instruction inst, LowBlock lowBlock,
             LowMethod<X64Register> methodInProgress)
         {
+            var op = inst.Operation;
+
             if (methodInProgress.Locals[(int)inst.Left].Type.Equals(SimpleType.Int32))
             {
                 var lowOp = GetLoweredIntegerArithmeticOp(op);
@@ -219,9 +226,10 @@ namespace Cle.CodeGeneration
             }
         }
 
-        private static void ConvertDivisionOrModulo(Opcode op, in Instruction inst, LowBlock lowBlock,
+        private static void ConvertDivisionOrModulo(in Instruction inst, LowBlock lowBlock,
             LowMethod<X64Register> methodInProgress)
         {
+            var op = inst.Operation;
             if (!methodInProgress.Locals[(int)inst.Left].Type.Equals(SimpleType.Int32) &&
                 !methodInProgress.Locals[inst.Right].Type.Equals(SimpleType.Int32))
             {
@@ -257,6 +265,33 @@ namespace Cle.CodeGeneration
             {
                 throw new ArgumentOutOfRangeException(nameof(op));
             }
+        }
+
+        private static void ConvertShift(in Instruction inst, LowBlock lowBlock,
+            LowMethod<X64Register> methodInProgress)
+        {
+            var op = inst.Operation;
+            if (!methodInProgress.Locals[(int)inst.Left].Type.Equals(SimpleType.Int32) &&
+                !methodInProgress.Locals[inst.Right].Type.Equals(SimpleType.Int32))
+            {
+                throw new NotImplementedException("Non-int32 arithmetic: " + op);
+            }
+
+            // On x64, the shift amount is stored in ecx
+
+            var amountIndex = methodInProgress.Locals.Count;
+            methodInProgress.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32, X64Register.Rcx));
+            lowBlock.Instructions.Add(new LowInstruction(LowOp.Move, amountIndex, (int)inst.Right, 0, 0));
+
+            LowOp lowOp;
+            if (op == Opcode.ShiftLeft)
+                lowOp = LowOp.ShiftLeft;
+            else if (op == Opcode.ShiftRight)
+                lowOp = LowOp.ShiftArithmeticRight; // TODO: Unsigned shift
+            else
+                throw new ArgumentOutOfRangeException(nameof(op));
+
+            lowBlock.Instructions.Add(new LowInstruction(lowOp, inst.Destination, (int)inst.Left, amountIndex, 0));
         }
 
         private static void ConvertBranchIf(LowBlock lowBlock, BasicBlock highBlock, int valueIndex)

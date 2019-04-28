@@ -56,7 +56,7 @@ namespace Cle.CodeGeneration
             // If the operand can fit into a 32 bit immediate, emit a 32-bit load
             if (bytes <= uint.MaxValue)
             {
-                _disassemblyWriter?.WriteLine($"{Indent}mov {Get32BitRegisterName(dest.Register)}, 0x{bytes:X}");
+                _disassemblyWriter?.WriteLine($"{Indent}mov {GetRegisterName(dest.Register, 4)}, 0x{bytes:X}");
 
                 EmitRexPrefixIfNeeded(false, false, false, needB);
                 _outputStream.WriteByte((byte)(0xB8 | registerEncoding));
@@ -64,7 +64,7 @@ namespace Cle.CodeGeneration
             }
             else
             {
-                _disassemblyWriter?.WriteLine($"{Indent}mov {GetRegisterName(dest.Register)}, 0x{bytes:X}");
+                _disassemblyWriter?.WriteLine($"{Indent}mov {GetRegisterName(dest.Register, 8)}, 0x{bytes:X}");
 
                 EmitRexPrefixIfNeeded(true, false, false, needB);
                 _outputStream.WriteByte((byte)(0xB8 | registerEncoding));
@@ -110,7 +110,7 @@ namespace Cle.CodeGeneration
                 throw new NotImplementedException("Movzx on XMM register");
 
             _disassemblyWriter?.WriteLine(
-                $"{Indent}movzx {Get32BitRegisterName(srcDest.Register)}, {Get8BitRegisterName(srcDest.Register)}");
+                $"{Indent}movzx {GetRegisterName(srcDest.Register, 4)}, {GetRegisterName(srcDest.Register, 1)}");
 
             var (encodedDest, needR) = GetRegisterEncoding(srcDest.Register);
             var (encodedSrc, needB) = GetRegisterEncoding(srcDest.Register);
@@ -210,6 +210,43 @@ namespace Cle.CodeGeneration
         }
 
         /// <summary>
+        /// Emits a shift instruction where the shift amount is stored in the cl register.
+        /// </summary>
+        /// <param name="shiftType">The shift operation to emit.</param>
+        /// <param name="srcDest">The left location, used both as a source and a destination. Must not be an XMM register.</param>
+        /// <param name="operandSize">The operand width in bytes.</param>
+        public void EmitShift(ShiftType shiftType, StorageLocation<X64Register> srcDest, int operandSize)
+        {
+            // TODO: 8-bit and 16-bit ops need their own special handling, as the opcodes are different
+            if (operandSize != 4 && operandSize != 8)
+                throw new NotImplementedException("Other operand widths");
+
+            if (!srcDest.IsRegister)
+                throw new NotImplementedException("Shift on stack");
+            if (srcDest.Register >= X64Register.Xmm0)
+                throw new InvalidOperationException("Trying to emit a general-purpose op on a SIMD register.");
+
+            var (encodedReg, needB) = GetRegisterEncoding(srcDest.Register);
+            EmitRexPrefixIfNeeded(operandSize == 8, false, false, needB);
+            _outputStream.WriteByte(0xD3);
+
+            // The shift type is encoded in the ModRM byte
+            switch (shiftType)
+            {
+                case ShiftType.Left:
+                    _outputStream.WriteByte((byte)(0b1110_0000 | encodedReg));
+                    _disassemblyWriter?.WriteLine($"{Indent}shl {GetRegisterName(srcDest.Register, operandSize)}, cl");
+                    break;
+                case ShiftType.ArithmeticRight:
+                    _outputStream.WriteByte((byte)(0b1111_1000 | encodedReg));
+                    _disassemblyWriter?.WriteLine($"{Indent}sar {GetRegisterName(srcDest.Register, operandSize)}, cl");
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(shiftType));
+            }
+        }
+
+        /// <summary>
         /// Emits a signed divide instruction with the specified width.
         /// The dividend must be stored in RDX:RAX.
         /// To sign-extend RAX to RDX, use
@@ -305,7 +342,7 @@ namespace Cle.CodeGeneration
             if (dest.Register >= X64Register.Xmm0)
                 throw new InvalidOperationException("Setcc on XMM register");
             
-            _disassemblyWriter?.WriteLine($"{Indent}set{GetConditionName(condition)} {Get8BitRegisterName(dest.Register)}");
+            _disassemblyWriter?.WriteLine($"{Indent}set{GetConditionName(condition)} {GetRegisterName(dest.Register, 1)}");
 
             var (encodedReg, needB) = GetRegisterEncoding(dest.Register);
 
@@ -323,7 +360,7 @@ namespace Cle.CodeGeneration
             if (src >= X64Register.Xmm0)
                 throw new InvalidOperationException("Push on XMM register");
 
-            _disassemblyWriter?.WriteLine($"{Indent}push {GetRegisterName(src)}");
+            _disassemblyWriter?.WriteLine($"{Indent}push {GetRegisterName(src, 8)}");
             var (encodedReg, needB) = GetRegisterEncoding(src);
 
             if (needB)
@@ -342,7 +379,7 @@ namespace Cle.CodeGeneration
             if (dest >= X64Register.Xmm0)
                 throw new InvalidOperationException("Pop on XMM register");
 
-            _disassemblyWriter?.WriteLine($"{Indent}pop {GetRegisterName(dest)}");
+            _disassemblyWriter?.WriteLine($"{Indent}pop {GetRegisterName(dest, 8)}");
             var (encodedReg, needB) = GetRegisterEncoding(dest);
 
             // The opcode is encoded exactly as push, except for the 0x8 bit
@@ -474,25 +511,7 @@ namespace Cle.CodeGeneration
 
         private void DisassembleSingleReg(string opcode, X64Register reg, int operandSize)
         {
-            if (_disassemblyWriter is null)
-                return;
-
-            var regName = "?";
-
-            switch (operandSize)
-            {
-                case 1:
-                    regName = Get8BitRegisterName(reg);
-                    break;
-                case 4:
-                    regName = Get32BitRegisterName(reg);
-                    break;
-                case 8:
-                    regName = GetRegisterName(reg);
-                    break;
-            }
-
-            _disassemblyWriter.WriteLine($"{Indent}{opcode} {regName}");
+            _disassemblyWriter?.WriteLine($"{Indent}{opcode} {GetRegisterName(reg, operandSize)}");
         }
 
         private void DisassembleRegReg(string opcode, X64Register left, X64Register right, int operandSize)
@@ -500,24 +519,8 @@ namespace Cle.CodeGeneration
             if (_disassemblyWriter is null)
                 return;
 
-            var leftName = "?";
-            var rightName = "?";
-
-            switch (operandSize)
-            {
-                case 1:
-                    leftName = Get8BitRegisterName(left);
-                    rightName = Get8BitRegisterName(right);
-                    break;
-                case 4:
-                    leftName = Get32BitRegisterName(left);
-                    rightName = Get32BitRegisterName(right);
-                    break;
-                case 8:
-                    leftName = GetRegisterName(left);
-                    rightName = GetRegisterName(right);
-                    break;
-            }
+            var leftName = GetRegisterName(left, operandSize);
+            var rightName = GetRegisterName(right, operandSize);
 
             _disassemblyWriter.WriteLine($"{Indent}{opcode} {leftName}, {rightName}");
         }
@@ -644,15 +647,24 @@ namespace Cle.CodeGeneration
             }
         }
 
-        private static string GetRegisterName(X64Register reg)
+        private static string GetRegisterName(X64Register reg, int sizeInBytes)
         {
-            return reg.ToString().ToLowerInvariant();
+            switch (sizeInBytes)
+            {
+                case 1:
+                    return Get8BitRegisterName(reg);
+                case 4:
+                    return Get32BitRegisterName(reg);
+                default:
+                    // Even though this is not correct for invalid values of operand size
+                    return reg.ToString().ToLowerInvariant();
+            }
         }
 
         private static string Get32BitRegisterName(X64Register reg)
         {
             // This is not the most efficient code but it is only called on the disassembly path anyways
-            var baseName = GetRegisterName(reg);
+            var baseName = reg.ToString().ToLowerInvariant();
             if (reg > X64Register.Invalid && reg < X64Register.R8)
             {
                 // rax becomes eax, etc.
@@ -673,7 +685,7 @@ namespace Cle.CodeGeneration
         private static string Get8BitRegisterName(X64Register reg)
         {
             // Same performance notes as above
-            var baseName = GetRegisterName(reg);
+            var baseName = reg.ToString().ToLowerInvariant();
             if (reg > X64Register.Invalid && reg < X64Register.Rsi)
             {
                 // rax becomes al, etc.

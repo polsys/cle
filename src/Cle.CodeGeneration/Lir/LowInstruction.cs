@@ -131,6 +131,18 @@ namespace Cle.CodeGeneration.Lir
         /// </summary>
         IntegerModulo,
         /// <summary>
+        /// Shifts the Left local left by the amount specified in the Right local (modulo operand size)
+        /// and stores the result in the Dest local.
+        /// The Right local must be stored in the platform-specified location.
+        /// </summary>
+        ShiftLeft,
+        /// <summary>
+        /// Shifts the Left local right by the amount specified in the Right local (modulo operand size),
+        /// propagating the sign bit, and stores the result in the Dest local.
+        /// The Right local must be stored in the platform-specified location.
+        /// </summary>
+        ShiftArithmeticRight,
+        /// <summary>
         /// Performs a bitwise AND of the Left and Right locals and stores the result in Dest local.
         /// </summary>
         BitwiseAnd,

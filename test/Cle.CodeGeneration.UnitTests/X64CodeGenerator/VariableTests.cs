@@ -298,5 +298,52 @@ LB_0:
 ";
             EmitAndAssertDisassembly(source, expected);
         }
+
+        [TestCase("ShiftLeft", "shl")]
+        [TestCase("ShiftRight", "sar")]
+        // TODO: Tests for unsigned shifts
+        public void Integer_shifts(string highOp, string expectedAsmOp)
+        {
+            // int32 a = 42;
+            // int32 s = 17;
+            // int32 b = a << s; // Destination different from source
+            // int32 c = a << s; // Destination can be same as source
+            // return b + c; // Use both operation results
+            var source = $@"
+; #0   int32
+; #1   int32
+; #2   int32
+; #3   int32
+; #4   int32
+BB_0:
+    Load 43 -> #0
+    Load 17 -> #1
+    {highOp} #0 ?? #1 -> #2
+    {highOp} #0 ?? #1 -> #3
+    Add #2 + #3 -> #4
+    Return #4
+";
+
+            // There is just so much wrong with the code quality here, I don't know where to start.
+            //   - The part in the end where ecx is used should be handled with register hints.
+            //   - The cl register should not need to be reassigned.
+            var expected = $@"
+; Test::Method
+LB_0:
+    mov eax, 0x2B
+    mov edx, 0x11
+    mov ecx, edx
+    mov r8d, eax
+    {expectedAsmOp} r8d, cl
+    mov ecx, edx
+    mov edx, eax
+    {expectedAsmOp} edx, cl
+    mov ecx, r8d
+    add ecx, edx
+    mov eax, ecx
+    ret
+";
+            EmitAndAssertDisassembly(source, expected);
+        }
     }
 }

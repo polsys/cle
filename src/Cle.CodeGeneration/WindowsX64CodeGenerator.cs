@@ -194,6 +194,12 @@ namespace Cle.CodeGeneration
                     case LowOp.BitwiseXor:
                         EmitIntegerBinaryOp(BinaryOp.BitwiseXor, in inst, method, allocation);
                         break;
+                    case LowOp.ShiftLeft:
+                        EmitShift(ShiftType.Left, in inst, method, allocation);
+                        break;
+                    case LowOp.ShiftArithmeticRight:
+                        EmitShift(ShiftType.ArithmeticRight, in inst, method, allocation);
+                        break;
                     case LowOp.Compare:
                         {
                             // TODO: Can the left and right operands have different sizes?
@@ -353,6 +359,27 @@ namespace Cle.CodeGeneration
                 // We have to do a temporary move first
                 emitter.EmitMov(destLocation, leftLocation, operandSize);
                 emitter.EmitGeneralBinaryOp(op, destLocation, rightLocation, operandSize);
+            }
+        }
+
+        private void EmitShift(ShiftType shiftType, in LowInstruction inst, 
+            LowMethod<X64Register> method, AllocationInfo<X64Register> allocation)
+        {
+            var emitter = _peWriter.Emitter;
+
+            var (srcLocation, _) = allocation.Get(inst.Left);
+            var (destLocation, destLocalIndex) = allocation.Get(inst.Dest);
+            var operandSize = method.Locals[destLocalIndex].Type.SizeInBytes;
+
+            // The same logic as for unary operations, since the shift amount is in rcx
+            if (srcLocation == destLocation)
+            {
+                emitter.EmitShift(shiftType, srcLocation, operandSize);
+            }
+            else
+            {
+                emitter.EmitMov(destLocation, srcLocation, operandSize);
+                emitter.EmitShift(shiftType, destLocation, operandSize);
             }
         }
 

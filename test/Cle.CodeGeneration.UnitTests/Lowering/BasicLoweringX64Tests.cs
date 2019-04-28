@@ -258,5 +258,39 @@ LB_0:
 ";
             AssertDump(lowered, expected);
         }
+
+        [TestCase("ShiftLeft", "ShiftLeft")]
+        [TestCase("ShiftRight", "ShiftArithmeticRight")]
+        public void Integer_shift(string highOp, string expectedLowOp)
+        {
+            var source = $@"
+; #0 int32
+; #1 int32
+; #2 int32
+BB_0:
+    Load 1234 -> #0
+    Load 5678 -> #1
+    {highOp} #0 ?? #1 -> #2
+    Return #2
+";
+            var method = MethodAssembler.Assemble(source, "Test::Method");
+            var lowered = LoweringX64.Lower(method);
+
+            var expected = $@"
+; #0 int32 [?]
+; #1 int32 [?]
+; #2 int32 [?]
+; #3 int32 [rcx]
+; #4 int32 [rax]
+LB_0:
+    LoadInt 0 0 1234 -> 0
+    LoadInt 0 0 5678 -> 1
+    Move 1 0 0 -> 3
+    {expectedLowOp} 0 3 0 -> 2
+    Move 2 0 0 -> 4
+    Return 4 0 0 -> 0
+";
+            AssertDump(lowered, expected);
+        }
     }
 }
