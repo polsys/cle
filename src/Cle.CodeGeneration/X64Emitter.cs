@@ -110,12 +110,13 @@ namespace Cle.CodeGeneration
                 throw new NotImplementedException("Movzx on XMM register");
 
             _disassemblyWriter?.WriteLine(
-                $"{Indent}movzx {GetRegisterName(srcDest.Register)}, {Get8BitRegisterName(srcDest.Register)}");
+                $"{Indent}movzx {Get32BitRegisterName(srcDest.Register)}, {Get8BitRegisterName(srcDest.Register)}");
 
             var (encodedDest, needR) = GetRegisterEncoding(srcDest.Register);
             var (encodedSrc, needB) = GetRegisterEncoding(srcDest.Register);
 
-            EmitRexPrefixIfNeeded(true, needR, false, needB);
+            // We don't need to use 64 bit wide operand size since the upper 32 bits are zeroed anyways
+            EmitRexPrefixIfNeeded(false, needR, false, needB);
             _outputStream.WriteByte(0x0F);
             _outputStream.WriteByte(0xB6);
             EmitModRmForRegisterToRegister(encodedDest, encodedSrc);
@@ -274,7 +275,7 @@ namespace Cle.CodeGeneration
 
         /// <summary>
         /// Emits a test instruction with the two operands.
-        /// The operands are considered to be full width.
+        /// The operands are considered to be 32 bits wide.
         /// </summary>
         // TODO: Support specifying operand size
         public void EmitTest(StorageLocation<X64Register> left, StorageLocation<X64Register> right)
@@ -284,12 +285,12 @@ namespace Cle.CodeGeneration
             if (left.Register >= X64Register.Xmm0 || right.Register >= X64Register.Xmm0)
                 throw new InvalidOperationException("SIMD test");
             
-            DisassembleRegReg("test", left.Register, right.Register, 8);
+            DisassembleRegReg("test", left.Register, right.Register, 4);
 
             var (encodedDest, needR) = GetRegisterEncoding(left.Register);
             var (encodedSrc, needB) = GetRegisterEncoding(right.Register);
 
-            EmitRexPrefixIfNeeded(true, needR, false, needB);
+            EmitRexPrefixIfNeeded(false, needR, false, needB);
             _outputStream.WriteByte(0x85);
             EmitModRmForRegisterToRegister(encodedDest, encodedSrc);
         }
