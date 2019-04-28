@@ -1,0 +1,18 @@
+// This test verifies int32 shift operators.
+// Since the integer type is signed, this algorithm is incorrect for negative values.
+//
+// Expected return code: 10.
+// No console output expected.
+
+namespace Rotate::Int32;
+
+[EntryPoint]
+public int32 Main()
+{
+    return RotateLeft(1073741825, 3); // 0x4000_0001 rotated by 3 is 0xA
+}
+
+private int32 RotateLeft(int32 value, int32 amount)
+{
+    return (value << amount) | (value >> (32 - amount));
+}

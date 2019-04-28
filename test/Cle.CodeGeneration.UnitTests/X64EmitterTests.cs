@@ -498,6 +498,30 @@ namespace Cle.CodeGeneration.UnitTests
         }
 
         [Test]
+        public void EmitShift_emits_32_bit_left_shift_of_basic_register()
+        {
+            GetEmitter(out var stream, out var disassembly).EmitShift(
+                ShiftType.Left,
+                new StorageLocation<X64Register>(X64Register.Rdx),
+                4);
+
+            CollectionAssert.AreEqual(new byte[] { 0xD3, 0xE2 }, stream.ToArray());
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("shl edx, cl"));
+        }
+
+        [Test]
+        public void EmitShift_emits_64_bit_arithmetic_right_shift_of_new_register()
+        {
+            GetEmitter(out var stream, out var disassembly).EmitShift(
+                ShiftType.ArithmeticRight,
+                new StorageLocation<X64Register>(X64Register.R8),
+                8);
+
+            CollectionAssert.AreEqual(new byte[] { 0x49, 0xD3, 0xF8 }, stream.ToArray());
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("sar r8, cl"));
+        }
+
+        [Test]
         public void EmitSignedDivide_emits_32_bit_divide_by_new_register()
         {
             GetEmitter(out var stream, out var disassembly).EmitSignedDivide(

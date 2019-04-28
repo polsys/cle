@@ -324,8 +324,10 @@ LB_3:
             }
         }
 
-        [Test]
-        public void Subtraction_destination_is_not_same_as_right()
+        [TestCase(LowOp.IntegerSubtract)]
+        [TestCase(LowOp.ShiftLeft)]
+        [TestCase(LowOp.ShiftArithmeticRight)]
+        public void Noncommutative_arithmetic_destination_is_not_same_as_right(LowOp op)
         {
             var method = new LowMethod<X64Register>();
             method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32));
@@ -339,7 +341,7 @@ LB_3:
                     new LowInstruction(LowOp.LoadInt, 0, 0, 0, 1), // Load 1 -> #0
                     new LowInstruction(LowOp.LoadInt, 1, 0, 0, 1), // Load 1 -> #1
 
-                    new LowInstruction(LowOp.IntegerSubtract, 2, 0, 1, 0), // Subtract #0 - #1 -> #2
+                    new LowInstruction(op, 2, 0, 1, 0), // Subtract/Shift #0 - #1 -> #2
 
                     new LowInstruction(LowOp.Test, 0, 0, 0, 0), // Use #0
                     new LowInstruction(LowOp.Move, 3, 2, 0, 0), // Use #2
@@ -351,11 +353,11 @@ LB_3:
 
             var (rewritten, allocationMap) = X64RegisterAllocator.Allocate(method);
 
-            AssertDump(rewritten, @"
+            AssertDump(rewritten, $@"
 LB_0:
     LoadInt 0 0 1 -> 0
     LoadInt 0 0 1 -> 1
-    IntegerSubtract 0 1 0 -> 2
+    {op} 0 1 0 -> 2
     Test 0 0 0 -> 0
     Move 2 0 0 -> 3
     Return 3 0 0 -> 0");
