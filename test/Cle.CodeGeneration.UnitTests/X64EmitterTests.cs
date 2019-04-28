@@ -132,8 +132,8 @@ namespace Cle.CodeGeneration.UnitTests
             GetEmitter(out var stream, out var disassembly).EmitZeroExtendFromByte(
                 new StorageLocation<X64Register>(X64Register.Rbx));
 
-            CollectionAssert.AreEqual(new byte[] { 0x48, 0x0F, 0xB6, 0xDB }, stream.ToArray());
-            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("movzx rbx, bl"));
+            CollectionAssert.AreEqual(new byte[] { 0x0F, 0xB6, 0xDB }, stream.ToArray());
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("movzx ebx, bl"));
         }
 
         [Test]
@@ -142,8 +142,8 @@ namespace Cle.CodeGeneration.UnitTests
             GetEmitter(out var stream, out var disassembly).EmitZeroExtendFromByte(
                 new StorageLocation<X64Register>(X64Register.R10));
 
-            CollectionAssert.AreEqual(new byte[] { 0x4D, 0x0F, 0xB6, 0xD2 }, stream.ToArray());
-            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("movzx r10, r10b"));
+            CollectionAssert.AreEqual(new byte[] { 0x45, 0x0F, 0xB6, 0xD2 }, stream.ToArray());
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("movzx r10d, r10b"));
         }
 
         [Test]
@@ -260,14 +260,14 @@ namespace Cle.CodeGeneration.UnitTests
         }
 
         [Test]
-        public void EmitTest_emits_logical_compare_between_basic_and_new_registers()
+        public void EmitTest_emits_32_bit_logical_compare_between_basic_and_new_registers()
         {
             GetEmitter(out var stream, out var disassembly).EmitTest(
                 new StorageLocation<X64Register>(X64Register.R9),
                 new StorageLocation<X64Register>(X64Register.Rax));
 
-            CollectionAssert.AreEqual(new byte[] { 0x4C, 0x85, 0xC8 }, stream.ToArray());
-            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("test r9, rax"));
+            CollectionAssert.AreEqual(new byte[] { 0x44, 0x85, 0xC8 }, stream.ToArray());
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("test r9d, eax"));
         }
 
         [Test]

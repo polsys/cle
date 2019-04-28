@@ -136,7 +136,7 @@ BB_2:
 ; Test::Method
 LB_0:
     mov ecx, 0x1
-    test rcx, rcx
+    test ecx, ecx
     jne LB_1
     jmp LB_2
 LB_1:
@@ -181,7 +181,7 @@ BB_2:
 ; Test::Method
 LB_0:
     mov ecx, 0x1
-    test rcx, rcx
+    test ecx, ecx
     je LB_1
     jmp LB_2
 LB_1:
@@ -232,7 +232,7 @@ BB_3:
 LB_0:
     xor ecx, ecx
     mov edx, 0x1
-    test rdx, rdx
+    test edx, edx
     jne LB_1
     jmp LB_2
 LB_1:

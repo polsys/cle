@@ -48,7 +48,7 @@ LB_0:
     mov edx, 0x64
     cmp ecx, edx
     {expectedLowOp} al
-    movzx rax, al
+    movzx eax, al
     ret
 ";
             EmitAndAssertDisassembly(source, expected);
@@ -81,7 +81,7 @@ LB_0:
     mov edx, 0x64
     cmp ecx, edx
     {expectedLowOp} al
-    movzx rax, al
+    movzx eax, al
     ret
 ";
             EmitAndAssertDisassembly(source, expected);
@@ -114,7 +114,7 @@ LB_0:
     xor edx, edx
     cmp ecx, edx
     sete al
-    movzx rax, al
+    movzx eax, al
     ret
 ";
             EmitAndAssertDisassembly(source, expected);
