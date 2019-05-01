@@ -1,0 +1,24 @@
+// Computes (10 choose 4) with the factorial formula (not the most efficient way).
+//
+// Expected return code: 210.
+// No console output expected.
+
+namespace Binomial;
+
+[EntryPoint]
+public int32 Main()
+{
+    return Fact(10)/(Fact(4)*Fact(6));
+}
+
+private int32 Fact(int32 n)
+{
+    int32 result = 1;
+    while (n > 1)
+    {
+        result = result * n;
+        n = n - 1;
+    }
+    
+    return result;
+}

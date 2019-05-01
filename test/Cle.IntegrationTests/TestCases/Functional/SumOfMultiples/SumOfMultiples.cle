@@ -1,0 +1,26 @@
+// https://projecteuler.net/problem=1
+// Sum of multiples of 3 or 5 below 1000.
+// This is implemented by the boring brute-force loop.
+//
+// Expected return code: 233168.
+// No console output expected.
+
+namespace SumOfMultiples;
+
+[EntryPoint]
+public int32 Main()
+{
+    int32 sum = 0;
+    int32 i = 1;
+    
+    while (i < 1000) // 1000 must be excluded
+    {
+        if (i % 3 == 0 | i % 5 == 0)
+        {
+            sum = sum + i;
+        }
+        i = i + 1;
+    }
+    
+    return sum;
+}
