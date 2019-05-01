@@ -8,17 +8,12 @@ trigger:
     - docs/*
 
 pool:
-  vmImage: 'vs2017-win2016'
+  vmImage: 'windows-2019'
 
 variables:
   configuration: 'Release'
-  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 'true'
 
 steps:
-- task: DotNetCoreInstaller@0
-  inputs:
-    version: '2.2.104'
-  displayName: 'Install .Net Core 2.2 SDK' # Needed for test filtering
 - script: |
     dotnet tool install --tool-path . nbgv
     .\nbgv cloud
