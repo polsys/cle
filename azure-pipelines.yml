@@ -30,6 +30,11 @@ steps:
 - script: |
     dotnet publish src/Cle.Frontend --configuration $(configuration) --output $(Build.ArtifactStagingDirectory)
   displayName: 'Package Cle.Frontend'
+- task: ArchiveFiles@2
+  inputs:
+    rootFolderOrFile: '$(Build.ArtifactStagingDirectory)'
+    archiveFile: '$(Build.ArtifactStagingDirectory)/cle-$(Build.BuildId).zip'
+  displayName: 'Create .zip file'
 - task: PublishBuildArtifacts@1
   displayName: 'Publish build artifacts'
 - task: PublishTestResults@2
