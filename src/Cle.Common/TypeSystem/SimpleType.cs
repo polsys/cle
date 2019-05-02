@@ -6,7 +6,7 @@ namespace Cle.Common.TypeSystem
     /// Represents built-in value types.
     /// Use the static properties to access type instances.
     /// </summary>
-    public class SimpleType : TypeDefinition, IEquatable<SimpleType>
+    public class SimpleType : TypeDefinition, IEquatable<SimpleType?>
     {
         public static SimpleType Void { get; } = new SimpleType(SimpleTypeId.Void, false, 0);
         public static SimpleType Bool { get; } = new SimpleType(SimpleTypeId.Bool, false, 1);
@@ -24,7 +24,7 @@ namespace Cle.Common.TypeSystem
             SizeInBytes = size;
         }
 
-        public bool Equals(SimpleType other)
+        public bool Equals(SimpleType? other)
         {
             return _typeId == other?._typeId;
         }
@@ -46,12 +46,12 @@ namespace Cle.Common.TypeSystem
 
         public override int SizeInBytes { get; }
 
-        public override bool Equals(TypeDefinition other)
+        public override bool Equals(TypeDefinition? other)
         {
             return other is SimpleType simpleType && Equals(simpleType);
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is SimpleType simpleType && Equals(simpleType);
         }

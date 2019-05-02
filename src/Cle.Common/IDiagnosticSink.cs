@@ -13,11 +13,11 @@
         /// <summary>
         /// Adds the specified diagnostic at given location with actual (unexpected) value.
         /// </summary>
-        void Add(DiagnosticCode code, TextPosition position, string actual);
+        void Add(DiagnosticCode code, TextPosition position, string? actual);
 
         /// <summary>
         /// Adds the specified diagnostic at given location with actual and expected value.
         /// </summary>
-        void Add(DiagnosticCode code, TextPosition position, string actual, string expected);
+        void Add(DiagnosticCode code, TextPosition position, string? actual, string? expected);
     }
 }

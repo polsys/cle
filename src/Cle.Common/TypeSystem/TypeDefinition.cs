@@ -7,7 +7,7 @@ namespace Cle.Common.TypeSystem
     /// Each type is defined exactly once and the <see cref="Equals(TypeDefinition)"/> method
     /// can be used for comparing types.
     /// </summary>
-    public abstract class TypeDefinition : IEquatable<TypeDefinition>
+    public abstract class TypeDefinition : IEquatable<TypeDefinition?>
     {
         /// <summary>
         /// Gets the fully qualified name of this type.
@@ -19,8 +19,8 @@ namespace Cle.Common.TypeSystem
         /// </summary>
         public abstract int SizeInBytes { get; }
 
-        public abstract bool Equals(TypeDefinition other);
-        public abstract override bool Equals(object obj);
+        public abstract bool Equals(TypeDefinition? other);
+        public abstract override bool Equals(object? obj);
         public abstract override int GetHashCode();
     }
 }

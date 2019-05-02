@@ -1,6 +1,4 @@
-﻿using JetBrains.Annotations;
-
-namespace Cle.Common
+﻿namespace Cle.Common
 {
     /// <summary>
     /// Represents a compilation diagnostic code along with source position and additional information.
@@ -16,15 +14,13 @@ namespace Cle.Common
         /// The content of this value depends on the diagnostic code.
         /// This may be null.
         /// </summary>
-        [CanBeNull]
-        public string Actual { get; }
+        public string? Actual { get; }
 
         /// <summary>
         /// The content of this value depends on the diagnostic code.
         /// This may be null.
         /// </summary>
-        [CanBeNull]
-        public string Expected { get; }
+        public string? Expected { get; }
 
         /// <summary>
         /// Gets whether the diagnostic code is classified as an error or not.
@@ -41,14 +37,13 @@ namespace Cle.Common
 
         /// <summary>
         /// Gets the name of the file where the diagnostic occurred.
+        /// This may be null.
         /// </summary>
-        [CanBeNull]
-        public string Filename { get; }
+        public string? Filename { get; }
 
         /// <summary>
         /// Gets the name of the module containing the source file.
         /// </summary>
-        [NotNull]
         public string Module { get; }
 
         /// <summary>
@@ -56,13 +51,13 @@ namespace Cle.Common
         /// </summary>
         /// <param name="code">The diagnostic code.</param>
         /// <param name="position">The position within the source file.</param>
-        /// <param name="filename">The source file name.</param>
+        /// <param name="filename">The source file name (optional if no associated file).</param>
         /// <param name="moduleName">The module name.</param>
         /// <param name="actual">Optional actual value encountered.</param>
         /// <param name="expected">Optional expected value.</param>
         public Diagnostic(DiagnosticCode code, TextPosition position,
-            [CanBeNull] string filename, [NotNull] string moduleName,
-            [CanBeNull] string actual, [CanBeNull] string expected)
+            string? filename, string moduleName,
+            string? actual, string? expected)
         {
             Code = code;
             Position = position;
