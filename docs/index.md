@@ -2,6 +2,7 @@ Clé is a C-like programming language compiled to optimized native code.
 As a hobby/learning project of [@polsys](https://github.com/polsys), it is purposefully feature-poor, but at the same time aims to avoid typical footguns of the C world.
 If you know C#, you will be immediately familiar; the language is also inspired by Rust.
 
+<a class="button" href="https://github.com/polsys/cle/releases">Download</a>
 
 ## Language specification
 This is an almost rigorous reference for the language.
