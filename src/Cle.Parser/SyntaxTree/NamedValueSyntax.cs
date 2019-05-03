@@ -1,5 +1,4 @@
 ﻿using Cle.Common;
-using JetBrains.Annotations;
 
 namespace Cle.Parser.SyntaxTree
 {
@@ -11,10 +10,9 @@ namespace Cle.Parser.SyntaxTree
         /// <summary>
         /// Gets the referenced variable/constant name.
         /// </summary>
-        [NotNull]
         public string Name { get; }
 
-        public NamedValueSyntax([NotNull] string name, TextPosition position)
+        public NamedValueSyntax(string name, TextPosition position)
             : base(position)
         {
             Name = name;

@@ -1,5 +1,4 @@
 ﻿using Cle.Common;
-using JetBrains.Annotations;
 
 namespace Cle.Parser.SyntaxTree
 {
@@ -11,18 +10,16 @@ namespace Cle.Parser.SyntaxTree
         /// <summary>
         /// Gets the name of the variable.
         /// </summary>
-        [NotNull]
         public string Variable { get; }
 
         /// <summary>
         /// Gets the new value of the variable.
         /// </summary>
-        [NotNull]
         public ExpressionSyntax Value { get; }
 
         public AssignmentSyntax(
-            [NotNull] string variable,
-            [NotNull] ExpressionSyntax value,
+            string variable,
+            ExpressionSyntax value,
             TextPosition position)
             : base(position)
         {

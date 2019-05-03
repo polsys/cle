@@ -1,5 +1,4 @@
 ﻿using Cle.Common;
-using JetBrains.Annotations;
 
 namespace Cle.Parser.SyntaxTree
 {
@@ -12,11 +11,10 @@ namespace Cle.Parser.SyntaxTree
         /// Gets the expression that is returned.
         /// Null for void returns.
         /// </summary>
-        [CanBeNull]
-        public ExpressionSyntax ResultExpression { get; }
+        public ExpressionSyntax? ResultExpression { get; }
 
         public ReturnStatementSyntax(
-            [CanBeNull] ExpressionSyntax expression,
+            ExpressionSyntax? expression,
             TextPosition position)
             : base(position)
         {

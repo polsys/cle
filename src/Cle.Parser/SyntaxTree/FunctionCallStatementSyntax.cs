@@ -1,5 +1,4 @@
 ﻿using Cle.Common;
-using JetBrains.Annotations;
 
 namespace Cle.Parser.SyntaxTree
 {
@@ -12,11 +11,10 @@ namespace Cle.Parser.SyntaxTree
         /// <summary>
         /// Gets the proper function call expression.
         /// </summary>
-        [NotNull]
         public FunctionCallSyntax Call { get; }
 
         public FunctionCallStatementSyntax(
-            [NotNull] FunctionCallSyntax call,
+            FunctionCallSyntax call,
             TextPosition position)
             : base(position)
         {

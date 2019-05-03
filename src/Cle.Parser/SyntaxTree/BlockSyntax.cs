@@ -1,6 +1,5 @@
 ﻿using System.Collections.Immutable;
 using Cle.Common;
-using JetBrains.Annotations;
 
 namespace Cle.Parser.SyntaxTree
 {
@@ -12,11 +11,10 @@ namespace Cle.Parser.SyntaxTree
         /// <summary>
         /// Gets the ordered list of statements within this block.
         /// </summary>
-        [NotNull, ItemNotNull]
         public ImmutableList<StatementSyntax> Statements { get; }
 
         public BlockSyntax(
-            [NotNull, ItemNotNull] ImmutableList<StatementSyntax> statements,
+            ImmutableList<StatementSyntax> statements,
             TextPosition position)
             : base(position)
         {

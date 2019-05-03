@@ -1,7 +1,6 @@
 using System;
 using System.Text;
 using Cle.Common;
-using JetBrains.Annotations;
 using NUnit.Framework;
 
 namespace Cle.Parser.UnitTests
@@ -254,7 +253,7 @@ namespace//Look ma, no spaces!
         /// <summary>
         /// Converts a UTF-16 encoded source code string into a view of a UTF-8 array.
         /// </summary>
-        private static Memory<byte> StringToMemory([NotNull] string source)
+        private static Memory<byte> StringToMemory(string source)
         {
             return Encoding.UTF8.GetBytes(source).AsMemory();
         }
@@ -262,7 +261,6 @@ namespace//Look ma, no spaces!
         /// <summary>
         /// Converts a UTF-8 encoded span into a UTF-16 string.
         /// </summary>
-        [NotNull]
         private static string Utf8ToString(ReadOnlySpan<byte> span)
         {
             return Encoding.UTF8.GetString(span);

@@ -22,7 +22,7 @@ namespace Cle.Parser.UnitTests.SyntaxParserTests
             var syntaxTree = ParseSource(source, out _);
             
             Assert.That(syntaxTree, Is.Not.Null);
-            Assert.That(syntaxTree.Filename, Is.EqualTo("test.cle")); // Default of ParseSource(...)
+            Assert.That(syntaxTree!.Filename, Is.EqualTo("test.cle")); // Default of ParseSource(...)
         }
     }
 }

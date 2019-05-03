@@ -1,6 +1,5 @@
 using Cle.Common;
 using Cle.Parser.SyntaxTree;
-using JetBrains.Annotations;
 using NUnit.Framework;
 
 namespace Cle.Parser.UnitTests.SyntaxParserTests
@@ -21,7 +20,7 @@ namespace Cle.Parser.UnitTests.SyntaxParserTests
             Assert.That(returnValue, Is.True);
             Assert.That(expression, Is.Not.Null);
             Assert.That(expression, Is.InstanceOf<IntegerLiteralSyntax>());
-            Assert.That(((IntegerLiteralSyntax)expression).Value, Is.EqualTo(expected));
+            Assert.That(((IntegerLiteralSyntax)expression!).Value, Is.EqualTo(expected));
         }
 
         [TestCase("0xDEAD")]
@@ -50,7 +49,7 @@ namespace Cle.Parser.UnitTests.SyntaxParserTests
             Assert.That(returnValue, Is.True);
             Assert.That(expression, Is.Not.Null);
             Assert.That(expression, Is.InstanceOf<BooleanLiteralSyntax>());
-            Assert.That(((BooleanLiteralSyntax)expression).Value, Is.EqualTo(expected));
+            Assert.That(((BooleanLiteralSyntax)expression!).Value, Is.EqualTo(expected));
         }
 
         [TestCase("i")]
@@ -65,7 +64,7 @@ namespace Cle.Parser.UnitTests.SyntaxParserTests
             Assert.That(returnValue, Is.True);
             Assert.That(expression, Is.Not.Null);
 
-            var reference = (NamedValueSyntax)expression;
+            var reference = (NamedValueSyntax)expression!;
             Assert.That(reference.Name, Is.EqualTo(name));
         }
 
@@ -95,7 +94,7 @@ namespace Cle.Parser.UnitTests.SyntaxParserTests
             Assert.That(returnValue, Is.True);
             Assert.That(expression, Is.Not.Null);
 
-            var unary = (UnaryExpressionSyntax)expression;
+            var unary = (UnaryExpressionSyntax)expression!;
             Assert.That(unary.Operation, Is.EqualTo(expectedOp));
             Assert.That(unary.InnerExpression, Is.InstanceOf<IntegerLiteralSyntax>());
             Assert.That(((IntegerLiteralSyntax)unary.InnerExpression).Value, Is.EqualTo(123));
@@ -112,7 +111,7 @@ namespace Cle.Parser.UnitTests.SyntaxParserTests
             Assert.That(returnValue, Is.True);
             Assert.That(expression, Is.Not.Null);
 
-            var unary = (UnaryExpressionSyntax)expression;
+            var unary = (UnaryExpressionSyntax)expression!;
             Assert.That(unary.Operation, Is.EqualTo(expectedOp));
             Assert.That(unary.InnerExpression, Is.InstanceOf<BooleanLiteralSyntax>());
             Assert.That(((BooleanLiteralSyntax)unary.InnerExpression).Value, Is.EqualTo(true));
@@ -129,7 +128,7 @@ namespace Cle.Parser.UnitTests.SyntaxParserTests
             Assert.That(returnValue, Is.True);
             Assert.That(expression, Is.Not.Null);
 
-            var unary = (UnaryExpressionSyntax)expression;
+            var unary = (UnaryExpressionSyntax)expression!;
             Assert.That(unary.Operation, Is.EqualTo(UnaryOperation.Minus));
 
             var innerUnary = (UnaryExpressionSyntax)unary.InnerExpression;
@@ -151,7 +150,7 @@ namespace Cle.Parser.UnitTests.SyntaxParserTests
         [TestCase("1 == 2 == 3", BinaryOperation.Equal)]
         [TestCase("(1 + 2 + 3)", BinaryOperation.Plus)] // Parens outside the expression have no effect
         [TestCase("(1 ^ 2 ^ 3)", BinaryOperation.Xor)]
-        public void Binary_operation_is_left_associative([NotNull] string source, BinaryOperation operation)
+        public void Binary_operation_is_left_associative(string source, BinaryOperation operation)
         {
             var parser = GetParserInstance(source, out var diagnostics);
 
@@ -161,7 +160,7 @@ namespace Cle.Parser.UnitTests.SyntaxParserTests
             Assert.That(returnValue, Is.True);
             Assert.That(expression, Is.Not.Null);
 
-            var binary = (BinaryExpressionSyntax)expression;
+            var binary = (BinaryExpressionSyntax)expression!;
             Assert.That(binary.Operation, Is.EqualTo(operation));
 
             var left = (BinaryExpressionSyntax)binary.Left;
@@ -186,7 +185,7 @@ namespace Cle.Parser.UnitTests.SyntaxParserTests
             Assert.That(returnValue, Is.True);
             Assert.That(expression, Is.Not.Null);
 
-            var binary = (BinaryExpressionSyntax)expression;
+            var binary = (BinaryExpressionSyntax)expression!;
             Assert.That(binary.Operation, Is.EqualTo(BinaryOperation.Plus));
 
             var left = (BinaryExpressionSyntax)binary.Left;
@@ -211,7 +210,7 @@ namespace Cle.Parser.UnitTests.SyntaxParserTests
             Assert.That(returnValue, Is.True);
             Assert.That(expression, Is.Not.Null);
 
-            var binary = (BinaryExpressionSyntax)expression;
+            var binary = (BinaryExpressionSyntax)expression!;
             Assert.That(binary.Operation, Is.EqualTo(BinaryOperation.Plus));
 
             Assert.That(binary.Left, Is.InstanceOf<IntegerLiteralSyntax>());
@@ -236,7 +235,7 @@ namespace Cle.Parser.UnitTests.SyntaxParserTests
             Assert.That(returnValue, Is.True);
             Assert.That(expression, Is.Not.Null);
 
-            var binary = (BinaryExpressionSyntax)expression;
+            var binary = (BinaryExpressionSyntax)expression!;
             Assert.That(binary.Operation, Is.EqualTo(BinaryOperation.Minus));
 
             Assert.That(binary.Left, Is.InstanceOf<IntegerLiteralSyntax>());
@@ -261,7 +260,7 @@ namespace Cle.Parser.UnitTests.SyntaxParserTests
             Assert.That(returnValue, Is.True);
             Assert.That(expression, Is.Not.Null);
 
-            var binary = (BinaryExpressionSyntax)expression;
+            var binary = (BinaryExpressionSyntax)expression!;
             Assert.That(binary.Operation, Is.EqualTo(BinaryOperation.Minus));
 
             Assert.That(binary.Left, Is.InstanceOf<IntegerLiteralSyntax>());
@@ -284,7 +283,7 @@ namespace Cle.Parser.UnitTests.SyntaxParserTests
             Assert.That(returnValue, Is.True);
             Assert.That(expression, Is.Not.Null);
 
-            var binary = (BinaryExpressionSyntax)expression;
+            var binary = (BinaryExpressionSyntax)expression!;
             Assert.That(binary.Operation, Is.EqualTo(BinaryOperation.Plus));
 
             Assert.That(binary.Left, Is.InstanceOf<NamedValueSyntax>());
@@ -307,7 +306,7 @@ namespace Cle.Parser.UnitTests.SyntaxParserTests
             Assert.That(returnValue, Is.True);
             Assert.That(expression, Is.Not.Null);
 
-            var binary = (BinaryExpressionSyntax)expression;
+            var binary = (BinaryExpressionSyntax)expression!;
             Assert.That(binary.Operation, Is.EqualTo(BinaryOperation.Minus));
 
             Assert.That(binary.Left, Is.InstanceOf<IntegerLiteralSyntax>());
@@ -333,7 +332,7 @@ namespace Cle.Parser.UnitTests.SyntaxParserTests
             Assert.That(returnValue, Is.True);
             Assert.That(expression, Is.Not.Null);
 
-            var binary = (BinaryExpressionSyntax)expression;
+            var binary = (BinaryExpressionSyntax)expression!;
             Assert.That(binary.Operation, Is.EqualTo(BinaryOperation.Times));
 
             var left = (BinaryExpressionSyntax)binary.Left;
@@ -358,7 +357,7 @@ namespace Cle.Parser.UnitTests.SyntaxParserTests
             Assert.That(returnValue, Is.True);
             Assert.That(expression, Is.Not.Null);
 
-            var binary = (BinaryExpressionSyntax)expression;
+            var binary = (BinaryExpressionSyntax)expression!;
             Assert.That(binary.Operation, Is.EqualTo(BinaryOperation.Plus));
 
             Assert.That(binary.Left, Is.InstanceOf<IntegerLiteralSyntax>());
@@ -388,7 +387,7 @@ namespace Cle.Parser.UnitTests.SyntaxParserTests
             Assert.That(returnValue, Is.True);
             Assert.That(expression, Is.Not.Null);
 
-            var binary = (BinaryExpressionSyntax)expression;
+            var binary = (BinaryExpressionSyntax)expression!;
             Assert.That(binary.Operation, Is.EqualTo(expected));
 
             Assert.That(binary.Left, Is.InstanceOf<BinaryExpressionSyntax>());
@@ -409,7 +408,7 @@ namespace Cle.Parser.UnitTests.SyntaxParserTests
             Assert.That(returnValue, Is.True);
             Assert.That(expression, Is.Not.Null);
 
-            var binary = (BinaryExpressionSyntax)expression;
+            var binary = (BinaryExpressionSyntax)expression!;
             Assert.That(binary.Operation, Is.EqualTo(BinaryOperation.ShortCircuitAnd));
 
             Assert.That(binary.Left, Is.InstanceOf<BinaryExpressionSyntax>());
@@ -430,7 +429,7 @@ namespace Cle.Parser.UnitTests.SyntaxParserTests
             Assert.That(returnValue, Is.True);
             Assert.That(expression, Is.Not.Null);
 
-            var binary = (BinaryExpressionSyntax)expression;
+            var binary = (BinaryExpressionSyntax)expression!;
             Assert.That(binary.Operation, Is.EqualTo(BinaryOperation.ShiftLeft));
 
             Assert.That(binary.Left, Is.InstanceOf<BinaryExpressionSyntax>());
@@ -522,7 +521,7 @@ namespace Cle.Parser.UnitTests.SyntaxParserTests
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             Assert.That(expression, Is.Not.Null);
 
-            var call = (FunctionCallSyntax)expression;
+            var call = (FunctionCallSyntax)expression!;
             Assert.That(call.Function, Is.EqualTo("Namespace::Function"));
             Assert.That(call.Parameters, Is.Empty);
         }
@@ -536,7 +535,7 @@ namespace Cle.Parser.UnitTests.SyntaxParserTests
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             Assert.That(expression, Is.Not.Null);
 
-            var call = (FunctionCallSyntax)expression;
+            var call = (FunctionCallSyntax)expression!;
             Assert.That(call.Function, Is.EqualTo("Fun"));
             Assert.That(call.Parameters, Has.Exactly(2).Items);
             Assert.That(call.Parameters[0], Is.InstanceOf<IntegerLiteralSyntax>());

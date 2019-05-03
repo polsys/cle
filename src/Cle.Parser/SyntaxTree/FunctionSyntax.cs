@@ -1,6 +1,5 @@
 ﻿using System.Collections.Immutable;
 using Cle.Common;
-using JetBrains.Annotations;
 
 namespace Cle.Parser.SyntaxTree
 {
@@ -13,7 +12,6 @@ namespace Cle.Parser.SyntaxTree
         /// Gets the simple name of this function.
         /// The name is guaranteed to be syntactically valid, but it may be semantically invalid.
         /// </summary>
-        [NotNull]
         public string Name { get; }
 
         /// <summary>
@@ -25,37 +23,31 @@ namespace Cle.Parser.SyntaxTree
         /// Gets the declared return type of this function.
         /// The type name may be full or simple and the type might not exist.
         /// </summary>
-        [NotNull]
         public string ReturnTypeName { get; }
 
         /// <summary>
         /// Gets the parameter list of this function.
         /// </summary>
-        [NotNull]
-        [ItemNotNull]
         public ImmutableList<ParameterDeclarationSyntax> Parameters { get; }
 
         /// <summary>
         /// Gets the list of attributes applied to this function.
         /// The list may be empty.
         /// </summary>
-        [NotNull]
-        [ItemNotNull]
         public ImmutableList<AttributeSyntax> Attributes { get; }
 
         /// <summary>
         /// Gets the code block of this function.
         /// </summary>
-        [NotNull]
         public BlockSyntax Block { get; }
 
         public FunctionSyntax(
-            [NotNull] string name,
-            [NotNull] string returnType,
+            string name,
+            string returnType,
             Visibility visibility,
-            [NotNull, ItemNotNull] ImmutableList<ParameterDeclarationSyntax> parameters,
-            [NotNull, ItemNotNull] ImmutableList<AttributeSyntax> attributes,
-            [NotNull] BlockSyntax block,
+            ImmutableList<ParameterDeclarationSyntax> parameters,
+            ImmutableList<AttributeSyntax> attributes,
+            BlockSyntax block,
             TextPosition position)
             : base(position)
         {

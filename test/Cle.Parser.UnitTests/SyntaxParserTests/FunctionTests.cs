@@ -135,7 +135,7 @@ internal int32 OneHundred()
             Assert.That(returnStatement.Position.ByteInLine, Is.EqualTo(4));
             Assert.That(returnStatement.ResultExpression, Is.Not.Null);
             Assert.That(returnStatement.ResultExpression, Is.InstanceOf<IntegerLiteralSyntax>());
-            Assert.That(((IntegerLiteralSyntax)returnStatement.ResultExpression).Value, Is.EqualTo(100));
+            Assert.That(((IntegerLiteralSyntax)returnStatement.ResultExpression!).Value, Is.EqualTo(100));
         }
 
         [Test]
@@ -159,7 +159,7 @@ internal int32 OneHundred()
             Assert.That(returnStatement.Position.ByteInLine, Is.EqualTo(4));
             Assert.That(returnStatement.ResultExpression, Is.Not.Null);
             Assert.That(returnStatement.ResultExpression, Is.InstanceOf<BinaryExpressionSyntax>());
-            Assert.That(((BinaryExpressionSyntax)returnStatement.ResultExpression).Operation,
+            Assert.That(((BinaryExpressionSyntax)returnStatement.ResultExpression!).Operation,
                 Is.EqualTo(BinaryOperation.Times));
         }
 
