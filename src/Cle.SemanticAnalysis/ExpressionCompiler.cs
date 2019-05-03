@@ -3,7 +3,6 @@ using Cle.Common;
 using Cle.Common.TypeSystem;
 using Cle.Parser.SyntaxTree;
 using Cle.SemanticAnalysis.IR;
-using JetBrains.Annotations;
 
 namespace Cle.SemanticAnalysis
 {
@@ -26,12 +25,12 @@ namespace Cle.SemanticAnalysis
         /// <param name="nameResolver">The resolver for variable and method names.</param>
         /// <param name="diagnostics">Receiver for possible diagnostics.</param>
         public static int TryCompileExpression(
-            [NotNull] ExpressionSyntax syntax,
-            [CanBeNull] TypeDefinition expectedType,
-            [NotNull] CompiledMethod method,
-            [NotNull] BasicBlockBuilder builder,
-            [NotNull] INameResolver nameResolver,
-            [NotNull] IDiagnosticSink diagnostics)
+            ExpressionSyntax syntax,
+            TypeDefinition? expectedType,
+            CompiledMethod method,
+            BasicBlockBuilder builder,
+            INameResolver nameResolver,
+            IDiagnosticSink diagnostics)
         {
             // Compile the expression
             if (!InternalTryCompileExpression(syntax, method, builder, nameResolver, diagnostics, out var value))
@@ -65,11 +64,11 @@ namespace Cle.SemanticAnalysis
         }
 
         private static bool InternalTryCompileExpression(
-            [NotNull] ExpressionSyntax syntax,
-            [NotNull] CompiledMethod method,
-            [NotNull] BasicBlockBuilder builder,
-            [NotNull] INameResolver nameResolver,
-            [NotNull] IDiagnosticSink diagnostics,
+            ExpressionSyntax syntax,
+            CompiledMethod method,
+            BasicBlockBuilder builder,
+            INameResolver nameResolver,
+            IDiagnosticSink diagnostics,
             out Temporary value)
         {
             value = default;

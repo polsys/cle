@@ -19,7 +19,7 @@ public void DoNothing() {
             Assert.That(compiledMethod, Is.Not.Null);
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             
-            AssertDisassembly(compiledMethod, @"
+            AssertDisassembly(compiledMethod!, @"
 ; #0   int32
 ; #1   void
 BB_0:
@@ -42,7 +42,7 @@ public void DoNothing() {
             Assert.That(compiledMethod, Is.Not.Null);
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             
-            AssertDisassembly(compiledMethod, @"
+            AssertDisassembly(compiledMethod!, @"
 ; #0   int32
 ; #1   int32
 ; #2   void
@@ -68,7 +68,7 @@ public void DoNothing() {
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             
             // void will be used for the initial value
-            AssertDisassembly(compiledMethod, @"
+            AssertDisassembly(compiledMethod!, @"
 ; #0   int32
 ; #1   int32
 ; #2   void
@@ -217,7 +217,7 @@ public void NameAppearsTwice() {
             Assert.That(compiledMethod, Is.Not.Null);
             Assert.That(diagnostics.Diagnostics, Is.Empty);
 
-            AssertDisassembly(compiledMethod, @"
+            AssertDisassembly(compiledMethod!, @"
 ; #0   int32
 ; #1   int32
 ; #2   void
@@ -246,7 +246,7 @@ public void NameAppearsTwice() {
             Assert.That(compiledMethod, Is.Not.Null);
             Assert.That(diagnostics.Diagnostics, Is.Empty);
 
-            AssertDisassembly(compiledMethod, @"
+            AssertDisassembly(compiledMethod!, @"
 ; #0   int32
 ; #1   int32
 ; #2   void
@@ -269,7 +269,7 @@ public int32 Params(int32 first, bool second) {
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             Assert.That(compiledMethod, Is.Not.Null);
 
-            AssertDisassembly(compiledMethod, @"
+            AssertDisassembly(compiledMethod!, @"
 ; #0   int32 param
 ; #1   bool param
 ; #2   int32

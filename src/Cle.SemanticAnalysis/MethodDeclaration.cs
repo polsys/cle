@@ -1,7 +1,6 @@
 ﻿using System.Collections.Immutable;
 using Cle.Common;
 using Cle.Common.TypeSystem;
-using JetBrains.Annotations;
 
 namespace Cle.SemanticAnalysis
 {
@@ -23,13 +22,11 @@ namespace Cle.SemanticAnalysis
         /// <summary>
         /// Gets the return type of this method.
         /// </summary>
-        [NotNull]
         public TypeDefinition ReturnType { get; }
 
         /// <summary>
         /// Gets the types of the parameters to this method.
         /// </summary>
-        [NotNull]
         public ImmutableList<TypeDefinition> ParameterTypes { get; }
 
         /// <summary>
@@ -41,14 +38,12 @@ namespace Cle.SemanticAnalysis
         /// Gets the full name of this method.
         /// This is only used for debugging purposes.
         /// </summary>
-        [NotNull]
         public string FullName { get; }
 
         /// <summary>
         /// Gets the name of the file this method is defined in.
         /// This is used for visibility resolution of private methods.
         /// </summary>
-        [NotNull]
         public string DefiningFilename { get; }
 
         /// <summary>
@@ -58,11 +53,11 @@ namespace Cle.SemanticAnalysis
 
         public MethodDeclaration(
             int bodyIndex,
-            [NotNull] TypeDefinition returnType, 
-            [NotNull, ItemNotNull] ImmutableList<TypeDefinition> parameterTypes,
+            TypeDefinition returnType, 
+            ImmutableList<TypeDefinition> parameterTypes,
             Visibility visibility,
-            [NotNull] string fullName,
-            [NotNull] string definingFilename,
+            string fullName,
+            string definingFilename,
             TextPosition sourcePosition,
             bool isEntryPoint)
         {

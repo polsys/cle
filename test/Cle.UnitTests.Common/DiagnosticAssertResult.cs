@@ -1,5 +1,4 @@
 ﻿using Cle.Common;
-using JetBrains.Annotations;
 using NUnit.Framework;
 
 namespace Cle.UnitTests.Common
@@ -9,10 +8,9 @@ namespace Cle.UnitTests.Common
     /// </summary>
     public class DiagnosticAssertResult
     {
-        [NotNull]
         private readonly Diagnostic _diagnostic;
 
-        public DiagnosticAssertResult([NotNull] Diagnostic diagnostic)
+        public DiagnosticAssertResult(Diagnostic diagnostic)
         {
             _diagnostic = diagnostic;
         }
@@ -21,7 +19,7 @@ namespace Cle.UnitTests.Common
         /// Asserts that <see cref="Diagnostic.Actual"/> for this diagnostic
         /// is equal to <paramref name="expectedActual"/>.
         /// </summary>
-        public DiagnosticAssertResult WithActual([CanBeNull] string expectedActual)
+        public DiagnosticAssertResult WithActual(string? expectedActual)
         {
             Assert.That(_diagnostic.Actual, Is.EqualTo(expectedActual));
 
@@ -42,7 +40,7 @@ namespace Cle.UnitTests.Common
         /// Asserts that <see cref="Diagnostic.Expected"/> for this diagnostic
         /// is equal to <paramref name="expectedExpected"/>.
         /// </summary>
-        public DiagnosticAssertResult WithExpected([CanBeNull] string expectedExpected)
+        public DiagnosticAssertResult WithExpected(string? expectedExpected)
         {
             Assert.That(_diagnostic.Expected, Is.EqualTo(expectedExpected));
 

@@ -23,7 +23,7 @@ namespace Cle.SemanticAnalysis.UnitTests.MethodCompilerTests
 
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             Assert.That(result, Is.Not.Null);
-            Assert.That(result.IsEntryPoint, Is.False);
+            Assert.That(result!.IsEntryPoint, Is.False);
             Assert.That(result.ReturnType, Is.EqualTo(SimpleType.Bool));
             Assert.That(result.Visibility, Is.EqualTo(Visibility.Public));
             Assert.That(result.FullName, Is.EqualTo("Namespace::MethodName"));
@@ -46,7 +46,7 @@ namespace Cle.SemanticAnalysis.UnitTests.MethodCompilerTests
 
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             Assert.That(result, Is.Not.Null);
-            Assert.That(result.IsEntryPoint, Is.False);
+            Assert.That(result!.IsEntryPoint, Is.False);
             Assert.That(result.ReturnType, Is.EqualTo(SimpleType.Int32));
             Assert.That(result.Visibility, Is.EqualTo(Visibility.Private));
             Assert.That(result.FullName, Is.EqualTo("long::ns::MethodName"));
@@ -87,7 +87,7 @@ namespace Cle.SemanticAnalysis.UnitTests.MethodCompilerTests
 
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             Assert.That(result, Is.Not.Null);
-            Assert.That(result.ParameterTypes, Has.Exactly(2).Items);
+            Assert.That(result!.ParameterTypes, Has.Exactly(2).Items);
             Assert.That(result.ParameterTypes[0], Is.EqualTo(SimpleType.Int32));
             Assert.That(result.ParameterTypes[1], Is.EqualTo(SimpleType.Bool));
         }
@@ -166,7 +166,7 @@ namespace Cle.SemanticAnalysis.UnitTests.MethodCompilerTests
 
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             Assert.That(result, Is.Not.Null);
-            Assert.That(result.IsEntryPoint, Is.True);
+            Assert.That(result!.IsEntryPoint, Is.True);
         }
 
         [Test]

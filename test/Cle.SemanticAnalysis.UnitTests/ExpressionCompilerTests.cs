@@ -661,7 +661,7 @@ namespace Cle.SemanticAnalysis.UnitTests
 
             Assert.That(expressionSyntax, Is.Not.Null);
             Assert.That(diagnostics.Diagnostics, Is.Empty);
-            return expressionSyntax;
+            return expressionSyntax!;
         }
 
         private class TestingResolver : INameResolver

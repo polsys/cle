@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using JetBrains.Annotations;
 
 namespace Cle.SemanticAnalysis
 {
@@ -15,10 +14,9 @@ namespace Cle.SemanticAnalysis
         /// <param name="visibleNamespaces">Namespaces available for searching the method.</param>
         /// <param name="sourceFile">The current source file, used for matching private methods.</param>
         // TODO: Specifying visible modules
-        [NotNull, ItemNotNull]
         IReadOnlyList<MethodDeclaration> GetMethodDeclarations(
-            [NotNull] string methodName,
-            [NotNull, ItemNotNull] IReadOnlyList<string> visibleNamespaces,
-            [NotNull] string sourceFile);
+            string methodName,
+            IReadOnlyList<string> visibleNamespaces,
+            string sourceFile);
     }
 }

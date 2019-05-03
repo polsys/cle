@@ -2,11 +2,11 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using Cle.Common;
 using Cle.Common.TypeSystem;
 using Cle.Parser.SyntaxTree;
 using Cle.SemanticAnalysis.IR;
-using JetBrains.Annotations;
 
 namespace Cle.SemanticAnalysis
 {
@@ -18,18 +18,18 @@ namespace Cle.SemanticAnalysis
     public class MethodCompiler : INameResolver
     {
         // These fields never change during the lifetime of the instance
-        [NotNull] private readonly IDiagnosticSink _diagnostics;
-        [NotNull] private readonly IDeclarationProvider _declarationProvider;
+        private readonly IDiagnosticSink _diagnostics;
+        private readonly IDeclarationProvider _declarationProvider;
 
         // These fields hold information for the current method and are reset by CompileBody()
-        [CanBeNull] private FunctionSyntax _syntaxTree;
-        [CanBeNull] private MethodDeclaration _declaration;
-        [CanBeNull] private string _definingNamespace;
-        [CanBeNull] private string _sourceFilename;
-        [NotNull] private readonly ScopedVariableMap _variableMap;
+        private FunctionSyntax? _syntaxTree;
+        private MethodDeclaration? _declaration;
+        private string? _definingNamespace;
+        private string? _sourceFilename;
+        private readonly ScopedVariableMap _variableMap;
 
         // These fields are reset by InternalCompile()
-        [CanBeNull] private CompiledMethod _methodInProgress;
+        private CompiledMethod? _methodInProgress;
 
         /// <summary>
         /// Verifies and creates type information for the method.
@@ -42,14 +42,13 @@ namespace Cle.SemanticAnalysis
         /// <param name="methodBodyIndex">The index associated with the compiled method body.</param>
         /// <param name="declarationProvider">The type provider to use for resolving custom types.</param>
         /// <param name="diagnosticSink">The receiver for any semantic errors or warnings.</param>
-        [CanBeNull]
-        public static MethodDeclaration CompileDeclaration(
-            [NotNull] FunctionSyntax syntax,
-            [NotNull] string definingNamespace,
-            [NotNull] string definingFilename,
+        public static MethodDeclaration? CompileDeclaration(
+            FunctionSyntax syntax,
+            string definingNamespace,
+            string definingFilename,
             int methodBodyIndex,
-            [NotNull] IDeclarationProvider declarationProvider,
-            [NotNull] IDiagnosticSink diagnosticSink)
+            IDeclarationProvider declarationProvider,
+            IDiagnosticSink diagnosticSink)
         {
             // Resolve the return type
             if (!TryResolveType(syntax.ReturnTypeName, diagnosticSink, syntax.Position, out var returnType))
@@ -109,8 +108,8 @@ namespace Cle.SemanticAnalysis
         /// <param name="declarationProvider">The provider for method and type declarations.</param>
         /// <param name="diagnosticSink">The receiver for any semantic errors or warnings.</param>
         public MethodCompiler(
-            [NotNull] IDeclarationProvider declarationProvider,
-            [NotNull] IDiagnosticSink diagnosticSink)
+            IDeclarationProvider declarationProvider,
+            IDiagnosticSink diagnosticSink)
         {
             _declarationProvider = declarationProvider;
             _diagnostics = diagnosticSink;
@@ -125,12 +124,11 @@ namespace Cle.SemanticAnalysis
         /// <param name="declaration">The method declaration.</param>
         /// <param name="definingNamespace">The namespace where the method is defined.</param>
         /// <param name="sourceFilename">The name of the file where the method is defined.</param>
-        [CanBeNull]
-        public CompiledMethod CompileBody(
-            [NotNull] FunctionSyntax syntaxTree,
-            [NotNull] MethodDeclaration declaration,
-            [NotNull] string definingNamespace,
-            [NotNull] string sourceFilename)
+        public CompiledMethod? CompileBody(
+            FunctionSyntax syntaxTree,
+            MethodDeclaration declaration,
+            string definingNamespace,
+            string sourceFilename)
         {
             // Reset most per-method fields
             _syntaxTree = syntaxTree;
@@ -142,8 +140,7 @@ namespace Cle.SemanticAnalysis
             return InternalCompile();
         }
 
-        [CanBeNull]
-        private CompiledMethod InternalCompile()
+        private CompiledMethod? InternalCompile()
         {
             Debug.Assert(_syntaxTree != null);
             Debug.Assert(_sourceFilename != null);
@@ -198,8 +195,8 @@ namespace Cle.SemanticAnalysis
             return _methodInProgress;
         }
 
-        private bool TryCompileBlock([NotNull] BlockSyntax block, [NotNull] BasicBlockBuilder builder,
-            [NotNull] out BasicBlockBuilder newBuilder, out bool returnGuaranteed)
+        private bool TryCompileBlock(BlockSyntax block, BasicBlockBuilder builder,
+            out BasicBlockBuilder newBuilder, out bool returnGuaranteed)
         {
             // Some statements may create new basic blocks, but the default is that they do not
             newBuilder = builder;
@@ -271,7 +268,7 @@ namespace Cle.SemanticAnalysis
             return true;
         }
 
-        private bool TryCompileAssignment([NotNull] AssignmentSyntax assignment, [NotNull] BasicBlockBuilder builder)
+        private bool TryCompileAssignment(AssignmentSyntax assignment, BasicBlockBuilder builder)
         {
             Debug.Assert(_methodInProgress != null);
 
@@ -295,8 +292,8 @@ namespace Cle.SemanticAnalysis
             return true;
         }
 
-        private bool TryCompileIf([NotNull] IfStatementSyntax ifSyntax, [NotNull] BasicBlockBuilder builder,
-            [NotNull] out BasicBlockBuilder newBuilder, out bool returnGuaranteed)
+        private bool TryCompileIf(IfStatementSyntax ifSyntax, BasicBlockBuilder builder,
+            out BasicBlockBuilder newBuilder, out bool returnGuaranteed)
         {
             newBuilder = builder; // Default failure case
             returnGuaranteed = false;
@@ -378,8 +375,8 @@ namespace Cle.SemanticAnalysis
             }
         }
 
-        private bool TryCompileWhile([NotNull] WhileStatementSyntax whileSyntax, [NotNull] BasicBlockBuilder builder,
-            [NotNull] out BasicBlockBuilder newBuilder)
+        private bool TryCompileWhile(WhileStatementSyntax whileSyntax, BasicBlockBuilder builder,
+            out BasicBlockBuilder newBuilder)
         {
             newBuilder = builder; // Default failure case
             Debug.Assert(_methodInProgress != null);
@@ -414,7 +411,7 @@ namespace Cle.SemanticAnalysis
             return true;
         }
 
-        private bool TryCompileReturn([NotNull] ReturnStatementSyntax syntax, [NotNull] BasicBlockBuilder builder)
+        private bool TryCompileReturn(ReturnStatementSyntax syntax, BasicBlockBuilder builder)
         {
             Debug.Assert(_methodInProgress != null);
             Debug.Assert(_declaration != null);
@@ -448,8 +445,8 @@ namespace Cle.SemanticAnalysis
             return true;
         }
 
-        private bool TryCompileVariableDeclaration([NotNull] VariableDeclarationSyntax declaration,
-            [NotNull] BasicBlockBuilder builder)
+        private bool TryCompileVariableDeclaration(VariableDeclarationSyntax declaration,
+            BasicBlockBuilder builder)
         {
             Debug.Assert(_methodInProgress != null);
             var localCount = _methodInProgress.Values.Count;
@@ -497,10 +494,10 @@ namespace Cle.SemanticAnalysis
         }
         
         private static bool TryResolveType(
-            [NotNull] string typeName, 
-            [NotNull] IDiagnosticSink diagnostics,
+            string typeName, 
+            IDiagnosticSink diagnostics,
             TextPosition position,
-            [CanBeNull] out TypeDefinition type)
+            [NotNullWhenTrue] out TypeDefinition? type)
         {
             // TODO: Proper type resolution with the declaration provider
             switch (typeName)

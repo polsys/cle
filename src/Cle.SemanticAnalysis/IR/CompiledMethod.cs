@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using Cle.Common.TypeSystem;
-using JetBrains.Annotations;
 
 namespace Cle.SemanticAnalysis.IR
 {
@@ -15,33 +14,29 @@ namespace Cle.SemanticAnalysis.IR
         /// Gets the full name of this method.
         /// This can be used for debugging and emitting symbols.
         /// </summary>
-        [NotNull]
         public string FullName { get; }
 
         /// <summary>
         /// Gets or sets the basic block graph for this method.
         /// </summary>
-        [CanBeNull]
-        public BasicBlockGraph Body { get; set; }
+        public BasicBlockGraph? Body { get; set; }
 
         /// <summary>
         /// Gets the list of local values for this method.
         /// This list may be modified using <see cref="AddLocal"/>.
         /// </summary>
-        [NotNull, ItemNotNull]
         public IReadOnlyList<LocalValue> Values => _values;
 
         /// <summary>
         /// Gets the list of method calls for this method.
         /// This list may be modified using <see cref="AddCallInfo"/>.
         /// </summary>
-        [NotNull, ItemNotNull]
         public IReadOnlyList<MethodCallInfo> CallInfos => _callInfos;
 
         private readonly List<LocalValue> _values = new List<LocalValue>();
         private readonly List<MethodCallInfo> _callInfos = new List<MethodCallInfo>();
 
-        public CompiledMethod([NotNull] string fullName)
+        public CompiledMethod(string fullName)
         {
             FullName = fullName;
         }
@@ -49,7 +44,7 @@ namespace Cle.SemanticAnalysis.IR
         /// <summary>
         /// Creates a new local value of the specified type and returns its value index.
         /// </summary>
-        public ushort AddLocal([NotNull] TypeDefinition type, LocalFlags flags)
+        public ushort AddLocal(TypeDefinition type, LocalFlags flags)
         {
             if (_values.Count == ushort.MaxValue)
             {
@@ -66,7 +61,7 @@ namespace Cle.SemanticAnalysis.IR
         /// <param name="calleeIndex">The body index of the called method.</param>
         /// <param name="parameterLocals">Local indices for the parameters.</param>
         /// <param name="calleeName">The full name of the called method, used for debugging.</param>
-        public uint AddCallInfo(int calleeIndex, [NotNull] int[] parameterLocals, [NotNull] string calleeName)
+        public uint AddCallInfo(int calleeIndex, int[] parameterLocals, string calleeName)
         {
             _callInfos.Add(new MethodCallInfo(calleeIndex, parameterLocals, calleeName));
             return (uint)(_callInfos.Count - 1);

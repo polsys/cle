@@ -21,7 +21,7 @@ public bool Contradiction() {
             Assert.That(compiledMethod, Is.Not.Null);
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             
-            AssertDisassembly(compiledMethod, @"
+            AssertDisassembly(compiledMethod!, @"
 ; #0   bool
 ; #1   bool
 ; #2   bool
@@ -54,7 +54,7 @@ public bool Tautology() {
             Assert.That(compiledMethod, Is.Not.Null);
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             
-            AssertDisassembly(compiledMethod, @"
+            AssertDisassembly(compiledMethod!, @"
 ; #0   bool
 ; #1   bool
 ; #2   bool
@@ -88,7 +88,7 @@ public bool Comparison() {
             Assert.That(compiledMethod, Is.Not.Null);
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             
-            AssertDisassembly(compiledMethod, @"
+            AssertDisassembly(compiledMethod!, @"
 ; #0   int32
 ; #1   int32
 ; #2   bool
@@ -128,7 +128,7 @@ public int32 TheAnswer() {
 
             // BB_2 exists because direct BB_0 --> BB_3 would be a critical edge: BB_0 has two successors
             // and BB_3 has two predecessors. This causes issues for SSA because the PHI cannot be resolved.
-            AssertDisassembly(compiledMethod, @"
+            AssertDisassembly(compiledMethod!, @"
 ; #0   int32
 ; #1   bool
 ; #2   int32
@@ -169,7 +169,7 @@ public int32 ComplexAnswer() {
 
             // Here are no critical edges as BB_1 and BB_2, the predecessors of BB_3, have only a single
             // successor each, and no other block has two predecessors.
-            AssertDisassembly(compiledMethod, @"
+            AssertDisassembly(compiledMethod!, @"
 ; #0   int32
 ; #1   bool
 ; #2   int32
@@ -209,7 +209,7 @@ public int32 GetTheAnswer() {
             Assert.That(compiledMethod, Is.Not.Null);
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             
-            AssertDisassembly(compiledMethod, @"
+            AssertDisassembly(compiledMethod!, @"
 ; #0   bool
 ; #1   bool
 ; #2   int32
@@ -256,7 +256,7 @@ public int32 GetTheAnswer() {
             Assert.That(compiledMethod, Is.Not.Null);
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             
-            AssertDisassembly(compiledMethod, @"
+            AssertDisassembly(compiledMethod!, @"
 ; #0   bool
 ; #1   bool
 ; #2   int32
@@ -307,7 +307,7 @@ public int32 TheAnswer() {
             Assert.That(compiledMethod, Is.Not.Null);
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             
-            AssertDisassembly(compiledMethod, @"
+            AssertDisassembly(compiledMethod!, @"
 ; #0   bool
 ; #1   int32
 ; #2   bool
@@ -358,7 +358,7 @@ public int32 TheAnswer() {
             Assert.That(diagnostics.Diagnostics, Is.Empty);
 
             // Although BB_5 has two predecessors, the edges are not critical since BB_1 and BB_3 do not branch
-            AssertDisassembly(compiledMethod, @"
+            AssertDisassembly(compiledMethod!, @"
 ; #0   int32
 ; #1   bool
 ; #2   int32
@@ -411,7 +411,7 @@ public int32 TheAnswer() {
             Assert.That(compiledMethod, Is.Not.Null);
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             
-            AssertDisassembly(compiledMethod, @"
+            AssertDisassembly(compiledMethod!, @"
 ; #0   bool
 ; #1   int32
 ; #2   bool

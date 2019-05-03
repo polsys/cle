@@ -21,7 +21,7 @@ private void VoidMethod() {}";
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             Assert.That(compiledMethod, Is.Not.Null);
             
-            AssertDisassembly(compiledMethod, @"
+            AssertDisassembly(compiledMethod!, @"
 ; #0   void
 ; #1   void
 ; #2   void
@@ -46,7 +46,7 @@ private bool IsLarger(int32 left, int32 right) { return left > right; }";
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             Assert.That(compiledMethod, Is.Not.Null);
             
-            AssertDisassembly(compiledMethod, @"
+            AssertDisassembly(compiledMethod!, @"
 ; #0   int32
 ; #1   int32
 ; #2   bool
@@ -73,7 +73,7 @@ private bool IsLarger(int32 left, int32 right) { return left > right; }";
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             Assert.That(compiledMethod, Is.Not.Null);
             
-            AssertDisassembly(compiledMethod, @"
+            AssertDisassembly(compiledMethod!, @"
 ; #0   int32
 ; #1   int32
 ; #2   bool
@@ -99,7 +99,7 @@ private bool IsLarger(int32 left, int32 right) { return left > right; }";
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             Assert.That(compiledMethod, Is.Not.Null);
             
-            AssertDisassembly(compiledMethod, @"
+            AssertDisassembly(compiledMethod!, @"
 ; #0   int32 param
 ; #1   int32
 ; #2   int32
