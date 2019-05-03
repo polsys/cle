@@ -4,7 +4,6 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using Cle.Common.TypeSystem;
 using Cle.SemanticAnalysis.IR;
-using JetBrains.Annotations;
 
 namespace Cle.SemanticAnalysis
 {
@@ -29,6 +28,8 @@ namespace Cle.SemanticAnalysis
     /// </remarks>
     public class SsaConverter
     {
+        // These are all set by ConvertToSsa
+#nullable disable
         private CompiledMethod _originalMethod;
         private CompiledMethod _newMethod;
         private BasicBlockGraphBuilder _blockGraphBuilder;
@@ -40,14 +41,14 @@ namespace Cle.SemanticAnalysis
         private bool[] _isSealed;
         private int[] _predecessorsSet;
         private List<(ushort variable, ushort phiValue)>[] _incompletePhis;
+#nullable restore
 
         /// <summary>
         /// Returns a new <see cref="CompiledMethod"/> instance equivalent to the original
         /// <paramref name="method"/> after SSA conversion.
         /// </summary>
         /// <param name="method">The non-SSA method to convert.</param>
-        [NotNull]
-        public CompiledMethod ConvertToSsa([NotNull] CompiledMethod method)
+        public CompiledMethod ConvertToSsa(CompiledMethod method)
         {
             if (method.Body is null)
                 throw new ArgumentNullException(nameof(method), "Method must have body");
@@ -101,7 +102,7 @@ namespace Cle.SemanticAnalysis
         /// </summary>
         /// <param name="blockIndex">The basic block index.</param>
         /// <param name="builder">The builder for the basic block.</param>
-        private void ConvertBlock(int blockIndex, [NotNull] BasicBlockBuilder builder)
+        private void ConvertBlock(int blockIndex, BasicBlockBuilder builder)
         {
             Debug.Assert(_originalMethod.Body != null);
             var block = _originalMethod.Body.BasicBlocks[blockIndex];

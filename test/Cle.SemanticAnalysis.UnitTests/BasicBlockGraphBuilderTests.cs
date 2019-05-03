@@ -7,6 +7,9 @@ namespace Cle.SemanticAnalysis.UnitTests
 {
     public class BasicBlockGraphBuilderTests
     {
+        // TODO: Re-enable this when refactoring the basic blocks to always be non-null
+#nullable disable
+
         [Test]
         public void Empty_graph_fails()
         {

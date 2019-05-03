@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using JetBrains.Annotations;
 
 namespace Cle.SemanticAnalysis
 {
@@ -62,7 +61,7 @@ namespace Cle.SemanticAnalysis
         /// Returns false if the name already exists in any scope.
         /// Throws if there is no scope on the stack.
         /// </summary>
-        public bool TryAddVariable([NotNull] string name, int localIndex)
+        public bool TryAddVariable(string name, int localIndex)
         {
             if (_scopeStack.Count == 0)
                 throw new InvalidOperationException("Scope stack is empty");
@@ -83,7 +82,7 @@ namespace Cle.SemanticAnalysis
         /// Returns false if the variable does not exist in any scope.
         /// Throws if there is no scope on the stack.
         /// </summary>
-        public bool TryGetVariable([NotNull] string name, out int localIndex)
+        public bool TryGetVariable(string name, out int localIndex)
         {
             if (_scopeStack.Count == 0)
                 throw new InvalidOperationException("Scope stack is empty");

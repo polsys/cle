@@ -1,5 +1,4 @@
 ﻿using System.Collections.Immutable;
-using JetBrains.Annotations;
 
 namespace Cle.SemanticAnalysis.IR
 {
@@ -8,11 +7,9 @@ namespace Cle.SemanticAnalysis.IR
     /// </summary>
     public class BasicBlockGraph
     {
-        [NotNull]
-        [ItemCanBeNull]
-        public readonly ImmutableList<BasicBlock> BasicBlocks;
+        public readonly ImmutableList<BasicBlock?> BasicBlocks;
 
-        public BasicBlockGraph([NotNull, ItemCanBeNull] ImmutableList<BasicBlock> basicBlocks)
+        public BasicBlockGraph(ImmutableList<BasicBlock?> basicBlocks)
         {
             BasicBlocks = basicBlocks;
         }

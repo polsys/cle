@@ -1,6 +1,4 @@
-﻿using JetBrains.Annotations;
-
-namespace Cle.SemanticAnalysis.IR
+﻿namespace Cle.SemanticAnalysis.IR
 {
     /// <summary>
     /// Descriptor for a method call.
@@ -16,17 +14,15 @@ namespace Cle.SemanticAnalysis.IR
         /// <summary>
         /// Gets the local indices that are passed as parameters.
         /// </summary>
-        [NotNull]
         public int[] ParameterIndices { get; }
 
         /// <summary>
         /// Gets the full name of the called method.
         /// This information is only for debugging purposes.
         /// </summary>
-        [NotNull]
         public string CalleeFullName { get; }
 
-        public MethodCallInfo(int calleeIndex, [NotNull] int[] parameterIndices, [NotNull] string calleeFullName)
+        public MethodCallInfo(int calleeIndex, int[] parameterIndices, string calleeFullName)
         {
             CalleeIndex = calleeIndex;
             ParameterIndices = parameterIndices;

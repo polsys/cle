@@ -1,5 +1,4 @@
 ﻿using System.Collections.Immutable;
-using JetBrains.Annotations;
 
 namespace Cle.SemanticAnalysis.IR
 {
@@ -11,13 +10,11 @@ namespace Cle.SemanticAnalysis.IR
         /// <summary>
         /// Gets the immutable linear list of instructions.
         /// </summary>
-        [NotNull]
         public ImmutableList<Instruction> Instructions { get; }
 
         /// <summary>
         /// Gets the Phi nodes in this basic block.
         /// </summary>
-        [NotNull]
         public ImmutableList<Phi> Phis { get; }
 
         /// <summary>
@@ -36,13 +33,12 @@ namespace Cle.SemanticAnalysis.IR
         /// <summary>
         /// Gets the predecessors of this basic block in an arbitrary order.
         /// </summary>
-        [NotNull]
         public ImmutableList<int> Predecessors { get; }
 
-        public BasicBlock([NotNull] ImmutableList<Instruction> instructions,
-            [NotNull] ImmutableList<Phi> phis,
+        public BasicBlock(ImmutableList<Instruction> instructions,
+            ImmutableList<Phi> phis,
             int defaultSuccessor, int alternativeSuccessor,
-            [NotNull] ImmutableList<int> predecessors)
+            ImmutableList<int> predecessors)
         {
             Instructions = instructions;
             Phis = phis;

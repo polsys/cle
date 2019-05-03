@@ -1,5 +1,4 @@
 ﻿using System.Collections.Immutable;
-using JetBrains.Annotations;
 
 namespace Cle.SemanticAnalysis.IR
 {
@@ -16,10 +15,9 @@ namespace Cle.SemanticAnalysis.IR
         /// <summary>
         /// Gets the operand local indices.
         /// </summary>
-        [NotNull]
         public ImmutableList<int> Operands { get; }
 
-        public Phi(int destination, [NotNull] ImmutableList<int> operands)
+        public Phi(int destination, ImmutableList<int> operands)
         {
             Destination = destination;
             Operands = operands;

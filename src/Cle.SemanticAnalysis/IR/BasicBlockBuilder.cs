@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Immutable;
-using JetBrains.Annotations;
 
 namespace Cle.SemanticAnalysis.IR
 {
@@ -11,10 +10,8 @@ namespace Cle.SemanticAnalysis.IR
     /// </summary>
     public class BasicBlockBuilder
     {
-        [NotNull]
         internal ImmutableList<Instruction>.Builder Instructions { get; } = ImmutableList<Instruction>.Empty.ToBuilder();
 
-        [NotNull]
         internal ImmutableList<Phi>.Builder Phis { get; } = ImmutableList<Phi>.Empty.ToBuilder();
 
         /// <summary>
@@ -63,10 +60,9 @@ namespace Cle.SemanticAnalysis.IR
             }
         }
 
-        [NotNull]
         private readonly BasicBlockGraphBuilder _parent;
 
-        internal BasicBlockBuilder([NotNull] BasicBlockGraphBuilder parent, int index)
+        internal BasicBlockBuilder(BasicBlockGraphBuilder parent, int index)
         {
             _parent = parent;
             Index = index;
@@ -89,7 +85,7 @@ namespace Cle.SemanticAnalysis.IR
         /// </summary>
         /// <param name="destination">The local that will receive the merged value from the Phi.</param>
         /// <param name="operands">The operand locals to the Phi.</param>
-        public void AddPhi(int destination, [NotNull] ImmutableList<int> operands)
+        public void AddPhi(int destination, ImmutableList<int> operands)
         {
             Phis.Add(new Phi(destination, operands));
         }

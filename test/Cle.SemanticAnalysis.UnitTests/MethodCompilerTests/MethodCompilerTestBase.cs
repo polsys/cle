@@ -3,7 +3,6 @@ using System.Text;
 using Cle.Parser;
 using Cle.SemanticAnalysis.IR;
 using Cle.UnitTests.Common;
-using JetBrains.Annotations;
 using NUnit.Framework;
 
 namespace Cle.SemanticAnalysis.UnitTests.MethodCompilerTests
@@ -14,8 +13,8 @@ namespace Cle.SemanticAnalysis.UnitTests.MethodCompilerTests
         /// Parses the given source code, compiles the method declarations and
         /// returns the result of <see cref="MethodCompiler.CompileBody"/> on the first method.
         /// </summary>
-        protected CompiledMethod TryCompileFirstMethod([NotNull] string source,
-            [NotNull] out TestingDiagnosticSink diagnostics)
+        protected CompiledMethod? TryCompileFirstMethod(string source,
+            out TestingDiagnosticSink diagnostics)
         {
             var sourceBytes = Encoding.UTF8.GetBytes(source);
             diagnostics = new TestingDiagnosticSink();
@@ -27,8 +26,8 @@ namespace Cle.SemanticAnalysis.UnitTests.MethodCompilerTests
 
             // Parse the declarations
             var declarationProvider = new TestingSingleFileDeclarationProvider();
-            MethodDeclaration firstDeclaration = null;
-            foreach (var functionSyntax in syntaxTree.Functions)
+            MethodDeclaration? firstDeclaration = null;
+            foreach (var functionSyntax in syntaxTree!.Functions)
             {
                 var declaration = MethodCompiler.CompileDeclaration(functionSyntax, syntaxTree.Namespace, sourceFilename,
                     declarationProvider.Methods.Count, declarationProvider, diagnostics);
@@ -39,19 +38,21 @@ namespace Cle.SemanticAnalysis.UnitTests.MethodCompilerTests
                 {
                     firstDeclaration = declaration;
                 }
-                declarationProvider.Methods.Add(functionSyntax.Name, declaration);
+                declarationProvider.Methods.Add(functionSyntax.Name, declaration!);
             }
+
+            Assert.That(firstDeclaration, Is.Not.Null, "No methods were declared.");
 
             // Then compile the first method
             return new MethodCompiler(declarationProvider, diagnostics)
-                .CompileBody(syntaxTree.Functions[0], firstDeclaration, syntaxTree.Namespace, sourceFilename);
+                .CompileBody(syntaxTree.Functions[0], firstDeclaration!, syntaxTree.Namespace, sourceFilename);
         }
         
         /// <summary>
         /// Verifies that the method has disassembly equal to <paramref name="expected"/>.
         /// Both the actual and expected strings are trimmed and linefeed normalized.
         /// </summary>
-        protected void AssertDisassembly([NotNull] CompiledMethod compiledMethod, [NotNull] string expected)
+        protected void AssertDisassembly(CompiledMethod compiledMethod, string expected)
         {
             var builder = new StringBuilder();
             MethodDisassembler.Disassemble(compiledMethod, builder);

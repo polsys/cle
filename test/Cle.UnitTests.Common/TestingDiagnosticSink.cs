@@ -1,19 +1,14 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using Cle.Common;
-using JetBrains.Annotations;
 using NUnit.Framework;
 
 namespace Cle.UnitTests.Common
 {
     public class TestingDiagnosticSink : IDiagnosticSink
     {
-        [NotNull]
-        [ItemNotNull]
         public IReadOnlyList<Diagnostic> Diagnostics => _diagnostics;
         
-        [NotNull]
-        [ItemNotNull]
         private readonly List<Diagnostic> _diagnostics = new List<Diagnostic>();
 
         public void Add(DiagnosticCode code, TextPosition position)
@@ -23,14 +18,14 @@ namespace Cle.UnitTests.Common
             _diagnostics.Add(diagnostic);
         }
 
-        public void Add(DiagnosticCode code, TextPosition position, string actual)
+        public void Add(DiagnosticCode code, TextPosition position, string? actual)
         {
             var diagnostic = new Diagnostic(code, position, string.Empty, string.Empty, actual, null);
 
             _diagnostics.Add(diagnostic);
         }
 
-        public void Add(DiagnosticCode code, TextPosition position, string actual, string expected)
+        public void Add(DiagnosticCode code, TextPosition position, string? actual, string? expected)
         {
             var diagnostic = new Diagnostic(code, position, string.Empty, string.Empty, actual, expected);
 

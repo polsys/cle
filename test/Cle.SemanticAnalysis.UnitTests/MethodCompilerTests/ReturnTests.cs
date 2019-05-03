@@ -15,7 +15,7 @@ public bool ReturnTrue() { return true; }";
             Assert.That(compiledMethod, Is.Not.Null);
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             
-            AssertDisassembly(compiledMethod, @"
+            AssertDisassembly(compiledMethod!, @"
 ; #0   bool
 BB_0:
     Load true -> #0
@@ -32,7 +32,7 @@ public int32 GetTheAnswer() { return 42; }";
             Assert.That(compiledMethod, Is.Not.Null);
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             
-            AssertDisassembly(compiledMethod, @"
+            AssertDisassembly(compiledMethod!, @"
 ; #0   int32
 BB_0:
     Load 42 -> #0
@@ -49,7 +49,7 @@ public int32 GetTheAnswer() { return 40 + 2; }";
             Assert.That(compiledMethod, Is.Not.Null);
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             
-            AssertDisassembly(compiledMethod, @"
+            AssertDisassembly(compiledMethod!, @"
 ; #0   int32
 BB_0:
     Load 42 -> #0
@@ -66,7 +66,7 @@ public int32 GetTheAnswer() { int32 almost = 40; return almost + 2; }";
             Assert.That(compiledMethod, Is.Not.Null);
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             
-            AssertDisassembly(compiledMethod, @"
+            AssertDisassembly(compiledMethod!, @"
 ; #0   int32
 ; #1   int32
 ; #2   int32
@@ -87,7 +87,7 @@ public void DoNothing() { return; }";
             Assert.That(compiledMethod, Is.Not.Null);
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             
-            AssertDisassembly(compiledMethod, @"
+            AssertDisassembly(compiledMethod!, @"
 ; #0   void
 BB_0:
     Return #0");
@@ -103,7 +103,7 @@ public void DoNothing() { }";
             Assert.That(compiledMethod, Is.Not.Null);
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             
-            AssertDisassembly(compiledMethod, @"
+            AssertDisassembly(compiledMethod!, @"
 ; #0   void
 BB_0:
     Return #0");
@@ -119,7 +119,7 @@ public void DoNothing() { if (true) { return; } }";
             Assert.That(compiledMethod, Is.Not.Null);
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             
-            AssertDisassembly(compiledMethod, @"
+            AssertDisassembly(compiledMethod!, @"
 ; #0   bool
 ; #1   void
 ; #2   void

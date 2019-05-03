@@ -1,7 +1,6 @@
 ﻿using System.Text;
 using Cle.Common.TypeSystem;
 using Cle.SemanticAnalysis.IR;
-using JetBrains.Annotations;
 
 namespace Cle.SemanticAnalysis
 {
@@ -15,7 +14,7 @@ namespace Cle.SemanticAnalysis
         /// <summary>
         /// Writes the type information and disassembled basic blocks of the method to the output string builder.
         /// </summary>
-        public static void Disassemble([NotNull] CompiledMethod method, [NotNull] StringBuilder outputBuilder)
+        public static void Disassemble(CompiledMethod method, StringBuilder outputBuilder)
         {
             // Write the types and initial values of locals
             for (var i = 0; i < method.Values.Count; i++)
@@ -32,8 +31,11 @@ namespace Cle.SemanticAnalysis
         /// <summary>
         /// Writes the disassembled basic blocks of the method to the output string builder.
         /// </summary>
-        public static void DisassembleBody([NotNull] CompiledMethod method, [NotNull] StringBuilder outputBuilder)
+        public static void DisassembleBody(CompiledMethod method, StringBuilder outputBuilder)
         {
+            if (method.Body is null)
+                return;
+
             for (var blockIndex = 0; blockIndex < method.Body.BasicBlocks.Count; blockIndex++)
             {
                 // The block may be null as the builder omits dead blocks but preserves numbering

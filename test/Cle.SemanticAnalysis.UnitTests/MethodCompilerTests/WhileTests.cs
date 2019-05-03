@@ -19,7 +19,7 @@ public bool Stupid() {
             Assert.That(compiledMethod, Is.Not.Null);
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             
-            AssertDisassembly(compiledMethod, @"
+            AssertDisassembly(compiledMethod!, @"
 ; #0   bool
 ; #1   bool
 BB_0:
@@ -56,7 +56,7 @@ public bool Stupid() {
             
             // The empty BB_4 must exist because otherwise the BB_2 --> BB_5 edge would be critical:
             // BB_2 has two successors and BB_5 has two predecessors (BB_3, and BB_2 via BB_4).
-            AssertDisassembly(compiledMethod, @"
+            AssertDisassembly(compiledMethod!, @"
 ; #0   bool
 ; #1   bool
 ; #2   bool

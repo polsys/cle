@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using JetBrains.Annotations;
 
 namespace Cle.SemanticAnalysis.IR
 {
@@ -12,8 +11,6 @@ namespace Cle.SemanticAnalysis.IR
     /// </summary>
     public class BasicBlockGraphBuilder
     {
-        [NotNull]
-        [ItemNotNull]
         private readonly List<BasicBlockBuilder> _builders = new List<BasicBlockBuilder>();
 
         /// <summary>
@@ -43,7 +40,6 @@ namespace Cle.SemanticAnalysis.IR
         /// Gets the basic block builder associated with the specified index.
         /// The builder must already be created.
         /// </summary>
-        [NotNull]
         public BasicBlockBuilder GetBuilderByBlockIndex(int blockIndex)
         {
             return _builders[blockIndex];
@@ -70,7 +66,7 @@ namespace Cle.SemanticAnalysis.IR
             MarkBlock(0, liveBlocks, predecessors);
 
             // Construct each marked basic block
-            var blocks = ImmutableList<BasicBlock>.Empty.ToBuilder();
+            var blocks = ImmutableList<BasicBlock?>.Empty.ToBuilder();
             for (var i = 0; i < _builders.Count; i++)
             {
                 // Skip unreachable blocks but append null to preserve indexing

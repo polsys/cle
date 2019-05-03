@@ -4,7 +4,6 @@ using System.Collections.Immutable;
 using Cle.Common.TypeSystem;
 using Cle.SemanticAnalysis;
 using Cle.SemanticAnalysis.IR;
-using JetBrains.Annotations;
 using NUnit.Framework;
 
 namespace Cle.UnitTests.Common
@@ -18,11 +17,11 @@ namespace Cle.UnitTests.Common
         /// Creates a <see cref="CompiledMethod"/> out of the given IR disassembly,
         /// which must follow the <see cref="MethodDisassembler"/> output very closely.
         /// </summary>
-        public static CompiledMethod Assemble([NotNull] string source, [NotNull] string fullName)
+        public static CompiledMethod Assemble(string source, string fullName)
         {
             var method = new CompiledMethod(fullName);
             var graphBuilder = new BasicBlockGraphBuilder();
-            BasicBlockBuilder currentBlockBuilder = null;
+            BasicBlockBuilder? currentBlockBuilder = null;
             var calledMethodIndices = new Dictionary<string, int>();
             
             // Since this class is for testing purposes only, we use brittle and unperformant string splits
@@ -65,8 +64,8 @@ namespace Cle.UnitTests.Common
                     // The line is of form "==> BB_nnn"
                     var blockIndex = int.Parse(currentLine.AsSpan(7));
 
-                    Assert.That(currentBlockBuilder, Is.Not.Null);
-                    currentBlockBuilder.SetSuccessor(blockIndex);
+                    Assert.That(currentBlockBuilder, Is.Not.Null, "No basic block has been started.");
+                    currentBlockBuilder!.SetSuccessor(blockIndex);
                 }
                 else if (currentLine.StartsWith("PHI"))
                 {
@@ -86,13 +85,13 @@ namespace Cle.UnitTests.Common
                     var dest = phiBuilder[phiBuilder.Count - 1];
                     phiBuilder.RemoveAt(phiBuilder.Count - 1);
                     
-                    currentBlockBuilder.AddPhi(dest, phiBuilder.ToImmutable());
+                    currentBlockBuilder!.AddPhi(dest, phiBuilder.ToImmutable());
                 }
                 else
                 {
                     Assert.That(currentBlockBuilder, Is.Not.Null, "No basic block has been started.");
 
-                    ParseInstruction(currentLine, method, currentBlockBuilder, calledMethodIndices);
+                    ParseInstruction(currentLine, method, currentBlockBuilder!, calledMethodIndices);
                 }
             }
 
