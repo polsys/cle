@@ -6,16 +6,15 @@ using Cle.CodeGeneration.Lir;
 using Cle.CodeGeneration.RegisterAllocation;
 using Cle.Common.TypeSystem;
 using Cle.SemanticAnalysis.IR;
-using JetBrains.Annotations;
 
 namespace Cle.CodeGeneration
 {
     public sealed class WindowsX64CodeGenerator
     {
-        [NotNull] private readonly PortableExecutableWriter _peWriter;
-        [NotNull] private readonly List<Fixup> _fixupsForMethod;
-        [NotNull] private readonly List<int> _blockPositions;
-        [NotNull] private readonly List<X64Register> _savedRegisters;
+        private readonly PortableExecutableWriter _peWriter;
+        private readonly List<Fixup> _fixupsForMethod;
+        private readonly List<int> _blockPositions;
+        private readonly List<X64Register> _savedRegisters;
 
         /// <summary>
         /// Creates a code generator instance with the specified output stream and optional disassembly stream.
@@ -28,7 +27,7 @@ namespace Cle.CodeGeneration
         /// <param name="disassemblyWriter">
         /// Optional text writer for method disassembly.
         /// </param>
-        public WindowsX64CodeGenerator([NotNull] Stream outputStream, [CanBeNull] TextWriter disassemblyWriter)
+        public WindowsX64CodeGenerator(Stream outputStream, TextWriter? disassemblyWriter)
         {
             _peWriter = new PortableExecutableWriter(outputStream, disassemblyWriter);
             _fixupsForMethod = new List<Fixup>();
@@ -51,8 +50,7 @@ namespace Cle.CodeGeneration
         /// <param name="methodIndex">The compiler internal index for the method.</param>
         /// <param name="isEntryPoint">If true, this method is marked as the executable entry point.</param>
         /// <param name="dumpWriter">An optional text writer for debug dumping of the current method.</param>
-        public void EmitMethod([NotNull] CompiledMethod method, int methodIndex, bool isEntryPoint,
-            [CanBeNull] TextWriter dumpWriter)
+        public void EmitMethod(CompiledMethod method, int methodIndex, bool isEntryPoint, TextWriter? dumpWriter)
         {
             _fixupsForMethod.Clear();
             _blockPositions.Clear();
@@ -454,8 +452,8 @@ namespace Cle.CodeGeneration
             }
         }
 
-        private static void DebugLogBeforeAllocation([NotNull] LowMethod<X64Register> loweredMethod,
-            [NotNull] string methodFullName, [NotNull] TextWriter dumpWriter)
+        private static void DebugLogBeforeAllocation(LowMethod<X64Register> loweredMethod,
+            string methodFullName, TextWriter dumpWriter)
         {
             // Dump the LIR with locals
             dumpWriter.Write("; Lowered IR for ");
@@ -466,8 +464,8 @@ namespace Cle.CodeGeneration
             dumpWriter.WriteLine();
         }
 
-        private static void DebugLogAfterAllocation([NotNull] LowMethod<X64Register> allocatedMethod,
-            [NotNull] AllocationInfo<X64Register> allocationInfo, [NotNull] TextWriter dumpWriter)
+        private static void DebugLogAfterAllocation(LowMethod<X64Register> allocatedMethod,
+            AllocationInfo<X64Register> allocationInfo, TextWriter dumpWriter)
         {
             dumpWriter.WriteLine("; After register allocation");
 

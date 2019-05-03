@@ -1,7 +1,6 @@
 ﻿using System;
 using System.IO;
 using Cle.CodeGeneration.Lir;
-using JetBrains.Annotations;
 
 namespace Cle.CodeGeneration
 {
@@ -11,13 +10,13 @@ namespace Cle.CodeGeneration
     /// </summary>
     internal sealed class X64Emitter
     {
-        [NotNull] private readonly Stream _outputStream;
-        [CanBeNull] private readonly TextWriter _disassemblyWriter;
+        private readonly Stream _outputStream;
+        private readonly TextWriter? _disassemblyWriter;
         private readonly byte[] _tempBuffer = new byte[8];
 
         private const string Indent = "    ";
 
-        public X64Emitter([NotNull] Stream outputStream, [CanBeNull] TextWriter disassemblyWriter)
+        public X64Emitter(Stream outputStream, TextWriter? disassemblyWriter)
         {
             _outputStream = outputStream;
             _disassemblyWriter = disassemblyWriter;
@@ -456,7 +455,7 @@ namespace Cle.CodeGeneration
         /// </summary>
         /// <param name="target">The target byte where the execution will be transferred to.</param>
         /// <param name="methodName">The target name for disassembly.</param>
-        public void EmitCall(int target, [NotNull] string methodName)
+        public void EmitCall(int target, string methodName)
         {
             _disassemblyWriter?.WriteLine($"{Indent}call {methodName}");
 
@@ -470,7 +469,7 @@ namespace Cle.CodeGeneration
         /// <param name="targetIndex">Method index to call. This will be used as the fixup tag.</param>
         /// <param name="methodName">The target name for disassembly.</param>
         /// <param name="fixup">Information required for fixing the target later.</param>
-        public void EmitCallWithFixup(int targetIndex, [NotNull] string methodName, out Fixup fixup)
+        public void EmitCallWithFixup(int targetIndex, string methodName, out Fixup fixup)
         {
             // The call opcode is a single byte
             fixup = new Fixup(FixupType.RelativeJump, targetIndex, (int)_outputStream.Position + 1);

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using Cle.CodeGeneration.Lir;
-using JetBrains.Annotations;
 
 namespace Cle.CodeGeneration
 {
@@ -17,7 +16,7 @@ namespace Cle.CodeGeneration
         /// Optimizes the given LIR.
         /// </summary>
         /// <param name="method">The method to optimize. The blocks will be mutated in place.</param>
-        public static void Optimize([NotNull] LowMethod<TRegister> method)
+        public static void Optimize(LowMethod<TRegister> method)
         {
             // As an extension to a basic peephole optimizer, count the uses of locals
             // TODO: Get a pooled array
@@ -32,7 +31,7 @@ namespace Cle.CodeGeneration
             }
         }
 
-        private static void CountUses([NotNull] LowMethod<TRegister> method, [NotNull] int[] uses)
+        private static void CountUses(LowMethod<TRegister> method, int[] uses)
         {
             // A variable is counted as used if it has a fixed storage location
             // For example, the Return op implicitly uses the local stored in the return register
@@ -55,7 +54,7 @@ namespace Cle.CodeGeneration
             }
         }
 
-        private static void OptimizeBlock([NotNull] List<LowInstruction> block, [NotNull] int[] localUses)
+        private static void OptimizeBlock(List<LowInstruction> block, int[] localUses)
         {
             var currentPos = 0;
             while (currentPos < block.Count)
@@ -70,7 +69,7 @@ namespace Cle.CodeGeneration
         /// Applies peephole patterns that are important for code quality even in non-optimizing builds.
         /// These fix up silly patterns created by lowering and help out register allocation.
         /// </summary>
-        private static bool PeepBasic([NotNull] List<LowInstruction> block, int currentPos, [NotNull] int[] localUses)
+        private static bool PeepBasic(List<LowInstruction> block, int currentPos, int[] localUses)
         {
             var current = block[currentPos]; // TODO: This might be an expensive copy
             var instructionsLeft = block.Count - currentPos - 1;

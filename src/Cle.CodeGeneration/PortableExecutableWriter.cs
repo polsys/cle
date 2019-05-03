@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using JetBrains.Annotations;
 
 namespace Cle.CodeGeneration
 {
@@ -13,11 +12,10 @@ namespace Cle.CodeGeneration
         /// <summary>
         /// Gets the instruction emitter associated with this PE file.
         /// </summary>
-        [NotNull]
         public X64Emitter Emitter { get; }
 
-        [CanBeNull] private readonly TextWriter _disassemblyWriter;
-        [NotNull] private readonly Stream _exeStream;
+        private readonly TextWriter? _disassemblyWriter;
+        private readonly Stream _exeStream;
         private int _entryPointOffset;
 
         private readonly List<Fixup> _callFixups = new List<Fixup>();
@@ -29,7 +27,7 @@ namespace Cle.CodeGeneration
         private const int BaseOfCodeAddress = 0x00001000; // The default
         private const int PeHeaderSize = 0x0400; // 1024 bytes, a safe bet
         
-        public PortableExecutableWriter([NotNull] Stream outputStream, [CanBeNull] TextWriter disassemblyWriter)
+        public PortableExecutableWriter(Stream outputStream, TextWriter? disassemblyWriter)
         {
             Emitter = new X64Emitter(outputStream, disassemblyWriter);
             _exeStream = outputStream;
@@ -47,7 +45,7 @@ namespace Cle.CodeGeneration
         /// </summary>
         /// <param name="methodIndex">The compiler internal method index.</param>
         /// <param name="methodName">The full method name, used for disassembly.</param>
-        public void StartNewMethod(int methodIndex, [NotNull] string methodName)
+        public void StartNewMethod(int methodIndex, string methodName)
         {
             // Methods always start at multiple of 16 bytes
             WritePadding(16, _int3Padding);
