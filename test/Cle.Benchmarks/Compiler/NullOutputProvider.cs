@@ -5,17 +5,17 @@ namespace Cle.Benchmarks.Compiler
 {
     internal class NullOutputProvider : IOutputFileProvider
     {
-        public Stream GetExecutableStream()
+        public Stream? GetExecutableStream()
         {
             return new EmptyStream();
         }
 
-        public TextWriter GetDisassemblyWriter()
+        public TextWriter? GetDisassemblyWriter()
         {
             return null;
         }
 
-        public TextWriter GetDebugFileWriter()
+        public TextWriter? GetDebugFileWriter()
         {
             return null;
         }

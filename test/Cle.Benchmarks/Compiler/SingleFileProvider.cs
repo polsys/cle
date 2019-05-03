@@ -15,7 +15,7 @@ namespace Cle.Benchmarks.Compiler
             _source = Encoding.UTF8.GetBytes(source).AsMemory();
         }
 
-        public bool TryGetFilenamesForModule(string moduleName, out IEnumerable<string> filenames)
+        public bool TryGetFilenamesForModule(string moduleName, out IEnumerable<string>? filenames)
         {
             filenames = s_filenames;
             return true;
