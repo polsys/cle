@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using JetBrains.Annotations;
 using NUnit.Framework;
 
 namespace Cle.Compiler.UnitTests
@@ -24,7 +23,7 @@ namespace Cle.Compiler.UnitTests
         /// File contents as an UTF-16 string. The contents will be converted to UTF-8.
         /// Specify null to create a missing file.
         /// </param>
-        public void Add([NotNull] string moduleName, [NotNull] string filename, [CanBeNull] string source)
+        public void Add(string moduleName, string filename, string? source)
         {
             if (!_moduleFiles.ContainsKey(moduleName))
             {
@@ -38,7 +37,7 @@ namespace Cle.Compiler.UnitTests
             }
         }
 
-        public bool TryGetFilenamesForModule(string moduleName, out IEnumerable<string> filenames)
+        public bool TryGetFilenamesForModule(string moduleName, out IEnumerable<string>? filenames)
         {
             if (_moduleFiles.TryGetValue(moduleName, out var names))
             {
@@ -71,7 +70,7 @@ namespace Cle.Compiler.UnitTests
         /// <summary>
         /// Asserts that the given file has been accessed.
         /// </summary>
-        public void AssertFileWasRead([NotNull] string filename)
+        public void AssertFileWasRead(string filename)
         {
             Assert.That(_readFiles.Contains(filename), Is.True, $"File {filename} was not accessed");
         }

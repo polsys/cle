@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using Cle.Common;
-using JetBrains.Annotations;
 
 namespace Cle.Compiler
 {
@@ -32,7 +31,7 @@ namespace Cle.Compiler
         public IReadOnlyList<Diagnostic> Diagnostics { get; }
 
         internal CompilationResult(int moduleCount, int succeededCount, int failedCount,
-            [NotNull, ItemNotNull] IReadOnlyList<Diagnostic> diagnostics)
+            IReadOnlyList<Diagnostic> diagnostics)
         {
             ModuleCount = moduleCount;
             SucceededCount = succeededCount;

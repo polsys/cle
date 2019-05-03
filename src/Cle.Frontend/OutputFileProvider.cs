@@ -1,25 +1,24 @@
 ﻿using System;
 using System.IO;
 using Cle.Compiler;
-using JetBrains.Annotations;
 
 namespace Cle.Frontend
 {
     internal class OutputFileProvider : IOutputFileProvider, IDisposable
     {
-        [NotNull] private readonly string _baseDirectory;
-        [NotNull] private readonly string _outputName;
+        private readonly string _baseDirectory;
+        private readonly string _outputName;
 
-        [CanBeNull] private TextWriter _debugWriter;
-        [CanBeNull] private TextWriter _disassemblyWriter;
-        [CanBeNull] private FileStream _executableStream;
+        private TextWriter? _debugWriter;
+        private TextWriter? _disassemblyWriter;
+        private FileStream? _executableStream;
 
         // TODO: Multi-platform support
         private const string PlatformName = "windows-x64";
         private const string ExecutableExtension = ".exe";
         private const string DisassemblyExtension = ".asm";
 
-        public OutputFileProvider([NotNull] string baseDirectory, [NotNull] string outputName)
+        public OutputFileProvider(string baseDirectory, string outputName)
         {
             _baseDirectory = baseDirectory;
             _outputName = outputName;
@@ -32,7 +31,7 @@ namespace Cle.Frontend
             _executableStream?.Dispose();
         }
 
-        public TextWriter GetDebugFileWriter()
+        public TextWriter? GetDebugFileWriter()
         {
             if (_debugWriter is null)
             {
@@ -49,7 +48,7 @@ namespace Cle.Frontend
             return _debugWriter;
         }
 
-        public Stream GetExecutableStream()
+        public Stream? GetExecutableStream()
         {
             if (_executableStream is null)
             {
@@ -68,7 +67,7 @@ namespace Cle.Frontend
             return _executableStream;
         }
 
-        public TextWriter GetDisassemblyWriter()
+        public TextWriter? GetDisassemblyWriter()
         {
             if (_disassemblyWriter is null)
             {

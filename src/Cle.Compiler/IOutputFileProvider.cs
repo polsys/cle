@@ -1,5 +1,4 @@
 ﻿using System.IO;
-using JetBrains.Annotations;
 
 namespace Cle.Compiler
 {
@@ -12,21 +11,18 @@ namespace Cle.Compiler
         /// <summary>
         /// Gets the writable stream for the output executable.
         /// </summary>
-        [CanBeNull]
-        Stream GetExecutableStream();
+        Stream? GetExecutableStream();
 
         /// <summary>
         /// Gets a writer for the output disassembly.
         /// May return null if the file can not be created.
         /// </summary>
-        [CanBeNull]
-        TextWriter GetDisassemblyWriter();
+        TextWriter? GetDisassemblyWriter();
 
         /// <summary>
         /// Gets a debug log writer.
         /// May return null if the file can not be created.
         /// </summary>
-        [CanBeNull]
-        TextWriter GetDebugFileWriter();
+        TextWriter? GetDebugFileWriter();
     }
 }

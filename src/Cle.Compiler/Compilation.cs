@@ -5,7 +5,6 @@ using System.Threading;
 using Cle.Common;
 using Cle.SemanticAnalysis;
 using Cle.SemanticAnalysis.IR;
-using JetBrains.Annotations;
 
 namespace Cle.Compiler
 {
@@ -20,14 +19,11 @@ namespace Cle.Compiler
         /// Gets the list of diagnostics associated with this compilation.
         /// <see cref="DiagnosticsLock"/> must be acquired prior to accessing this property.
         /// </summary>
-        [NotNull]
-        [ItemNotNull]
         public IReadOnlyList<Diagnostic> Diagnostics => _diagnostics;
 
         /// <summary>
         /// Synchronization object for <see cref="Diagnostics"/>.
         /// </summary>
-        [NotNull]
         public object DiagnosticsLock { get; } = new object();
 
         /// <summary>
@@ -57,8 +53,6 @@ namespace Cle.Compiler
             }
         }
 
-        [NotNull]
-        [ItemNotNull]
         private readonly List<Diagnostic> _diagnostics = new List<Diagnostic>();
 
         /// <summary>
@@ -66,18 +60,14 @@ namespace Cle.Compiler
         /// Second level: method name.
         /// Third level: list of methods with the name (because of private methods, may have more than one).
         /// </summary>
-        [NotNull]
         private readonly Dictionary<string, Dictionary<string, List<MethodDeclaration>>> _methodDeclarations =
             new Dictionary<string, Dictionary<string, List<MethodDeclaration>>>();
 
-        [NotNull]
         private readonly object _declarationLock = new object();
 
-        [NotNull]
         private readonly IndexedRandomAccessStore<CompiledMethod> _methodBodies =
             new IndexedRandomAccessStore<CompiledMethod>();
 
-        [NotNull]
         private readonly object _methodBodyLock = new object();
         private int _entryPointIndex = -1;
 
@@ -85,7 +75,7 @@ namespace Cle.Compiler
         /// Adds the given collection of diagnostics to <see cref="Diagnostics"/>.
         /// This function may be called from multiple threads.
         /// </summary>
-        public void AddDiagnostics([NotNull] IReadOnlyList<Diagnostic> diagnosticsToAdd)
+        public void AddDiagnostics(IReadOnlyList<Diagnostic> diagnosticsToAdd)
         {
             lock (DiagnosticsLock)
             {
@@ -106,7 +96,7 @@ namespace Cle.Compiler
         /// </summary>
         /// <param name="moduleName">The module that should contain the file.</param>
         /// <param name="filename">The name of the missing file.</param>
-        public void AddMissingFileError([NotNull] string moduleName, [NotNull] string filename)
+        public void AddMissingFileError(string moduleName, string filename)
         {
             lock (DiagnosticsLock)
             {
@@ -122,7 +112,7 @@ namespace Cle.Compiler
         /// </summary>
         /// <param name="code">The error code.</param>
         /// <param name="moduleName">The module that was not found.</param>
-        public void AddModuleLevelDiagnostic(DiagnosticCode code, [NotNull] string moduleName)
+        public void AddModuleLevelDiagnostic(DiagnosticCode code, string moduleName)
         {
             lock (DiagnosticsLock)
             {
@@ -141,9 +131,9 @@ namespace Cle.Compiler
         /// <param name="declaration">The method declaration to be associated with the full method name.</param>
         // TODO: Modules
         public bool AddMethodDeclaration(
-            [NotNull] string methodName,
-            [NotNull] string namespaceName,
-            [NotNull] MethodDeclaration declaration)
+            string methodName,
+            string namespaceName,
+            MethodDeclaration declaration)
         {
             // TODO: This imposes a performance penalty, especially as adds typically happen in a batch.
             // TODO: Investigate when we have a realistic workload.
@@ -197,11 +187,10 @@ namespace Cle.Compiler
         /// <param name="visibleNamespaces">Namespaces available for searching the method.</param>
         /// <param name="sourceFile">The current source file, used for matching private methods.</param>
         // TODO: Modules
-        [NotNull, ItemNotNull]
         public IReadOnlyList<MethodDeclaration> GetMethodDeclarations(
-            [NotNull] string methodName,
-            [NotNull, ItemNotNull] IReadOnlyList<string> visibleNamespaces,
-            [NotNull] string sourceFile)
+            string methodName,
+            IReadOnlyList<string> visibleNamespaces,
+            string sourceFile)
         {
             var matchingMethods = ImmutableList<MethodDeclaration>.Empty;
 
@@ -252,7 +241,6 @@ namespace Cle.Compiler
         /// Returns the method body associated with the given index.
         /// Throws if there is no method stored.
         /// </summary>
-        [NotNull]
         public CompiledMethod GetMethodBody(int index)
         {
             try
@@ -273,7 +261,7 @@ namespace Cle.Compiler
         /// </summary>
         /// <param name="index">The method index from <see cref="ReserveMethodSlot"/>. Throws if this is not valid.</param>
         /// <param name="method">The method to store.</param>
-        public void SetMethodBody(int index, [NotNull] CompiledMethod method)
+        public void SetMethodBody(int index, CompiledMethod method)
         {
             try
             {

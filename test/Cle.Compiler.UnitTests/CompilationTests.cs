@@ -4,7 +4,6 @@ using Cle.Common;
 using Cle.Parser.SyntaxTree;
 using Cle.SemanticAnalysis;
 using Cle.SemanticAnalysis.IR;
-using JetBrains.Annotations;
 using NUnit.Framework;
 
 namespace Cle.Compiler.UnitTests
@@ -267,10 +266,10 @@ namespace Cle.Compiler.UnitTests
         }
 
         private static MethodDeclaration CreateDeclaration(
-            [NotNull] string methodName,
+            string methodName,
             Visibility visibility,
-            [NotNull] string filename,
-            [NotNull] Compilation compilation)
+            string filename,
+            Compilation compilation)
         {
             var diagnostics = new SingleFileDiagnosticSink();
             diagnostics.Reset(".", filename);
@@ -284,7 +283,7 @@ namespace Cle.Compiler.UnitTests
             Assert.That(declaration, Is.Not.Null);
             Assert.That(diagnostics.Diagnostics, Is.Empty);
 
-            return declaration;
+            return declaration!;
         }
     }
 }

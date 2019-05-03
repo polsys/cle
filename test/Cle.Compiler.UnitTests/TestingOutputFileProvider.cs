@@ -9,7 +9,7 @@ namespace Cle.Compiler.UnitTests
         /// Gets the mock output stream.
         /// Null if never requested via <see cref="GetExecutableStream"/>.
         /// </summary>
-        public MemoryStream ExecutableStream { get; private set; }
+        public MemoryStream? ExecutableStream { get; private set; }
 
         /// <summary>
         /// If true, <see cref="GetExecutableStream"/> will always return <c>null</c>.
@@ -25,13 +25,13 @@ namespace Cle.Compiler.UnitTests
         /// Gets the mock disassembly writer.
         /// Null if never requested via <see cref="GetDisassemblyWriter"/>.
         /// </summary>
-        public StringWriter DisassemblyWriter { get; private set; }
+        public StringWriter? DisassemblyWriter { get; private set; }
 
         /// <summary>
         /// Gets the mock debug log writer.
         /// Null if never requested via <see cref="GetDebugFileWriter"/>.
         /// </summary>
-        public StringWriter DebugWriter { get; private set; }
+        public StringWriter? DebugWriter { get; private set; }
 
         public void Dispose()
         {
@@ -40,7 +40,7 @@ namespace Cle.Compiler.UnitTests
             DebugWriter?.Dispose();
         }
 
-        public Stream GetExecutableStream()
+        public Stream? GetExecutableStream()
         {
             if (FailExecutable)
                 return null;
@@ -48,7 +48,7 @@ namespace Cle.Compiler.UnitTests
             return ExecutableStream ?? (ExecutableStream = new MemoryStream());
         }
 
-        public TextWriter GetDisassemblyWriter()
+        public TextWriter? GetDisassemblyWriter()
         {
             if (FailDisassembly)
                 return null;
@@ -56,7 +56,7 @@ namespace Cle.Compiler.UnitTests
             return DisassemblyWriter ?? (DisassemblyWriter = new StringWriter());
         }
 
-        public TextWriter GetDebugFileWriter()
+        public TextWriter? GetDebugFileWriter()
         {
             return DebugWriter ?? (DebugWriter = new StringWriter());
         }

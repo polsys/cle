@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using JetBrains.Annotations;
+using System.Runtime.CompilerServices;
 
 namespace Cle.Compiler
 {
@@ -13,7 +13,7 @@ namespace Cle.Compiler
         /// Tries to return a sequence of source file names that compose the specified module.
         /// If the module could not be found, returns false.
         /// </summary>
-        bool TryGetFilenamesForModule([NotNull] string moduleName, [CanBeNull] out IEnumerable<string> filenames);
+        bool TryGetFilenamesForModule(string moduleName, [NotNullWhenTrue] out IEnumerable<string>? filenames);
 
         /// <summary>
         /// Tries to open the specified source file and return its contents as a view of bytes.
@@ -22,6 +22,6 @@ namespace Cle.Compiler
         /// </summary>
         /// <param name="filename">The file to open, originated from <see cref="TryGetFilenamesForModule"/>.</param>
         /// <param name="fileBytes">View of full file bytes.</param>
-        bool TryGetSourceFile([NotNull] string filename, out Memory<byte> fileBytes);
+        bool TryGetSourceFile(string filename, out Memory<byte> fileBytes);
     }
 }

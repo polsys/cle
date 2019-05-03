@@ -1,6 +1,4 @@
-﻿using JetBrains.Annotations;
-
-namespace Cle.Compiler
+﻿namespace Cle.Compiler
 {
     /// <summary>
     /// Additional options for the compiler.
@@ -16,8 +14,7 @@ namespace Cle.Compiler
         /// <summary>
         /// Gets a regex pattern the will be used for matching method names to dump debug logging for.
         /// </summary>
-        [CanBeNull]
-        public string DebugPattern { get; }
+        public string? DebugPattern { get; }
 
         /// <summary>
         /// If true, an assembly language listing for the compiled program should be produced along the executable.
@@ -27,10 +24,9 @@ namespace Cle.Compiler
         /// <summary>
         /// Gets the name of the main module.
         /// </summary>
-        [NotNull]
         public string MainModule { get; }
 
-        public CompilationOptions([NotNull] string mainModule, string debugPattern = null, bool emitDisassembly = false)
+        public CompilationOptions(string mainModule, string? debugPattern = null, bool emitDisassembly = false)
         {
             MainModule = mainModule;
             DebugPattern = debugPattern;
