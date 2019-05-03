@@ -107,13 +107,13 @@ private int32 CollatzOnCollatz(int32 n)
 
             // Compile the method body
             var result = new MethodCompiler(declarationProvider, diagnostics)
-                .CompileBody(syntaxTree.Functions[0], declaration, syntaxTree.Namespace, sourceFilename);
+                .CompileBody(syntaxTree.Functions[0], declaration!, syntaxTree.Namespace, sourceFilename);
             
             if (diagnostics.DiagnosticCount > 0)
             {
                 throw new InvalidOperationException("Expected no diagnostics");
             }
-            return result;
+            return result!;
         }
     }
 
