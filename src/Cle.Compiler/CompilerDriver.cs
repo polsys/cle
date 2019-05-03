@@ -7,7 +7,6 @@ using Cle.Common;
 using Cle.Parser;
 using Cle.Parser.SyntaxTree;
 using Cle.SemanticAnalysis;
-using JetBrains.Annotations;
 
 namespace Cle.Compiler
 {
@@ -23,11 +22,10 @@ namespace Cle.Compiler
         /// <param name="options">Additional options, such as optimization and logging levels.</param>
         /// <param name="sourceFileProvider">Interface for source file access.</param>
         /// <param name="outputFileProvider">Interface for output file access.</param>
-        [NotNull]
         public static CompilationResult Compile(
-            [NotNull] CompilationOptions options,
-            [NotNull] ISourceFileProvider sourceFileProvider,
-            [NotNull] IOutputFileProvider outputFileProvider)
+            CompilationOptions options,
+            ISourceFileProvider sourceFileProvider,
+            IOutputFileProvider outputFileProvider)
         {
             // TODO: Determinism (basically, compile everything in a fixed order)
 
@@ -102,8 +100,8 @@ namespace Cle.Compiler
         /// Parses a single module and returns the successfully parsed syntax trees.
         /// Adds parsing diagnostics to the compilation.
         /// </summary>
-        internal static void ParseModule([NotNull] string moduleName, [NotNull] Compilation compilation,
-            [NotNull] ISourceFileProvider fileProvider, [NotNull, ItemNotNull] out List<SourceFileSyntax> syntaxTrees)
+        internal static void ParseModule(string moduleName, Compilation compilation,
+            ISourceFileProvider fileProvider, out List<SourceFileSyntax> syntaxTrees)
         {
             syntaxTrees = new List<SourceFileSyntax>();
 
@@ -141,9 +139,9 @@ namespace Cle.Compiler
         }
 
         private static void AddDeclarationsForModule(
-            [NotNull] string moduleName,
-            [NotNull] Compilation compilation,
-            [NotNull, ItemNotNull] List<SourceFileSyntax> syntaxTrees)
+            string moduleName,
+            Compilation compilation,
+            List<SourceFileSyntax> syntaxTrees)
         {
             var diagnosticSink = new SingleFileDiagnosticSink();
 
@@ -188,10 +186,10 @@ namespace Cle.Compiler
         }
 
         private static void CompileModule(
-            [NotNull] string moduleName,
-            [NotNull] Compilation compilation,
-            [NotNull, ItemNotNull] List<SourceFileSyntax> syntaxTrees,
-            [NotNull] DebugLogger debugLogger)
+            string moduleName,
+            Compilation compilation,
+            List<SourceFileSyntax> syntaxTrees,
+            DebugLogger debugLogger)
         {
             var diagnosticSink = new SingleFileDiagnosticSink();
             var compiler = new MethodCompiler(compilation, diagnosticSink);
@@ -237,8 +235,8 @@ namespace Cle.Compiler
             }
         }
 
-        private static void GenerateCode([NotNull] Compilation compilation, [NotNull] Stream outputStream,
-            [CanBeNull] TextWriter disassemblyWriter, [NotNull] DebugLogger debugLogger)
+        private static void GenerateCode(Compilation compilation, Stream outputStream,
+            TextWriter? disassemblyWriter, DebugLogger debugLogger)
         {
             var generator = new WindowsX64CodeGenerator(outputStream, disassemblyWriter);
             

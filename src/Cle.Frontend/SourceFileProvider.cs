@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using Cle.Compiler;
-using JetBrains.Annotations;
 
 namespace Cle.Frontend
 {
@@ -10,12 +9,12 @@ namespace Cle.Frontend
     {
         private readonly string _mainDirectory;
 
-        public SourceFileProvider([NotNull] string mainDirectory)
+        public SourceFileProvider(string mainDirectory)
         {
             _mainDirectory = mainDirectory;
         }
 
-        public bool TryGetFilenamesForModule(string moduleName, out IEnumerable<string> filenames)
+        public bool TryGetFilenamesForModule(string moduleName, out IEnumerable<string>? filenames)
         {
             // Use absolute paths everywhere
             // TODO: Support for module search paths

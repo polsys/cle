@@ -1,9 +1,9 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using Cle.SemanticAnalysis;
 using Cle.SemanticAnalysis.IR;
-using JetBrains.Annotations;
 
 namespace Cle.Compiler
 {
@@ -12,13 +12,12 @@ namespace Cle.Compiler
     /// </summary>
     internal class DebugLogger
     {
-        [CanBeNull] private readonly string _pattern;
+        private readonly string? _pattern;
 
         /// <summary>
         /// Gets the internal writer, which may be null.
         /// </summary>
-        [CanBeNull]
-        public TextWriter Writer { get; }
+        public TextWriter? Writer { get; }
 
         /// <summary>
         /// Creates a logger.
@@ -31,7 +30,7 @@ namespace Cle.Compiler
         /// A string that is searched for in method names.
         /// A null pattern matches no method and "*" or empty matches all methods.
         /// </param>
-        public DebugLogger([CanBeNull] TextWriter writer, [CanBeNull] string methodPattern)
+        public DebugLogger(TextWriter? writer, string? methodPattern)
         {
             Writer = writer;
 
@@ -47,7 +46,7 @@ namespace Cle.Compiler
         /// Returns true iff the method name contains the pattern string and logging is enabled. 
         /// </summary>
         /// <param name="methodName">The full name of the method to match.</param>
-        public bool ShouldLog([NotNull] string methodName)
+        public bool ShouldLog(string methodName)
         {
             return Writer != null && _pattern != null &&
                 methodName.IndexOf(_pattern, StringComparison.InvariantCultureIgnoreCase) != -1;
@@ -58,10 +57,11 @@ namespace Cle.Compiler
         /// to the output writer.
         /// </summary>
         /// <param name="method">The method IR.</param>
-        public void DumpMethod([NotNull] CompiledMethod method)
+        public void DumpMethod(CompiledMethod method)
         {
             if (!ShouldLog(method.FullName))
                 return;
+            Debug.Assert(Writer is object);
 
             // Write the full name as a comment
             Writer.Write("; ");
@@ -87,7 +87,7 @@ namespace Cle.Compiler
         /// Writes a header surrounded by padding and a header sign.
         /// </summary>
         /// <param name="header">The header text.</param>
-        public void WriteHeader([NotNull] string header)
+        public void WriteHeader(string header)
         {
             if (Writer != null)
             {
@@ -102,7 +102,7 @@ namespace Cle.Compiler
         /// <summary>
         /// Writes the specified text followed by a newline.
         /// </summary>
-        public void WriteLine([NotNull] string text)
+        public void WriteLine(string text)
         {
             Writer?.WriteLine(text);
         }

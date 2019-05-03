@@ -1,7 +1,5 @@
 ﻿using System.Collections.Generic;
 using Cle.Common;
-using JetBrains.Annotations;
-
 namespace Cle.Compiler
 {
     /// <summary>
@@ -15,16 +13,11 @@ namespace Cle.Compiler
         /// </summary>
         public IReadOnlyList<Diagnostic> Diagnostics => _diagnostics;
 
-        [NotNull]
         private string _moduleName = string.Empty;
-
-        [NotNull]
         private string _filename = string.Empty;
-
-        [NotNull, ItemNotNull]
         private readonly List<Diagnostic> _diagnostics = new List<Diagnostic>();
 
-        public void Reset([NotNull] string moduleName, [NotNull] string filename)
+        public void Reset(string moduleName, string filename)
         {
             _moduleName = moduleName;
             _filename = filename;
@@ -36,12 +29,12 @@ namespace Cle.Compiler
             _diagnostics.Add(new Diagnostic(code, position, _filename, _moduleName, null, null));
         }
 
-        public void Add(DiagnosticCode code, TextPosition position, string actual)
+        public void Add(DiagnosticCode code, TextPosition position, string? actual)
         {
             _diagnostics.Add(new Diagnostic(code, position, _filename, _moduleName, actual, null));
         }
 
-        public void Add(DiagnosticCode code, TextPosition position, string actual, string expected)
+        public void Add(DiagnosticCode code, TextPosition position, string? actual, string? expected)
         {
             _diagnostics.Add(new Diagnostic(code, position, _filename, _moduleName, actual, expected));
         }

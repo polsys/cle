@@ -215,12 +215,12 @@ private int32 Main() { return 0; }";
                 Assert.That(result.Diagnostics, Has.Exactly(0).Items);
 
                 Assert.That(outputProvider.ExecutableStream, Is.Not.Null);
-                Assert.That(outputProvider.ExecutableStream.Position, Is.GreaterThan(0));
+                Assert.That(outputProvider.ExecutableStream!.Position, Is.GreaterThan(0));
 
                 if (emitDisassembly)
                 {
                     Assert.That(outputProvider.DisassemblyWriter, Is.Not.Null);
-                    Assert.That(outputProvider.DisassemblyWriter.ToString(), Does.Contain("Test::Main"));
+                    Assert.That(outputProvider.DisassemblyWriter!.ToString(), Does.Contain("Test::Main"));
                 }
                 else
                 {
@@ -343,7 +343,8 @@ public int32 ComplexMethod() { return 42; }";
                     sourceProvider, outputProvider);
 
                 var writer = outputProvider.DebugWriter;
-                Assert.That(writer.ToString(), Does.Contain("; Test::SimpleMethod"));
+                Assert.That(writer, Is.Not.Null);
+                Assert.That(writer!.ToString(), Does.Contain("; Test::SimpleMethod"));
                 Assert.That(writer.ToString(), Does.Contain("  Return #0"));
                 Assert.That(writer.ToString(), Does.Not.Contain("ComplexMethod"));
             }

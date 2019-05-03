@@ -34,7 +34,7 @@ namespace Cle.Frontend.UnitTests
                 Is.True);
             Assert.That(options, Is.Not.Null);
 
-            Assert.That(options.EmitDisassembly, Is.False);
+            Assert.That(options!.EmitDisassembly, Is.False);
             Assert.That(options.DebugOutput, Is.False);
             Assert.That(options.MainModule, Is.EqualTo("."));
         }
@@ -48,7 +48,7 @@ namespace Cle.Frontend.UnitTests
             Assert.That(CommandLineParser.TryParseArguments(new[] { "--dump", "\\d+" }, output, out var options),
                 Is.True);
             Assert.That(options, Is.Not.Null);
-            Assert.That(options.DebugPattern, Is.EqualTo("\\d+"));
+            Assert.That(options!.DebugPattern, Is.EqualTo("\\d+"));
             Assert.That(options.DebugOutput, Is.True);
         }
 
@@ -60,7 +60,7 @@ namespace Cle.Frontend.UnitTests
             Assert.That(CommandLineParser.TryParseArguments(new[] { "--disasm" }, output, out var options),
                 Is.True);
             Assert.That(options, Is.Not.Null);
-            Assert.That(options.EmitDisassembly, Is.True);
+            Assert.That(options!.EmitDisassembly, Is.True);
         }
 
         [Test]
@@ -71,7 +71,7 @@ namespace Cle.Frontend.UnitTests
             Assert.That(CommandLineParser.TryParseArguments(new[] { "MainModule" }, output, out var options),
                 Is.True);
             Assert.That(options, Is.Not.Null);
-            Assert.That(options.MainModule, Is.EqualTo("MainModule"));
+            Assert.That(options!.MainModule, Is.EqualTo("MainModule"));
         }
 
         [Test]

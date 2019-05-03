@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace Cle.Compiler
 {
@@ -12,7 +13,7 @@ namespace Cle.Compiler
     internal class IndexedRandomAccessStore<T> where T : class
     {
         private int _nextIndex;
-        private T[] _array;
+        private T[]? _array;
 
         /// <summary>
         /// Gets the number of reserved indices.
@@ -35,6 +36,7 @@ namespace Cle.Compiler
                 if (_array is null || _array.Length <= index)
                 {
                     ResizeArray();
+                    Debug.Assert(_array is object);
                 }
                 _array[index] = value;
             }

@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using System.Runtime.CompilerServices;
 using Cle.Compiler;
 using CommandLine;
-using JetBrains.Annotations;
 
 namespace Cle.Frontend
 {
@@ -19,9 +19,9 @@ namespace Cle.Frontend
         /// <param name="output">A writer for any output such as help.</param>
         /// <param name="options">The parsed compilation options, if successful.</param>
         public static bool TryParseArguments(
-            [NotNull, ItemNotNull] IEnumerable<string> args,
-            [NotNull] TextWriter output,
-            [CanBeNull] out CompilationOptions options)
+            IEnumerable<string> args,
+            TextWriter output,
+            [NotNullWhenTrue] out CompilationOptions? options)
         {
             var parser = new CommandLine.Parser(config =>
             {
