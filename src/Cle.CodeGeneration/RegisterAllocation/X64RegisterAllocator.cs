@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using Cle.CodeGeneration.Lir;
-using JetBrains.Annotations;
 
 using Interval = Cle.CodeGeneration.RegisterAllocation.Interval<Cle.CodeGeneration.Lir.X64Register>;
 
@@ -50,7 +49,7 @@ namespace Cle.CodeGeneration.RegisterAllocation
         /// The method must be in SSA form with critical edges broken.
         /// </param>
         public static (LowMethod<X64Register> allocatedMethod, AllocationInfo<X64Register> allocationInfo)
-            Allocate([NotNull] LowMethod<X64Register> method)
+            Allocate(LowMethod<X64Register> method)
         {
             // Compute the live intervals
             var intervals = new List<Interval>(method.Locals.Count);
@@ -117,11 +116,12 @@ namespace Cle.CodeGeneration.RegisterAllocation
                     {
                         live.UnionWith(liveIn[succ]);
 
-                        if (method.Blocks[succ].Phis is null)
+                        var phis = method.Blocks[succ].Phis;
+                        if (phis is null)
                             continue;
 
                         var phiPosition = GetPhiOperandIndex(blockIndex, method.Blocks[succ]);
-                        foreach (var phi in method.Blocks[succ].Phis)
+                        foreach (var phi in phis)
                             live.Add(phi.Operands[phiPosition]);
                     }
                 }

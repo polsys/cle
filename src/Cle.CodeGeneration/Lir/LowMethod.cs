@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using JetBrains.Annotations;
 
 namespace Cle.CodeGeneration.Lir
 {
@@ -14,10 +13,8 @@ namespace Cle.CodeGeneration.Lir
     internal class LowMethod<TRegister>
         where TRegister : struct, Enum
     {
-        [NotNull, ItemNotNull]
         public readonly List<LowLocal<TRegister>> Locals;
 
-        [NotNull, ItemNotNull]
         public readonly List<LowBlock> Blocks;
 
         public LowMethod()
@@ -36,7 +33,7 @@ namespace Cle.CodeGeneration.Lir
         /// </summary>
         /// <param name="writer">A writer instance.</param>
         /// <param name="printLocals">If true, the locals and their required locations will be printed.</param>
-        public void Dump([NotNull] TextWriter writer, bool printLocals)
+        public void Dump(TextWriter writer, bool printLocals)
         {
             if (printLocals)
             {

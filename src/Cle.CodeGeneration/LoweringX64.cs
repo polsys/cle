@@ -3,7 +3,6 @@ using System.Diagnostics;
 using Cle.CodeGeneration.Lir;
 using Cle.Common.TypeSystem;
 using Cle.SemanticAnalysis.IR;
-using JetBrains.Annotations;
 
 namespace Cle.CodeGeneration
 {
@@ -12,7 +11,7 @@ namespace Cle.CodeGeneration
     /// </summary>
     internal static class LoweringX64
     {
-        public static LowMethod<X64Register> Lower([NotNull] CompiledMethod highMethod)
+        public static LowMethod<X64Register> Lower(CompiledMethod highMethod)
         {
             Debug.Assert(highMethod.Body != null);
             Debug.Assert(highMethod.Body.BasicBlocks.Count > 0);
@@ -70,8 +69,8 @@ namespace Cle.CodeGeneration
             }
         }
 
-        private static LowBlock ConvertBlock([NotNull] BasicBlock highBlock, [NotNull] CompiledMethod highMethod,
-            [NotNull] LowMethod<X64Register> methodInProgress, bool isFirstBlock, int paramCount)
+        private static LowBlock ConvertBlock(BasicBlock highBlock, CompiledMethod highMethod,
+            LowMethod<X64Register> methodInProgress, bool isFirstBlock, int paramCount)
         {
             var lowBlock = new LowBlock
             {
