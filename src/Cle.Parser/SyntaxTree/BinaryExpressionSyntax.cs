@@ -1,5 +1,4 @@
 ﻿using Cle.Common;
-using JetBrains.Annotations;
 
 namespace Cle.Parser.SyntaxTree
 {
@@ -43,18 +42,16 @@ namespace Cle.Parser.SyntaxTree
         /// Gets the left parameter to the binary operation.
         /// This parameter should be evaluated first.
         /// </summary>
-        [NotNull]
         public ExpressionSyntax Left { get; }
 
         /// <summary>
         /// Gets the right parameter to the binary operation.
         /// This parameter should be evaluated after <see cref="Left"/>.
         /// </summary>
-        [NotNull]
         public ExpressionSyntax Right { get; }
 
-        public BinaryExpressionSyntax(BinaryOperation operation, [NotNull] ExpressionSyntax left,
-            [NotNull] ExpressionSyntax right, TextPosition position)
+        public BinaryExpressionSyntax(BinaryOperation operation, ExpressionSyntax left,
+            ExpressionSyntax right, TextPosition position)
             : base(position)
         {
             Operation = operation;

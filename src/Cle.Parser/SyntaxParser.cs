@@ -2,10 +2,10 @@
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Text;
 using Cle.Common;
 using Cle.Parser.SyntaxTree;
-using JetBrains.Annotations;
 
 namespace Cle.Parser
 {
@@ -14,15 +14,15 @@ namespace Cle.Parser
     /// </summary>
     public class SyntaxParser
     {
-        [NotNull] private readonly Lexer _lexer;
-        [NotNull] private readonly string _filename;
-        [NotNull] private readonly IDiagnosticSink _diagnosticSink;
+        private readonly Lexer _lexer;
+        private readonly string _filename;
+        private readonly IDiagnosticSink _diagnosticSink;
 
         /// <summary>
         /// Internal for testing only.
         /// Use <see cref="Parse"/> instead.
         /// </summary>
-        internal SyntaxParser(Memory<byte> source, [NotNull] string filename, [NotNull] IDiagnosticSink diagnosticSink)
+        internal SyntaxParser(Memory<byte> source, string filename, IDiagnosticSink diagnosticSink)
         {
             _lexer = new Lexer(source);
             _filename = filename;
@@ -36,18 +36,16 @@ namespace Cle.Parser
         /// <param name="source">The UTF-8 encoded source file content.</param>
         /// <param name="filename">The name of the source file.</param>
         /// <param name="diagnosticSink">The sink to write parse diagnostics into.</param>
-        [CanBeNull]
-        public static SourceFileSyntax Parse(
+        public static SourceFileSyntax? Parse(
             Memory<byte> source, 
-            [NotNull] string filename,
-            [NotNull] IDiagnosticSink diagnosticSink)
+            string filename,
+            IDiagnosticSink diagnosticSink)
         {
             var parser = new SyntaxParser(source, filename, diagnosticSink);
             return parser.ParseSourceFile();
         }
 
-        [CanBeNull]
-        private SourceFileSyntax ParseSourceFile()
+        private SourceFileSyntax? ParseSourceFile()
         {
             var namespaceName = string.Empty;
             var functionListBuilder = ImmutableList<FunctionSyntax>.Empty.ToBuilder();
@@ -165,7 +163,7 @@ namespace Cle.Parser
             return new SourceFileSyntax(namespaceName, _filename, functionListBuilder.ToImmutable());
         }
 
-        private bool TryParseAttribute([CanBeNull] out AttributeSyntax attribute)
+        private bool TryParseAttribute([NotNullWhenTrue] out AttributeSyntax? attribute)
         {
             attribute = null;
 
@@ -190,10 +188,8 @@ namespace Cle.Parser
             return true;
         }
 
-        private bool TryParseNamespaceDeclaration([NotNull] out string namespaceName)
+        private bool TryParseNamespaceDeclaration(out string namespaceName)
         {
-            namespaceName = string.Empty;
-
             // Eat the 'namespace' token
             EatAndAssertToken(TokenType.Namespace);
 
@@ -217,7 +213,7 @@ namespace Cle.Parser
             return true;
         }
 
-        private bool TryParseParameterList([NotNull, ItemNotNull] out ImmutableList<ParameterDeclarationSyntax> parameters)
+        private bool TryParseParameterList(out ImmutableList<ParameterDeclarationSyntax> parameters)
         {
             parameters = ImmutableList<ParameterDeclarationSyntax>.Empty;
 
@@ -278,7 +274,7 @@ namespace Cle.Parser
             return true;
         }
         
-        private bool TryParseBlock([CanBeNull] out BlockSyntax block)
+        private bool TryParseBlock([NotNullWhenTrue] out BlockSyntax? block)
         {
             block = null;
 
@@ -363,7 +359,7 @@ namespace Cle.Parser
             return true;
         }
 
-        private bool TryParseIf([CanBeNull] out IfStatementSyntax ifStatement)
+        private bool TryParseIf([NotNullWhenTrue] out IfStatementSyntax? ifStatement)
         {
             ifStatement = null;
 
@@ -430,7 +426,7 @@ namespace Cle.Parser
             }
         }
 
-        private bool TryParseReturnStatement([CanBeNull] out ReturnStatementSyntax returnStatement)
+        private bool TryParseReturnStatement([NotNullWhenTrue] out ReturnStatementSyntax? returnStatement)
         {
             returnStatement = null;
 
@@ -440,7 +436,7 @@ namespace Cle.Parser
             // There are two kinds of returns: void return and value return.
             // In case of the former, the keyword is immediately followed by a semicolon.
             // In case of the latter, parse the expression.
-            ExpressionSyntax expression = null;
+            ExpressionSyntax? expression = null;
             if (_lexer.PeekTokenType() != TokenType.Semicolon)
             {
                 if (!TryParseExpression(out expression))
@@ -459,7 +455,7 @@ namespace Cle.Parser
             return true;
         }
 
-        private bool TryParseWhileStatement([CanBeNull] out WhileStatementSyntax whileStatement)
+        private bool TryParseWhileStatement([NotNullWhenTrue] out WhileStatementSyntax? whileStatement)
         {
             whileStatement = null;
 
@@ -489,7 +485,7 @@ namespace Cle.Parser
             return true;
         }
 
-        private bool TryParseCondition([CanBeNull] out ExpressionSyntax condition)
+        private bool TryParseCondition([NotNullWhenTrue] out ExpressionSyntax? condition)
         {
             if (!ExpectToken(TokenType.OpenParen, DiagnosticCode.ExpectedCondition) ||
                 !TryParseExpression(out condition) ||
@@ -502,7 +498,7 @@ namespace Cle.Parser
             return true;
         }
 
-        private bool TryParseStatementStartingWithIdentifier(out StatementSyntax statement)
+        private bool TryParseStatementStartingWithIdentifier([NotNullWhenTrue] out StatementSyntax? statement)
         {
             // This method handles
             //   - variable declarations ("int32 name = expression;")
@@ -592,12 +588,12 @@ namespace Cle.Parser
         /// Internal for testing only.
         /// This function handles error logging on its own.
         /// </summary>
-        internal bool TryParseExpression([CanBeNull] out ExpressionSyntax expressionSyntax)
+        internal bool TryParseExpression([NotNullWhenTrue] out ExpressionSyntax? expressionSyntax)
         {
             return TryParseLogicalExpression(out expressionSyntax);
         }
 
-        private bool TryParseLogicalExpression([CanBeNull] out ExpressionSyntax expressionSyntax)
+        private bool TryParseLogicalExpression([NotNullWhenTrue] out ExpressionSyntax? expressionSyntax)
         {
             // Logical expression := Logical expression [& && | || ^] Relational expression
             expressionSyntax = null;
@@ -658,7 +654,7 @@ namespace Cle.Parser
             }
         }
 
-        private bool TryParseRelationalExpression([CanBeNull] out ExpressionSyntax expressionSyntax)
+        private bool TryParseRelationalExpression([NotNullWhenTrue] out ExpressionSyntax? expressionSyntax)
         {
             // Relational expression := Relational expression [== != < <= >= >] Shift expression
             expressionSyntax = null;
@@ -723,7 +719,7 @@ namespace Cle.Parser
             }
         }
 
-        private bool TryParseShiftExpression([CanBeNull] out ExpressionSyntax expressionSyntax)
+        private bool TryParseShiftExpression([NotNullWhenTrue] out ExpressionSyntax? expressionSyntax)
         {
             // Shift expression := Shift expression [<< >>] Arithmetic expression
             expressionSyntax = null;
@@ -777,7 +773,7 @@ namespace Cle.Parser
             }
         }
 
-        private bool TryParseArithmeticExpression([CanBeNull] out ExpressionSyntax expressionSyntax)
+        private bool TryParseArithmeticExpression([NotNullWhenTrue] out ExpressionSyntax? expressionSyntax)
         {
             // Arithmetic expression := Arithmetic expression [+ -] Term
             expressionSyntax = null;
@@ -830,7 +826,7 @@ namespace Cle.Parser
             }
         }
 
-        private bool TryParseTerm([CanBeNull] out ExpressionSyntax expressionSyntax)
+        private bool TryParseTerm([NotNullWhenTrue] out ExpressionSyntax? expressionSyntax)
         {
             // Term := Term [* / %] Factor
             expressionSyntax = null;
@@ -886,7 +882,7 @@ namespace Cle.Parser
             }
         }
 
-        private bool TryParseFactor([CanBeNull] out ExpressionSyntax expressionSyntax)
+        private bool TryParseFactor([NotNullWhenTrue] out ExpressionSyntax? expressionSyntax)
         {
             // Factor := Identifier | Number | Boolean literal | ( Expression ) | -Factor | !Factor | ~Factor
             
@@ -967,7 +963,7 @@ namespace Cle.Parser
             }
 
             // Local helper method for sharing code between the various unary paths
-            bool ParseUnary(UnaryOperation op, out ExpressionSyntax syntax)
+            bool ParseUnary(UnaryOperation op, out ExpressionSyntax? syntax)
             {
                 // Eat the operator
                 var opPosition = _lexer.Position;
@@ -988,7 +984,7 @@ namespace Cle.Parser
             }
         }
 
-        private bool TryParseNumber([CanBeNull] out ExpressionSyntax literalSyntax)
+        private bool TryParseNumber([NotNullWhenTrue] out ExpressionSyntax? literalSyntax)
         {
             literalSyntax = null;
 
@@ -1018,7 +1014,7 @@ namespace Cle.Parser
         /// This function assumes that the function name, passed in <paramref name="functionName"/>,
         /// has already been read from the lexer, and the next token is known to be "(".
         /// </summary>
-        private bool TryParseFunctionCall([NotNull] string functionName, [CanBeNull] out FunctionCallSyntax callSyntax)
+        private bool TryParseFunctionCall(string functionName, [NotNullWhenTrue] out FunctionCallSyntax? callSyntax)
         {
             callSyntax = null;
             var callPosition = _lexer.LastPosition;
@@ -1130,7 +1126,7 @@ namespace Cle.Parser
         /// </summary>
         /// <param name="errorCode">The error code to log if the token is not an identifier.</param>
         /// <param name="identifier">The read identifier.</param>
-        private bool ExpectIdentifier(DiagnosticCode errorCode, [NotNull] out string identifier)
+        private bool ExpectIdentifier(DiagnosticCode errorCode, out string identifier)
         {
             if (_lexer.PeekTokenType() == TokenType.Identifier)
             {
@@ -1148,7 +1144,6 @@ namespace Cle.Parser
         /// <summary>
         /// Reads a token and converts it into an UTF-16 string.
         /// </summary>
-        [NotNull]
         private string ReadTokenIntoString()
         {
             // TODO: Remove ToArray() once the ReadOnlySpan<byte> overload is available

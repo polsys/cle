@@ -1,5 +1,4 @@
 ﻿using Cle.Common;
-using JetBrains.Annotations;
 
 namespace Cle.Parser.SyntaxTree
 {
@@ -11,11 +10,10 @@ namespace Cle.Parser.SyntaxTree
         /// <summary>
         /// Gets the name of the attribute.
         /// </summary>
-        [NotNull]
         public string Name { get; }
 
         public AttributeSyntax(
-            [NotNull] string name,
+            string name,
             TextPosition position)
             : base(position)
         {

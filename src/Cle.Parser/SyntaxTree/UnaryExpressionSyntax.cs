@@ -1,5 +1,4 @@
 ﻿using Cle.Common;
-using JetBrains.Annotations;
 
 namespace Cle.Parser.SyntaxTree
 {
@@ -27,10 +26,9 @@ namespace Cle.Parser.SyntaxTree
         /// <summary>
         /// Gets the parameter to the unary operation.
         /// </summary>
-        [NotNull]
         public ExpressionSyntax InnerExpression { get; }
 
-        public UnaryExpressionSyntax(UnaryOperation operation, [NotNull] ExpressionSyntax innerExpression,
+        public UnaryExpressionSyntax(UnaryOperation operation, ExpressionSyntax innerExpression,
             TextPosition position)
             : base(position)
         {

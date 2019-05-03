@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
-using JetBrains.Annotations;
 
 namespace Cle.Parser
 {
@@ -13,7 +12,7 @@ namespace Cle.Parser
         /// Returns whether the given namespace name, possibly composed of multiple parts, is valid.
         /// </summary>
         /// <param name="name">The namespace name to check as an UTF-16 string.</param>
-        public static bool IsValidNamespaceName([NotNull] string name)
+        public static bool IsValidNamespaceName(string name)
         {
             // Namespace names must conform to rules for other identifiers, so
             // this check is equivalent to validating a fully qualified name.
@@ -35,7 +34,7 @@ namespace Cle.Parser
         /// Returns whether the given fully qualified (or unqualified) name is valid.
         /// </summary>
         /// <param name="name">The name to check as an UTF-16 string.</param>
-        public static bool IsValidFullName([NotNull] string name)
+        public static bool IsValidFullName(string name)
         {
             return IsValidFullName(name.AsSpan());
         }
@@ -90,7 +89,7 @@ namespace Cle.Parser
         /// to be done by the lexer.
         /// </summary>
         /// <param name="name">The simple name to check as an UTF-16 string.</param>
-        public static bool IsValidSimpleName([NotNull] string name)
+        public static bool IsValidSimpleName(string name)
         {
             return IsValidSimpleName(name.AsSpan());
         }
@@ -126,7 +125,7 @@ namespace Cle.Parser
         /// Returns whether the given name is equal to a reserved type name.
         /// </summary>
         /// <param name="name">The name to check. This may be a simple or a fully qualified name.</param>
-        public static bool IsReservedTypeName([NotNull] string name)
+        public static bool IsReservedTypeName(string name)
         {
             // TODO: More types once they exist (consider matching on the initial part of the name for [u]int[NN])
             return name == "bool" || name == "int32" || name == "void";
