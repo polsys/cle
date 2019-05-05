@@ -14,6 +14,10 @@ variables:
   configuration: 'Release'
 
 steps:
+- task: DotNetCoreInstaller@0
+  inputs:
+    version: '2.2.203'
+  displayName: 'Install .NET Core SDK that supports C# 8.0'
 - script: |
     dotnet tool install --tool-path . nbgv
     .\nbgv cloud
