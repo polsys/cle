@@ -38,10 +38,7 @@ namespace Cle.SemanticAnalysis
 
             for (var blockIndex = 0; blockIndex < method.Body.BasicBlocks.Count; blockIndex++)
             {
-                // The block may be null as the builder omits dead blocks but preserves numbering
                 var block = method.Body.BasicBlocks[blockIndex];
-                if (block is null)
-                    continue;
 
                 // Basic block header
                 outputBuilder.AppendLine("BB_" + blockIndex + ":");

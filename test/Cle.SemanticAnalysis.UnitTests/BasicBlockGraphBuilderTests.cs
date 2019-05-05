@@ -7,9 +7,6 @@ namespace Cle.SemanticAnalysis.UnitTests
 {
     public class BasicBlockGraphBuilderTests
     {
-        // TODO: Re-enable this when refactoring the basic blocks to always be non-null
-#nullable disable
-
         [Test]
         public void Empty_graph_fails()
         {
@@ -242,13 +239,13 @@ namespace Cle.SemanticAnalysis.UnitTests
             var rightBuilder = firstBuilder.CreateBranch(7);
             rightBuilder.AppendInstruction(Opcode.Return, 0, 0, 0);
 
-            // This block does not return but is not referenced either
+            // This block does not return nor is referenced, therefore it should be dropped
             var finalBuilder = leftBuilder.CreateSuccessorBlock();
             finalBuilder.AppendInstruction(Opcode.CopyValue, 1, 2, 3);
 
             var graph = graphBuilder.Build();
 
-            Assert.That(graph.BasicBlocks, Has.Exactly(4).Items);
+            Assert.That(graph.BasicBlocks, Has.Exactly(3).Items);
             Assert.That(graph.BasicBlocks[0].Instructions, Has.Exactly(1).Items);
             Assert.That(graph.BasicBlocks[0].Instructions[0].Operation, Is.EqualTo(Opcode.BranchIf));
             Assert.That(graph.BasicBlocks[0].Instructions[0].Left, Is.EqualTo(7));
@@ -262,8 +259,29 @@ namespace Cle.SemanticAnalysis.UnitTests
             Assert.That(graph.BasicBlocks[2].Instructions, Has.Exactly(1).Items);
             Assert.That(graph.BasicBlocks[2].DefaultSuccessor, Is.EqualTo(-1));
             CollectionAssert.AreEqual(new[] { 0 }, graph.BasicBlocks[2].Predecessors);
+        }
 
-            Assert.That(graph.BasicBlocks[3], Is.Null);
+        [Test]
+        public void Unreachable_blocks_are_dropped()
+        {
+            var graphBuilder = new BasicBlockGraphBuilder();
+
+            // The first and the last block are alive, the two in the middle can be dropped
+            var firstBuilder = graphBuilder.GetInitialBlockBuilder();
+            graphBuilder.GetNewBasicBlock().CreateSuccessorBlock();
+            firstBuilder.CreateSuccessorBlock().AppendInstruction(Opcode.Return, 0, 0, 0);
+
+            var graph = graphBuilder.Build();
+
+            Assert.That(graph.BasicBlocks, Has.Exactly(2).Items);
+            Assert.That(graph.BasicBlocks[0].Instructions, Is.Empty);
+            Assert.That(graph.BasicBlocks[0].DefaultSuccessor, Is.EqualTo(1));
+            Assert.That(graph.BasicBlocks[0].AlternativeSuccessor, Is.EqualTo(-1));
+
+            Assert.That(graph.BasicBlocks[1].Instructions, Has.Exactly(1).Items);
+            Assert.That(graph.BasicBlocks[1].Instructions[0].Operation, Is.EqualTo(Opcode.Return));
+            Assert.That(graph.BasicBlocks[1].DefaultSuccessor, Is.EqualTo(-1));
+            CollectionAssert.AreEqual(new[] { 0 }, graph.BasicBlocks[1].Predecessors);
         }
 
         [Test]

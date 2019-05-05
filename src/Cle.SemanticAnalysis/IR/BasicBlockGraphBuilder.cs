@@ -65,15 +65,29 @@ namespace Cle.SemanticAnalysis.IR
             }
             MarkBlock(0, liveBlocks, predecessors);
 
+            // To drop unreachable blocks, reconstruct the block indices
+            // TODO: Array pooling
+            var newIndices = new int[_builders.Count];
+            var currentIndex = 0;
+            for (var i = 0; i < liveBlocks.Length; i++)
+            {
+                if (liveBlocks[i])
+                {
+                    newIndices[i] = currentIndex;
+                    currentIndex++;
+                }
+                else
+                {
+                    newIndices[i] = -1;
+                }
+            }
+
             // Construct each marked basic block
             var blocks = ImmutableList<BasicBlock?>.Empty.ToBuilder();
             for (var i = 0; i < _builders.Count; i++)
             {
-                // Skip unreachable blocks but append null to preserve indexing
-                // Indexing can be fixed by an optimization pass after possible block merges etc.
                 if (!liveBlocks[i])
                 {
-                    blocks.Add(null);
                     continue;
                 }
 
@@ -86,8 +100,8 @@ namespace Cle.SemanticAnalysis.IR
                 blocks.Add(new BasicBlock(
                     blockBuilder.Instructions.ToImmutable(),
                     blockBuilder.Phis.ToImmutable(),
-                    blockBuilder.DefaultSuccessor,
-                    blockBuilder.AlternativeSuccessor,
+                    blockBuilder.DefaultSuccessor == -1 ? -1 : newIndices[blockBuilder.DefaultSuccessor],
+                    blockBuilder.AlternativeSuccessor == -1 ? -1 : newIndices[blockBuilder.AlternativeSuccessor],
                     predecessors[i]));
             }
 

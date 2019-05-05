@@ -7,9 +7,9 @@ namespace Cle.SemanticAnalysis.IR
     /// </summary>
     public class BasicBlockGraph
     {
-        public readonly ImmutableList<BasicBlock?> BasicBlocks;
+        public readonly ImmutableList<BasicBlock> BasicBlocks;
 
-        public BasicBlockGraph(ImmutableList<BasicBlock?> basicBlocks)
+        public BasicBlockGraph(ImmutableList<BasicBlock> basicBlocks)
         {
             BasicBlocks = basicBlocks;
         }

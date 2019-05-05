@@ -51,11 +51,7 @@ namespace Cle.UnitTests.Common
                     // The line is of form "BB_nnn:" so we have to chop bits off both ends
                     var blockIndex = int.Parse(currentLine.AsSpan(3, currentLine.Length - 4));
                     
-                    // Blocks may be omitted in the disassembly, so we may need to create the missing ones too
-                    while (currentBlockBuilder == null || currentBlockBuilder.Index < blockIndex)
-                    {
-                        currentBlockBuilder = graphBuilder.GetNewBasicBlock();
-                    }
+                    currentBlockBuilder = graphBuilder.GetNewBasicBlock();
                     Assert.That(blockIndex, Is.EqualTo(currentBlockBuilder.Index), "Blocks must be specified in order.");
                 }
                 else if (currentLine.StartsWith("==>"))

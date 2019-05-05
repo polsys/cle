@@ -106,10 +106,6 @@ namespace Cle.SemanticAnalysis
         {
             Debug.Assert(_originalMethod.Body != null);
             var block = _originalMethod.Body.BasicBlocks[blockIndex];
-            
-            // Unreachable blocks are easy to convert!
-            if (block is null)
-                return;
 
             // If possible, seal this block
             TrySealBlock(blockIndex);
@@ -215,7 +211,6 @@ namespace Cle.SemanticAnalysis
             {
                 Debug.Assert(_originalMethod.Body != null);
                 var block = _originalMethod.Body.BasicBlocks[blockIndex];
-                Debug.Assert(block != null);
 
                 if (!_isSealed[blockIndex])
                 {
@@ -271,7 +266,6 @@ namespace Cle.SemanticAnalysis
         {
             Debug.Assert(_originalMethod.Body != null);
             var block = _originalMethod.Body.BasicBlocks[blockIndex];
-            Debug.Assert(block != null);
 
             var operands = ImmutableList<int>.Empty.ToBuilder();
             foreach (var predecessor in block.Predecessors)
@@ -327,7 +321,7 @@ namespace Cle.SemanticAnalysis
 
             // TODO Perf: making the precondition check inline-able might have a positive impact
             if (!_isSealed[blockIndex] &&
-                _originalMethod.Body.BasicBlocks[blockIndex]?.Predecessors.Count == _predecessorsSet[blockIndex])
+                _originalMethod.Body.BasicBlocks[blockIndex].Predecessors.Count == _predecessorsSet[blockIndex])
             {
                 _isSealed[blockIndex] = true;
 
