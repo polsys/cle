@@ -34,19 +34,7 @@ namespace Cle.CodeGeneration
             for (var i = 0; i < highMethod.Body.BasicBlocks.Count; i++)
             {
                 var highBlock = highMethod.Body.BasicBlocks[i];
-
-                if (highBlock is null)
-                {
-                    lowMethod.Blocks.Add(new LowBlock()
-                    {
-                        Predecessors = Array.Empty<int>(),
-                        Successors = Array.Empty<int>()
-                    });
-                }
-                else
-                {
-                    lowMethod.Blocks.Add(ConvertBlock(highBlock, highMethod, lowMethod, i == 0, paramCount));
-                }
+                lowMethod.Blocks.Add(ConvertBlock(highBlock, highMethod, lowMethod, i == 0, paramCount));
             }
 
             return lowMethod;

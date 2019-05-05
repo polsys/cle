@@ -186,37 +186,6 @@ BB_1:
         }
 
         [Test]
-        public void Successive_basic_blocks_with_gap_in_between()
-        {
-            const string source = @"
-; #0   int32 param
-BB_0:
-    Multiply #0 * #0 -> #0
-    ==> BB_2
-
-BB_2:
-    Add #0 + #0 -> #0
-    Return #0
-";
-            var original = MethodAssembler.Assemble(source, "Test::Method");
-            var result = new SsaConverter().ConvertToSsa(original);
-
-            const string expected = @"
-; #0   int32 param
-; #1   int32
-; #2   int32
-BB_0:
-    Multiply #0 * #0 -> #1
-    ==> BB_2
-
-BB_2:
-    Add #1 + #1 -> #2
-    Return #2
-";
-            AssertDisassembly(result, expected);
-        }
-
-        [Test]
         public void Branch_that_does_not_merge_back()
         {
             const string source = @"

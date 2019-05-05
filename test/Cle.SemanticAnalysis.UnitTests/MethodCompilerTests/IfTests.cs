@@ -218,7 +218,7 @@ public int32 GetTheAnswer() {
 BB_0:
     Load true -> #0
     BranchIf #0 ==> BB_1
-    ==> BB_5
+    ==> BB_4
 
 BB_1:
     Load false -> #1
@@ -233,7 +233,7 @@ BB_3:
     Load 42 -> #3
     Return #3
 
-BB_5:
+BB_4:
     Load 41 -> #4
     Return #4");
         }
@@ -268,7 +268,7 @@ BB_0:
     ==> BB_2
 
 BB_1:
-    ==> BB_6
+    ==> BB_5
 
 BB_2:
     Load false -> #1
@@ -283,7 +283,7 @@ BB_4:
     Load 42 -> #3
     Return #3
 
-BB_6:
+BB_5:
     Load 41 -> #4
     Return #4");
         }
