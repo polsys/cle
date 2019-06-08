@@ -24,7 +24,7 @@ steps:
   displayName: 'Install NerdBank.GitVersioning'
 - script: |
     dotnet tool install --tool-path . dotnet-sonarscanner
-    .\dotnet-sonarscanner begin /k:"polsys_cle" /v:"$(buildId)" /d:sonar.organization="polsys-github" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.login="$(SONAR_TOKEN)" /d:sonar.cs.opencover.reportsPaths="**\coverage.opencover.xml"
+    .\dotnet-sonarscanner begin /k:"polsys_cle" /v:"$(buildId)" /o:"polsys-github" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.login="$(SONAR_TOKEN)" /d:sonar.cs.opencover.reportsPaths="**\coverage.opencover.xml"
   displayName: 'Install SonarScanner'
 - script: |
     dotnet build --configuration $(configuration)
