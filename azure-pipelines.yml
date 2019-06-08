@@ -24,13 +24,13 @@ steps:
   displayName: 'Install NerdBank.GitVersioning'
 - script: |
     dotnet tool install --tool-path . dotnet-sonarscanner
-    dotnet sonarscanner begin /k:"polsys_cle" /v:"$(buildId)" /d:sonar-organization="polsys-github" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.login="$(SONAR_TOKEN)" /d:sonar.cs.vscoveragexml.reportsPaths="**\*.coverage"
+    .\dotnet-sonarscanner begin /k:"polsys_cle" /v:"$(buildId)" /d:sonar-organization="polsys-github" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.login="$(SONAR_TOKEN)" /d:sonar.cs.opencover.reportsPaths="**\coverage.opencover.xml"
   displayName: 'Install SonarScanner'
 - script: |
     dotnet build --configuration $(configuration)
   displayName: 'Build Release'
 - script: |
-    dotnet test --configuration $(configuration) --logger trx --collect "Code Coverage" --filter "FullyQualifiedName~UnitTests"
+    dotnet test --configuration $(configuration) --logger trx --collect "Code Coverage" --filter "FullyQualifiedName~UnitTests" /p:CoverletOutputFormat=opencover
   displayName: 'Run unit tests'
 - script: |
     dotnet test --configuration Release --logger trx test/Cle.IntegrationTests/Cle.IntegrationTests.csproj
@@ -53,6 +53,6 @@ steps:
     testResultsFiles: '**/*.trx'
   displayName: 'Publish test results'
 - script: |
-    dotnet sonarscanner end /d:sonar.login="$(SONAR_TOKEN)"
+    .\dotnet-sonarscanner end /d:sonar.login="$(SONAR_TOKEN)"
   condition: succeededOrFailed()
   displayName: 'Publish SonarScanner results'
