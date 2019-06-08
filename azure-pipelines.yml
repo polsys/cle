@@ -23,6 +23,10 @@ steps:
     .\nbgv cloud
   displayName: 'Install NerdBank.GitVersioning'
 - script: |
+    dotnet tool install --tool-path . dotnet-sonarscanner
+    dotnet sonarscanner begin /k:"polsys_cle" /v:"$(buildId)" /d:sonar-organization="polsys-github" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.login="$(SONAR_TOKEN)" /d:sonar.cs.vscoveragexml.reportsPaths="**\*.coverage"
+  displayName: 'Install SonarScanner'
+- script: |
     dotnet build --configuration $(configuration)
   displayName: 'Build Release'
 - script: |
@@ -48,3 +52,7 @@ steps:
     testRunner: VSTest
     testResultsFiles: '**/*.trx'
   displayName: 'Publish test results'
+- script: |
+    dotnet sonarscanner end /d:sonar.login="$(SONAR_TOKEN)"
+  condition: succeededOrFailed()
+  displayName: 'Publish SonarScanner results'
