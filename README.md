@@ -1,6 +1,8 @@
 # cle - a simple C-like language
 
 [![Build Status](https://dev.azure.com/polsys/cle/_apis/build/status/polsys.cle?branchName=master)](https://dev.azure.com/polsys/cle/_build/latest?definitionId=3?branchName=master)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=polsys_cle&metric=alert_status)](https://sonarcloud.io/dashboard?id=polsys_cle)
+[![Technical Debt](https://sonarcloud.io/api/project_badges/measure?project=polsys_cle&metric=sqale_index)](https://sonarcloud.io/dashboard?id=polsys_cle)
 
 Cle (stylized as Clé, for the French word) is a simple programming language inspired by C#, Rust and C/C++, compiled to optimized native code.
 It is a hobby project of [@polsys](https://github.com/polsys), and as such not safe for production use but hopefully an interesting learning project.
