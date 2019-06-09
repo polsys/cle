@@ -28,16 +28,16 @@ steps:
   displayName: 'Set PR properties for Sonar'
 - script: |
     dotnet tool install --tool-path . dotnet-sonarscanner
-    .\dotnet-sonarscanner begin /k:"polsys_cle" /v:"$(Build.BuildNumber)" /o:"polsys-github" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.login="$(SONAR_TOKEN)" $(sonar_pr)
+    .\dotnet-sonarscanner begin /k:"polsys_cle" /v:"$(Build.BuildNumber)" /o:"polsys-github" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.login="$(SONAR_TOKEN)" /d:sonar.cs.opencover.reportsPaths="**\coverage.opencover.xml" $(sonar_pr)
   displayName: 'Install SonarScanner'
 - script: |
     dotnet build --configuration $(configuration)
   displayName: 'Build Release'
 - script: |
-    dotnet test --configuration $(configuration) --logger trx --collect "Code Coverage" --filter "FullyQualifiedName~UnitTests"
+    dotnet test --configuration $(configuration) --no-build --logger trx --filter "FullyQualifiedName~UnitTests" /p:CollectCoverage=true /p:CoverletOutputFormat=opencover
   displayName: 'Run unit tests'
 - script: |
-    dotnet test --configuration Release --logger trx test/Cle.IntegrationTests/Cle.IntegrationTests.csproj
+    dotnet test --configuration Release --no-build --logger trx test/Cle.IntegrationTests/Cle.IntegrationTests.csproj
   displayName: 'Run integration tests' # Code coverage hangs/crashes the Cle-compiled executables
 - script: |
     dotnet publish src/Cle.Frontend --configuration $(configuration) --output $(Build.ArtifactStagingDirectory)
