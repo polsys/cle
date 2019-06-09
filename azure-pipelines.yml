@@ -23,17 +23,15 @@ steps:
     .\nbgv cloud
   displayName: 'Install NerdBank.GitVersioning'
 - script: |
-    echo '##vso[task.setvariable variable=sonar_pr] /d:sonar.pullrequest.key=$(System.PullRequest.PullRequestNumber) /d:sonar.pullrequest.branch="$(Build.SourceBranch)" /d:sonar.pullrequest.base="$(System.PullRequest.TargetBranch)"'
+    dotnet tool install --tool-path . dotnet-sonarscanner
+    .\dotnet-sonarscanner begin /k:"polsys_cle" /v:"$(Build.BuildNumber)" /o:"polsys-github" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.login="$(SONAR_TOKEN)" /d:sonar.pullrequest.key=$(System.PullRequest.PullRequestNumber) /d:sonar.pullrequest.branch="$(Build.SourceBranch)" /d:sonar.pullrequest.base="$(System.PullRequest.TargetBranch)"
   condition: ne(variables['Build.SourceBranch'], 'refs/heads/master')
-  displayName: 'Set PR properties for Sonar'
-- script: |
-    echo '##vso[task.setvariable variable=sonar_pr] '
-  condition: eq(variables['Build.SourceBranch'], 'refs/heads/master')
-  displayName: 'Set CI properties for Sonar'
+  displayName: 'Install SonarScanner (PR)'
 - script: |
     dotnet tool install --tool-path . dotnet-sonarscanner
-    .\dotnet-sonarscanner begin /k:"polsys_cle" /v:"$(Build.BuildNumber)" /o:"polsys-github" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.login="$(SONAR_TOKEN)" $(sonar_pr)
-  displayName: 'Install SonarScanner'
+    .\dotnet-sonarscanner begin /k:"polsys_cle" /v:"$(Build.BuildNumber)" /o:"polsys-github" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.login="$(SONAR_TOKEN)"
+  condition: eq(variables['Build.SourceBranch'], 'refs/heads/master')
+  displayName: 'Install SonarScanner (CI)'
 - script: |
     dotnet build --configuration $(configuration)
   displayName: 'Build Release'
