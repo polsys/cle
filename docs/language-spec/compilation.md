@@ -76,7 +76,7 @@ A method definition has the following syntax:
 ```
 attributes
 visibility_modifier return_type method_name (parameter_list)
-block
+block_or_semicolon
 ```
 
 The visibility modifier is discussed above.
@@ -94,3 +94,6 @@ The parameters are local variables initialized to values specified at the method
 The _block statement_ is discussed in [Statements](statements.md).
 The block in a non-`void` method must return a value with a `return` statement.
 In a `void` method, the compiler will insert an implicit return statement at the end of the block if required.
+
+The method must not have a body if and only if it is annotated with the `[Import]` [attribute](attributes.md).
+In this case, the block must be replaced with a semicolon.
