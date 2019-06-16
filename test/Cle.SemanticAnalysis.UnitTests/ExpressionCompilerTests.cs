@@ -657,7 +657,7 @@ namespace Cle.SemanticAnalysis.UnitTests
             var sourceBytes = Encoding.UTF8.GetBytes(source).AsMemory();
             var diagnostics = new TestingDiagnosticSink();
             var parseTree = SyntaxParser.Parse(sourceBytes, "file.cle", diagnostics);
-            var expressionSyntax = (parseTree?.Functions[0].Block.Statements[0] as ReturnStatementSyntax)?.ResultExpression;
+            var expressionSyntax = (parseTree?.Functions[0].Block!.Statements[0] as ReturnStatementSyntax)?.ResultExpression;
 
             Assert.That(expressionSyntax, Is.Not.Null);
             Assert.That(diagnostics.Diagnostics, Is.Empty);

@@ -24,7 +24,7 @@ private void Function()
             Assert.That(function.Parameters, Is.Empty);
 
             Assert.That(function.Block, Is.Not.Null);
-            Assert.That(function.Block.Position.Line, Is.EqualTo(4));
+            Assert.That(function.Block!.Position.Line, Is.EqualTo(4));
             Assert.That(function.Block.Position.ByteInLine, Is.EqualTo(0));
             Assert.That(function.Block.Statements, Is.Empty);
         }
@@ -115,6 +115,21 @@ internal int32 Integer()
         }
 
         [Test]
+        public void Function_with_no_body_is_correctly_read()
+        {
+            const string source = @"namespace ImportedMaybe;
+
+public int32 Imported();";
+            var syntaxTree = ParseSourceWithoutDiagnostics(source);
+            Assert.That(syntaxTree.Functions, Has.Exactly(1).Items);
+
+            Assert.That(syntaxTree.Functions[0].Visibility, Is.EqualTo(Visibility.Public));
+            Assert.That(syntaxTree.Functions[0].Name, Is.EqualTo("Imported"));
+            Assert.That(syntaxTree.Functions[0].ReturnTypeName, Is.EqualTo("int32"));
+            Assert.That(syntaxTree.Functions[0].Block, Is.Null);
+        }
+
+        [Test]
         public void Global_int32_function_with_const_return_is_parsed_correctly()
         {
             const string source = @"namespace Test;
@@ -128,7 +143,7 @@ internal int32 OneHundred()
 
             var function = syntaxTree.Functions[0];
             Assert.That(function.Block, Is.Not.Null);
-            Assert.That(function.Block.Statements, Has.Exactly(1).Items);
+            Assert.That(function.Block!.Statements, Has.Exactly(1).Items);
 
             var returnStatement = (ReturnStatementSyntax)function.Block.Statements[0];
             Assert.That(returnStatement.Position.Line, Is.EqualTo(5));
@@ -152,7 +167,7 @@ internal int32 OneHundred()
 
             var function = syntaxTree.Functions[0];
             Assert.That(function.Block, Is.Not.Null);
-            Assert.That(function.Block.Statements, Has.Exactly(1).Items);
+            Assert.That(function.Block!.Statements, Has.Exactly(1).Items);
 
             var returnStatement = (ReturnStatementSyntax)function.Block.Statements[0];
             Assert.That(returnStatement.Position.Line, Is.EqualTo(5));
@@ -177,7 +192,7 @@ internal void DoNothing()
 
             var function = syntaxTree.Functions[0];
             Assert.That(function.Block, Is.Not.Null);
-            Assert.That(function.Block.Statements, Has.Exactly(1).Items);
+            Assert.That(function.Block!.Statements, Has.Exactly(1).Items);
 
             var returnStatement = (ReturnStatementSyntax)function.Block.Statements[0];
             Assert.That(returnStatement.Position.Line, Is.EqualTo(5));
@@ -202,7 +217,7 @@ internal void DoNothing()
 
             var function = syntaxTree.Functions[0];
             Assert.That(function.Block, Is.Not.Null);
-            Assert.That(function.Block.Statements, Has.Exactly(1).Items);
+            Assert.That(function.Block!.Statements, Has.Exactly(1).Items);
 
             var innerBlock = (BlockSyntax)function.Block.Statements[0];
             Assert.That(innerBlock.Statements, Has.Exactly(2).Items);
@@ -224,7 +239,7 @@ internal void DoSomething()
 
             var function = syntaxTree.Functions[0];
             Assert.That(function.Block, Is.Not.Null);
-            Assert.That(function.Block.Statements, Has.Exactly(1).Items);
+            Assert.That(function.Block!.Statements, Has.Exactly(1).Items);
 
             var call = (FunctionCallStatementSyntax)function.Block.Statements[0];
             Assert.That(call.Call.Function, Is.EqualTo("DoSomethingInternal"));
@@ -429,7 +444,7 @@ public int32 Fun(Invalid::123 a)
         }
 
         [Test]
-        public void Empty_global_function_without_body_fails()
+        public void Empty_global_function_without_body_or_semicolon_fails()
         {
             const string source = @"namespace Test;
 

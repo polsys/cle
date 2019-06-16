@@ -137,19 +137,24 @@ namespace Cle.Parser
                         return null;
                     }
 
-                    // Method body
-                    if (_lexer.PeekTokenType() != TokenType.OpenBrace)
+                    // Method body; the method may also have no body, as indicated by a semicolon
+                    BlockSyntax? methodBody;
+                    if (_lexer.PeekTokenType() == TokenType.Semicolon)
+                    {
+                        _lexer.GetToken(); // Eat the semicolon
+                        methodBody = null;
+                    }
+                    else if (_lexer.PeekTokenType() != TokenType.OpenBrace)
                     {
                         _diagnosticSink.Add(DiagnosticCode.ExpectedMethodBody, _lexer.Position, ReadTokenIntoString());
                         return null;
                     }
-                    if (!TryParseBlock(out var methodBody))
+                    else if (!TryParseBlock(out methodBody))
                     {
                         return null;
                     }
 
                     // Add the parsed function to the syntax tree
-                    Debug.Assert(methodBody != null);
                     functionListBuilder.Add(new FunctionSyntax(functionName, typeName, visibility, 
                         parameters, attributes, methodBody, itemPosition));
                 }

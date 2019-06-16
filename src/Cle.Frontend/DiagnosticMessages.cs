@@ -48,7 +48,7 @@ namespace Cle.Frontend
                 case DiagnosticCode.ExpectedParameterName:
                     return $"Expected parameter name, read '{diagnostic.Actual}'.";
                 case DiagnosticCode.ExpectedMethodBody:
-                    return $"Expected method body, read '{diagnostic.Actual}'.";
+                    return $"Expected method body or semicolon, read '{diagnostic.Actual}'.";
                 case DiagnosticCode.InvalidTypeName:
                     return $"'{diagnostic.Actual}' is not a valid type name.";
                 case DiagnosticCode.InvalidFunctionName:

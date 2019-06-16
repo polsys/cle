@@ -143,6 +143,7 @@ namespace Cle.SemanticAnalysis
         private CompiledMethod? InternalCompile()
         {
             Debug.Assert(_syntaxTree != null);
+            Debug.Assert(_syntaxTree.Block != null);
             Debug.Assert(_sourceFilename != null);
             Debug.Assert(_declaration != null);
 
