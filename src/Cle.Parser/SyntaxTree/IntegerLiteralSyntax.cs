@@ -5,7 +5,7 @@ namespace Cle.Parser.SyntaxTree
     /// <summary>
     /// Syntax tree node for an unsigned integer literal.
     /// </summary>
-    public sealed class IntegerLiteralSyntax : ExpressionSyntax
+    public sealed class IntegerLiteralSyntax : LiteralSyntax
     {
         /// <summary>
         /// Gets the numeric value of this literal.

@@ -5,7 +5,7 @@ namespace Cle.Parser.SyntaxTree
     /// <summary>
     /// Syntax tree node for a Boolean literal.
     /// </summary>
-    public sealed class BooleanLiteralSyntax : ExpressionSyntax
+    public sealed class BooleanLiteralSyntax : LiteralSyntax
     {
         /// <summary>
         /// Gets the Boolean value of this literal.

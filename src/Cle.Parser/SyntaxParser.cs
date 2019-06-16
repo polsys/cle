@@ -176,7 +176,50 @@ namespace Cle.Parser
                 return false;
             }
 
-            // TODO: Parameter lists
+            // Read the parameter list, if one is given
+            var parameters = ImmutableList<LiteralSyntax>.Empty;
+            if (_lexer.PeekTokenType() == TokenType.OpenParen)
+            {
+                _lexer.GetToken();
+
+                // There may be zero or more parameters
+                if (_lexer.PeekTokenType() != TokenType.CloseParen)
+                {
+                    while (true)
+                    {
+                        if (!TryParseExpression(out var expression))
+                        {
+                            return false;
+                        }
+
+                        // Intentional limitation: attribute parameters must be literals
+                        if (expression is LiteralSyntax literal)
+                        {
+                            parameters = parameters.Add(literal);
+                        }
+                        else
+                        {
+                            _diagnosticSink.Add(DiagnosticCode.AttributeParameterMustBeLiteral, expression.Position);
+                            return false;
+                        }
+
+                        if (_lexer.PeekTokenType() == TokenType.Comma)
+                        {
+                            _lexer.GetToken();
+                            continue;
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+                }
+
+                if (!ExpectToken(TokenType.CloseParen, DiagnosticCode.ExpectedClosingParen))
+                {
+                    return false;
+                }
+            }
 
             // Eat the closing bracket
             if (!ExpectToken(TokenType.CloseBracket, DiagnosticCode.ExpectedClosingBracket))
@@ -184,7 +227,7 @@ namespace Cle.Parser
                 return false;
             }
 
-            attribute = new AttributeSyntax(attributeName, startPosition);
+            attribute = new AttributeSyntax(attributeName, parameters, startPosition);
             return true;
         }
 
@@ -926,6 +969,8 @@ namespace Cle.Parser
 
                     expressionSyntax = new BooleanLiteralSyntax(true, _lexer.LastPosition);
                     return true;
+                case TokenType.StringLiteral:
+                    return TryParseStringLiteral(out expressionSyntax);
                 case TokenType.Identifier:
                     var identifier = ReadTokenIntoString();
 
@@ -1008,6 +1053,27 @@ namespace Cle.Parser
                 _diagnosticSink.Add(DiagnosticCode.ExpectedExpression, _lexer.Position, ReadTokenIntoString());
                 return false;
             }
+        }
+
+        private bool TryParseStringLiteral([NotNullWhenTrue] out ExpressionSyntax? expressionSyntax)
+        {
+            Debug.Assert(_lexer.PeekTokenType() == TokenType.StringLiteral);
+            expressionSyntax = null;
+
+            var tokenPosition = _lexer.Position;
+            var tokenSpan = _lexer.GetToken();
+
+            // The string literal must end in a quote
+            if (tokenSpan.Length < 2 || tokenSpan[tokenSpan.Length - 1] != (byte)'"')
+            {
+                _diagnosticSink.Add(DiagnosticCode.ExpectedClosingQuote, tokenPosition);
+                return false;
+            }
+
+            // Strip the quotes
+            // TODO: Process escape sequences
+            expressionSyntax = new StringLiteralSyntax(tokenSpan.Slice(1, tokenSpan.Length - 2).ToArray(), tokenPosition);
+            return true;
         }
 
         /// <summary>

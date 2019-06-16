@@ -136,7 +136,8 @@ namespace Cle.SemanticAnalysis.UnitTests.MethodCompilerTests
         public void CompileDeclaration_does_not_accept_unknown_attribute()
         {
             var position = new TextPosition(140, 13, 4);
-            var attribute = new AttributeSyntax("TotallyNonexistentAttribute", position);
+            var parameters = ImmutableList<LiteralSyntax>.Empty;
+            var attribute = new AttributeSyntax("TotallyNonexistentAttribute", parameters, position);
             var syntax = new FunctionSyntax("MethodName", "bool",
                 Visibility.Public, ImmutableList<ParameterDeclarationSyntax>.Empty,
                 ImmutableList<AttributeSyntax>.Empty.Add(attribute),
@@ -154,7 +155,7 @@ namespace Cle.SemanticAnalysis.UnitTests.MethodCompilerTests
         [Test]
         public void CompileDeclaration_entry_point_is_flagged()
         {
-            var entryPointAttribute = new AttributeSyntax("EntryPoint", default);
+            var entryPointAttribute = new AttributeSyntax("EntryPoint", ImmutableList<LiteralSyntax>.Empty, default);
             var syntax = new FunctionSyntax("Main", "int32",
                 Visibility.Private, ImmutableList<ParameterDeclarationSyntax>.Empty,
                 ImmutableList<AttributeSyntax>.Empty.Add(entryPointAttribute),
@@ -172,7 +173,7 @@ namespace Cle.SemanticAnalysis.UnitTests.MethodCompilerTests
         [Test]
         public void CompileDeclaration_entry_point_must_return_int32()
         {
-            var entryPointAttribute = new AttributeSyntax("EntryPoint", default);
+            var entryPointAttribute = new AttributeSyntax("EntryPoint", ImmutableList<LiteralSyntax>.Empty, default);
             var syntax = new FunctionSyntax("Main", "bool",
                 Visibility.Public, ImmutableList<ParameterDeclarationSyntax>.Empty,
                 ImmutableList<AttributeSyntax>.Empty.Add(entryPointAttribute),
