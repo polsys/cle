@@ -1,3 +1,4 @@
+using System.Text;
 using Cle.Common;
 using Cle.Parser.SyntaxTree;
 using NUnit.Framework;
@@ -50,6 +51,25 @@ namespace Cle.Parser.UnitTests.SyntaxParserTests
             Assert.That(expression, Is.Not.Null);
             Assert.That(expression, Is.InstanceOf<BooleanLiteralSyntax>());
             Assert.That(((BooleanLiteralSyntax)expression!).Value, Is.EqualTo(expected));
+        }
+
+        [TestCase("\"this is a string\"", "this is a string")]
+        [TestCase("\"\"", "")]
+        public void Valid_string_literals(string source, string expected)
+        {
+            var parser = GetParserInstance(source, out var diagnostics);
+
+            var returnValue = parser.TryParseExpression(out var expression);
+
+            Assert.That(diagnostics.Diagnostics, Is.Empty);
+            Assert.That(returnValue, Is.True);
+            Assert.That(expression, Is.Not.Null);
+            Assert.That(expression, Is.InstanceOf<StringLiteralSyntax>());
+
+            // Do the comparison both ways to guarantee that the bytes are not mangled in any way
+            var actualBytes = ((StringLiteralSyntax)expression!).Value;
+            Assert.That(Encoding.UTF8.GetString(actualBytes), Is.EqualTo(expected));
+            Assert.That(actualBytes, Is.EqualTo(Encoding.UTF8.GetBytes(expected)));
         }
 
         [TestCase("i")]
@@ -510,6 +530,30 @@ namespace Cle.Parser.UnitTests.SyntaxParserTests
             Assert.That(returnValue, Is.False);
             Assert.That(expression, Is.Null);
             diagnostics.AssertDiagnosticAt(DiagnosticCode.ExpectedExpression, 1, 26).WithActual("if");
+        }
+
+        [Test]
+        public void Quotes_must_be_closed_in_string_literal()
+        {
+            var parser = GetParserInstance("\"incomplete\nstring", out var diagnostics);
+
+            var returnValue = parser.TryParseExpression(out var expression);
+
+            Assert.That(returnValue, Is.False);
+            Assert.That(expression, Is.Null);
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.ExpectedClosingQuote, 1, 0);
+        }
+
+        [Test]
+        public void Quotes_must_be_closed_in_empty_string_literal()
+        {
+            var parser = GetParserInstance(" \"\nsomething", out var diagnostics);
+
+            var returnValue = parser.TryParseExpression(out var expression);
+
+            Assert.That(returnValue, Is.False);
+            Assert.That(expression, Is.Null);
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.ExpectedClosingQuote, 1, 1);
         }
 
         [Test]

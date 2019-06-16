@@ -18,6 +18,7 @@
 
         ExpectedAttributeName,
         AttributesOnlyApplicableToFunctions,
+        AttributeParameterMustBeLiteral,
         ExpectedVisibilityModifier,
         ExpectedType,
         ExpectedFunctionName,
@@ -36,6 +37,7 @@
         ExpectedStatement,
         ExpectedExpression,
         InvalidNumericLiteral,
+        ExpectedClosingQuote,
         ExpectedInitialValue,
         InvalidVariableName,
         ExpectedCondition,

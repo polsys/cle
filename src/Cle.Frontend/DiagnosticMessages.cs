@@ -33,6 +33,8 @@ namespace Cle.Frontend
                     return $"Expected attribute name, read '{diagnostic.Actual}'.";
                 case DiagnosticCode.AttributesOnlyApplicableToFunctions:
                     return "Attributes can only be applied to functions.";
+                case DiagnosticCode.AttributeParameterMustBeLiteral:
+                    return "Attribute parameters must be literals.";
                 case DiagnosticCode.ExpectedVisibilityModifier:
                     return $"Expected definition preceded by a visibility modifier, read '{diagnostic.Actual}'.";
                 case DiagnosticCode.ExpectedType:
@@ -65,6 +67,8 @@ namespace Cle.Frontend
                     return $"Expected expression, read '{diagnostic.Actual}'.";
                 case DiagnosticCode.InvalidNumericLiteral:
                     return $"'{diagnostic.Actual}' is not a valid numeric literal.";
+                case DiagnosticCode.ExpectedClosingQuote:
+                    return "Expected a closing quote for this string literal before end of line.";
                 case DiagnosticCode.ExpectedInitialValue:
                     return "Expected initial value for variable.";
                 case DiagnosticCode.InvalidVariableName:

@@ -1,4 +1,5 @@
-﻿using Cle.Common;
+﻿using System.Collections.Immutable;
+using Cle.Common;
 
 namespace Cle.Parser.SyntaxTree
 {
@@ -12,12 +13,20 @@ namespace Cle.Parser.SyntaxTree
         /// </summary>
         public string Name { get; }
 
+        /// <summary>
+        /// Gets the parameter list of the attribute.
+        /// May be empty.
+        /// </summary>
+        public ImmutableList<LiteralSyntax> Parameters { get; }
+
         public AttributeSyntax(
             string name,
+            ImmutableList<LiteralSyntax> parameters,
             TextPosition position)
             : base(position)
         {
             Name = name;
+            Parameters = parameters;
         }
     }
 }
