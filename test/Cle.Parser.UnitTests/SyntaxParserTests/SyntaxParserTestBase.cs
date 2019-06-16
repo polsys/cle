@@ -43,8 +43,9 @@ namespace Cle.Parser.UnitTests.SyntaxParserTests
 
             Assert.That(syntaxTree.Functions, Has.Exactly(1).Items, "File must have only a single function");
             var function = syntaxTree.Functions[0];
+            Assert.That(function.Block, Is.Not.Null, "Function contains no block");
 
-            return function.Block;
+            return function.Block!;
         }
 
         /// <summary>

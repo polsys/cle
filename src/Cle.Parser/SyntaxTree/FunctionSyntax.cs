@@ -38,8 +38,9 @@ namespace Cle.Parser.SyntaxTree
 
         /// <summary>
         /// Gets the code block of this function.
+        /// May be null if there is no block (for example, in a function decorated with [Import] attribute).
         /// </summary>
-        public BlockSyntax Block { get; }
+        public BlockSyntax? Block { get; }
 
         public FunctionSyntax(
             string name,
@@ -47,7 +48,7 @@ namespace Cle.Parser.SyntaxTree
             Visibility visibility,
             ImmutableList<ParameterDeclarationSyntax> parameters,
             ImmutableList<AttributeSyntax> attributes,
-            BlockSyntax block,
+            BlockSyntax? block,
             TextPosition position)
             : base(position)
         {
