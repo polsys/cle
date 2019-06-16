@@ -83,7 +83,7 @@ namespace Cle.SemanticAnalysis.IR
             }
 
             // Construct each marked basic block
-            var blocks = ImmutableList<BasicBlock?>.Empty.ToBuilder();
+            var blocks = ImmutableList<BasicBlock>.Empty.ToBuilder();
             for (var i = 0; i < _builders.Count; i++)
             {
                 if (!liveBlocks[i])
