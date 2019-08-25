@@ -155,15 +155,17 @@ namespace Cle.SemanticAnalysis.UnitTests.MethodCompilerTests
         [Test]
         public void CompileDeclaration_entry_point_is_flagged()
         {
-            var entryPointAttribute = new AttributeSyntax("EntryPoint", ImmutableList<LiteralSyntax>.Empty, default);
-            var syntax = new FunctionSyntax("Main", "int32",
-                Visibility.Private, ImmutableList<ParameterDeclarationSyntax>.Empty,
-                ImmutableList<AttributeSyntax>.Empty.Add(entryPointAttribute),
-                new BlockSyntax(ImmutableList<StatementSyntax>.Empty, default), default);
-            var diagnostics = new TestingDiagnosticSink();
-            var declarationProvider = new TestingSingleFileDeclarationProvider();
+            var (result, diagnostics) = CompileEntryPointDeclaration(Visibility.Public, "int32", null);
 
-            var result = MethodCompiler.CompileDeclaration(syntax, "ns", "int32.cle", 8, declarationProvider, diagnostics);
+            Assert.That(diagnostics.Diagnostics, Is.Empty);
+            Assert.That(result, Is.Not.Null);
+            Assert.That(result!.IsEntryPoint, Is.True);
+        }
+
+        [Test]
+        public void CompileDeclaration_entry_point_may_be_private()
+        {
+            var (result, diagnostics) = CompileEntryPointDeclaration(Visibility.Private, "int32", null);
 
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             Assert.That(result, Is.Not.Null);
@@ -173,20 +175,41 @@ namespace Cle.SemanticAnalysis.UnitTests.MethodCompilerTests
         [Test]
         public void CompileDeclaration_entry_point_must_return_int32()
         {
-            var entryPointAttribute = new AttributeSyntax("EntryPoint", ImmutableList<LiteralSyntax>.Empty, default);
-            var syntax = new FunctionSyntax("Main", "bool",
-                Visibility.Public, ImmutableList<ParameterDeclarationSyntax>.Empty,
-                ImmutableList<AttributeSyntax>.Empty.Add(entryPointAttribute),
-                new BlockSyntax(ImmutableList<StatementSyntax>.Empty, default), new TextPosition(3, 1, 3));
-            var diagnostics = new TestingDiagnosticSink();
-            var declarationProvider = new TestingSingleFileDeclarationProvider();
-
-            var result = MethodCompiler.CompileDeclaration(syntax, "ns", "unknown.cle", 0, declarationProvider, diagnostics);
+            var (result, diagnostics) = CompileEntryPointDeclaration(Visibility.Public, "bool", null);
 
             Assert.That(result, Is.Null);
             diagnostics.AssertDiagnosticAt(DiagnosticCode.EntryPointMustBeDeclaredCorrectly, 1, 3);
         }
 
-        // TODO: Test for entry point parameter list correctness once parameter lists exist
+        [Test]
+        public void CompileDeclaration_entry_point_must_not_have_parameters()
+        {
+            var parameter = new ParameterDeclarationSyntax("int32", "param", default);
+            var (result, diagnostics) = CompileEntryPointDeclaration(Visibility.Public, "int32", parameter);
+
+            Assert.That(result, Is.Null);
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.EntryPointMustBeDeclaredCorrectly, 1, 3);
+        }
+
+        private static (MethodDeclaration?, TestingDiagnosticSink) CompileEntryPointDeclaration(
+            Visibility visibility, string returnType, ParameterDeclarationSyntax? parameter)
+        {
+            var paramList = ImmutableList<ParameterDeclarationSyntax>.Empty;
+            if (parameter != null)
+            {
+                paramList = paramList.Add(parameter);
+            }
+
+            var entryPointAttribute = new AttributeSyntax("EntryPoint", ImmutableList<LiteralSyntax>.Empty, default);
+            var syntax = new FunctionSyntax("Main", returnType,
+                visibility, paramList, ImmutableList<AttributeSyntax>.Empty.Add(entryPointAttribute),
+                new BlockSyntax(ImmutableList<StatementSyntax>.Empty, default), new TextPosition(3, 1, 3));
+
+            var diagnostics = new TestingDiagnosticSink();
+            var declarationProvider = new TestingSingleFileDeclarationProvider();
+
+            var result = MethodCompiler.CompileDeclaration(syntax, "ns", "entrypoint.cle", 0, declarationProvider, diagnostics);
+            return (result, diagnostics);
+        }
     }
 }
