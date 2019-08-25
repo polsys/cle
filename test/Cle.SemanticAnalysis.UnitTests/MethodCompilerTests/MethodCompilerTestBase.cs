@@ -29,7 +29,7 @@ namespace Cle.SemanticAnalysis.UnitTests.MethodCompilerTests
             MethodDeclaration? firstDeclaration = null;
             foreach (var functionSyntax in syntaxTree!.Functions)
             {
-                var declaration = MethodCompiler.CompileDeclaration(functionSyntax, syntaxTree.Namespace, sourceFilename,
+                var declaration = MethodDeclarationCompiler.Compile(functionSyntax, syntaxTree.Namespace, sourceFilename,
                     declarationProvider.Methods.Count, declarationProvider, diagnostics);
                 Assert.That(declaration, Is.Not.Null,
                     $"Method declaration for {functionSyntax.Name} was not compiled successfully.");
