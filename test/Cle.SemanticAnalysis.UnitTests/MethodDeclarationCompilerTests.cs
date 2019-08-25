@@ -5,12 +5,12 @@ using Cle.Parser.SyntaxTree;
 using Cle.UnitTests.Common;
 using NUnit.Framework;
 
-namespace Cle.SemanticAnalysis.UnitTests.MethodCompilerTests
+namespace Cle.SemanticAnalysis.UnitTests
 {
-    public class DeclarationTests
+    public class MethodDeclarationCompilerTests
     {
         [Test]
-        public void CompileDeclaration_parameterless_bool_method_succeeds()
+        public void Compile_parameterless_bool_method_succeeds()
         {
             var position = new TextPosition(13, 3, 4);
             var syntax = new FunctionSyntax("MethodName", "bool",
@@ -19,7 +19,7 @@ namespace Cle.SemanticAnalysis.UnitTests.MethodCompilerTests
             var diagnostics = new TestingDiagnosticSink();
             var declarationProvider = new TestingSingleFileDeclarationProvider();
 
-            var result = MethodCompiler.CompileDeclaration(syntax, "Namespace", "bool.cle", 7, declarationProvider, diagnostics);
+            var result = MethodDeclarationCompiler.Compile(syntax, "Namespace", "bool.cle", 7, declarationProvider, diagnostics);
 
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             Assert.That(result, Is.Not.Null);
@@ -33,7 +33,7 @@ namespace Cle.SemanticAnalysis.UnitTests.MethodCompilerTests
         }
 
         [Test]
-        public void CompileDeclaration_parameterless_int32_method_succeeds()
+        public void Compile_parameterless_int32_method_succeeds()
         {
             var position = new TextPosition(280, 14, 8);
             var syntax = new FunctionSyntax("MethodName", "int32",
@@ -42,7 +42,7 @@ namespace Cle.SemanticAnalysis.UnitTests.MethodCompilerTests
             var diagnostics = new TestingDiagnosticSink();
             var declarationProvider = new TestingSingleFileDeclarationProvider();
 
-            var result = MethodCompiler.CompileDeclaration(syntax, "long::ns", "int32.cle", 8, declarationProvider, diagnostics);
+            var result = MethodDeclarationCompiler.Compile(syntax, "long::ns", "int32.cle", 8, declarationProvider, diagnostics);
 
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             Assert.That(result, Is.Not.Null);
@@ -56,7 +56,7 @@ namespace Cle.SemanticAnalysis.UnitTests.MethodCompilerTests
         }
 
         [Test]
-        public void CompileDeclaration_parameterless_method_with_unknown_type_fails()
+        public void Compile_parameterless_method_with_unknown_type_fails()
         {
             var syntax = new FunctionSyntax("MethodName", "UltimateBool", 
                 Visibility.Public, ImmutableList<ParameterDeclarationSyntax>.Empty, ImmutableList<AttributeSyntax>.Empty,
@@ -64,14 +64,14 @@ namespace Cle.SemanticAnalysis.UnitTests.MethodCompilerTests
             var diagnostics = new TestingDiagnosticSink();
             var declarationProvider = new TestingSingleFileDeclarationProvider();
 
-            var result = MethodCompiler.CompileDeclaration(syntax, "ns", "unknown.cle", 0, declarationProvider, diagnostics);
+            var result = MethodDeclarationCompiler.Compile(syntax, "ns", "unknown.cle", 0, declarationProvider, diagnostics);
 
             Assert.That(result, Is.Null);
             diagnostics.AssertDiagnosticAt(DiagnosticCode.TypeNotFound, 1, 3).WithActual("UltimateBool");
         }
         
         [Test]
-        public void CompileDeclaration_method_with_parameters_succeeds()
+        public void Compile_method_with_parameters_succeeds()
         {
             var parameters = ImmutableList<ParameterDeclarationSyntax>.Empty
                 .Add(new ParameterDeclarationSyntax("int32", "intParam", default))
@@ -83,7 +83,7 @@ namespace Cle.SemanticAnalysis.UnitTests.MethodCompilerTests
             var diagnostics = new TestingDiagnosticSink();
             var declarationProvider = new TestingSingleFileDeclarationProvider();
 
-            var result = MethodCompiler.CompileDeclaration(syntax, "ns", "int32.cle", 0, declarationProvider, diagnostics);
+            var result = MethodDeclarationCompiler.Compile(syntax, "ns", "int32.cle", 0, declarationProvider, diagnostics);
 
             Assert.That(diagnostics.Diagnostics, Is.Empty);
             Assert.That(result, Is.Not.Null);
@@ -93,7 +93,7 @@ namespace Cle.SemanticAnalysis.UnitTests.MethodCompilerTests
         }
 
         [Test]
-        public void CompileDeclaration_parameter_type_must_exist()
+        public void Compile_parameter_type_must_exist()
         {
             var position = new TextPosition(140, 13, 4);
             var parameters = ImmutableList<ParameterDeclarationSyntax>.Empty
@@ -105,7 +105,7 @@ namespace Cle.SemanticAnalysis.UnitTests.MethodCompilerTests
             var diagnostics = new TestingDiagnosticSink();
             var declarationProvider = new TestingSingleFileDeclarationProvider();
 
-            var result = MethodCompiler.CompileDeclaration(syntax, "ns", "unknown.cle", 0, declarationProvider, diagnostics);
+            var result = MethodDeclarationCompiler.Compile(syntax, "ns", "unknown.cle", 0, declarationProvider, diagnostics);
 
             Assert.That(result, Is.Null);
             diagnostics.AssertDiagnosticAt(DiagnosticCode.TypeNotFound, position.Line, position.ByteInLine)
@@ -113,7 +113,7 @@ namespace Cle.SemanticAnalysis.UnitTests.MethodCompilerTests
         }
 
         [Test]
-        public void CompileDeclaration_parameter_type_must_not_be_void()
+        public void Compile_parameter_type_must_not_be_void()
         {
             var position = new TextPosition(140, 13, 4);
             var parameters = ImmutableList<ParameterDeclarationSyntax>.Empty
@@ -125,7 +125,7 @@ namespace Cle.SemanticAnalysis.UnitTests.MethodCompilerTests
             var diagnostics = new TestingDiagnosticSink();
             var declarationProvider = new TestingSingleFileDeclarationProvider();
 
-            var result = MethodCompiler.CompileDeclaration(syntax, "ns", "unknown.cle", 0, declarationProvider, diagnostics);
+            var result = MethodDeclarationCompiler.Compile(syntax, "ns", "unknown.cle", 0, declarationProvider, diagnostics);
 
             Assert.That(result, Is.Null);
             diagnostics.AssertDiagnosticAt(DiagnosticCode.VoidIsNotValidType, position.Line, position.ByteInLine)
@@ -133,7 +133,7 @@ namespace Cle.SemanticAnalysis.UnitTests.MethodCompilerTests
         }
 
         [Test]
-        public void CompileDeclaration_does_not_accept_unknown_attribute()
+        public void Compile_does_not_accept_unknown_attribute()
         {
             var position = new TextPosition(140, 13, 4);
             var parameters = ImmutableList<LiteralSyntax>.Empty;
@@ -145,7 +145,7 @@ namespace Cle.SemanticAnalysis.UnitTests.MethodCompilerTests
             var diagnostics = new TestingDiagnosticSink();
             var declarationProvider = new TestingSingleFileDeclarationProvider();
 
-            var result = MethodCompiler.CompileDeclaration(syntax, "ns", "unknown.cle", 0, declarationProvider, diagnostics);
+            var result = MethodDeclarationCompiler.Compile(syntax, "ns", "unknown.cle", 0, declarationProvider, diagnostics);
 
             Assert.That(result, Is.Null);
             diagnostics.AssertDiagnosticAt(DiagnosticCode.UnknownAttribute, position.Line, position.ByteInLine)
@@ -153,7 +153,7 @@ namespace Cle.SemanticAnalysis.UnitTests.MethodCompilerTests
         }
 
         [Test]
-        public void CompileDeclaration_entry_point_is_flagged()
+        public void Compile_entry_point_is_flagged()
         {
             var (result, diagnostics) = CompileEntryPointDeclaration(Visibility.Public, "int32", null);
 
@@ -163,7 +163,7 @@ namespace Cle.SemanticAnalysis.UnitTests.MethodCompilerTests
         }
 
         [Test]
-        public void CompileDeclaration_entry_point_may_be_private()
+        public void Compile_entry_point_may_be_private()
         {
             var (result, diagnostics) = CompileEntryPointDeclaration(Visibility.Private, "int32", null);
 
@@ -173,7 +173,7 @@ namespace Cle.SemanticAnalysis.UnitTests.MethodCompilerTests
         }
 
         [Test]
-        public void CompileDeclaration_entry_point_must_return_int32()
+        public void Compile_entry_point_must_return_int32()
         {
             var (result, diagnostics) = CompileEntryPointDeclaration(Visibility.Public, "bool", null);
 
@@ -182,7 +182,7 @@ namespace Cle.SemanticAnalysis.UnitTests.MethodCompilerTests
         }
 
         [Test]
-        public void CompileDeclaration_entry_point_must_not_have_parameters()
+        public void Compile_entry_point_must_not_have_parameters()
         {
             var parameter = new ParameterDeclarationSyntax("int32", "param", default);
             var (result, diagnostics) = CompileEntryPointDeclaration(Visibility.Public, "int32", parameter);
@@ -208,7 +208,7 @@ namespace Cle.SemanticAnalysis.UnitTests.MethodCompilerTests
             var diagnostics = new TestingDiagnosticSink();
             var declarationProvider = new TestingSingleFileDeclarationProvider();
 
-            var result = MethodCompiler.CompileDeclaration(syntax, "ns", "entrypoint.cle", 0, declarationProvider, diagnostics);
+            var result = MethodDeclarationCompiler.Compile(syntax, "ns", "entrypoint.cle", 0, declarationProvider, diagnostics);
             return (result, diagnostics);
         }
     }

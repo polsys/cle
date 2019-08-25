@@ -101,7 +101,7 @@ private int32 CollatzOnCollatz(int32 n)
 
             // Compile the declaration
             var declarationProvider = new NullDeclarationProvider();
-            var declaration = MethodCompiler.CompileDeclaration(syntaxTree.Functions[0],
+            var declaration = MethodDeclarationCompiler.Compile(syntaxTree.Functions[0],
                 syntaxTree.Namespace, sourceFilename,
                 0, declarationProvider, diagnostics);
 
