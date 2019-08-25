@@ -11,7 +11,7 @@ namespace Cle.Benchmarks
         {
             var config = ManualConfig
                 .Create(DefaultConfig.Instance)
-                .With(new MemoryDiagnoser())
+                .With(MemoryDiagnoser.Default)
                 .With(ExecutionValidator.FailOnError);
 
             BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).Run(args, config);

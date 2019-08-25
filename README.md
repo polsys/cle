@@ -9,12 +9,12 @@ It is a hobby project of [@polsys](https://github.com/polsys), and as such not s
 
 
 ## Building
-This is a .NET Core 2.2 project. Install the SDK, then execute
+This is a .NET Core 3.0 project. Install the SDK, then execute
 ```
 dotnet build
 ```
 to restore NuGet packages and compile the solution.
-Alternatively, open the solution in up-to-date Visual Studio 2017 or later.
+Alternatively, open the solution in up-to-date Visual Studio 2019 or later.
 
 Unit test projects use NUnit and can be executed with `dotnet test` or in Visual Studio.
 
@@ -29,7 +29,7 @@ to compile files in the specified directory.
 The default is to compile files in the current directory.
 Specify the `--help` option for more information.
 
-**NOTE:** The compiler does not yet produce executable programs. See [Milestone 0.1](https://github.com/polsys/cle/milestone/1) for the status of this work.
+For an example of a Clé program, see the [integration test cases](test/Cle.IntegrationTests/TestCases/Functional).
 
 
 ## Contributing

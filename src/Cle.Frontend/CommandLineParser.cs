@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.Runtime.CompilerServices;
 using Cle.Compiler;
 using CommandLine;
 
@@ -21,7 +22,7 @@ namespace Cle.Frontend
         public static bool TryParseArguments(
             IEnumerable<string> args,
             TextWriter output,
-            [NotNullWhenTrue] out CompilationOptions? options)
+            [NotNullWhen(true)] out CompilationOptions? options)
         {
             var parser = new CommandLine.Parser(config =>
             {
@@ -35,6 +36,8 @@ namespace Cle.Frontend
                 // We could also set an Value attribute property Max=1, but the error message would be:
                 //   "A sequence value not bound to option name is defined with few items than required."
                 // So yeah, maybe it is better to handle that by ourselves.
+                Debug.Assert(parsed.Value.MainModule != null);
+
                 var mainModules = new List<string>(parsed.Value.MainModule);
                 if (mainModules.Count > 1)
                 {
