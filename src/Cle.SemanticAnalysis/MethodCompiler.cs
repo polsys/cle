@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
+using System.Diagnostics.CodeAnalysis;
 using Cle.Common;
 using Cle.Common.TypeSystem;
 using Cle.Parser.SyntaxTree;
@@ -498,7 +498,7 @@ namespace Cle.SemanticAnalysis
             string typeName, 
             IDiagnosticSink diagnostics,
             TextPosition position,
-            [NotNullWhenTrue] out TypeDefinition? type)
+            [NotNullWhen(true)] out TypeDefinition? type)
         {
             // TODO: Proper type resolution with the declaration provider
             switch (typeName)
@@ -528,6 +528,7 @@ namespace Cle.SemanticAnalysis
         IReadOnlyList<MethodDeclaration> INameResolver.ResolveMethod(string name)
         {
             Debug.Assert(_sourceFilename != null);
+            Debug.Assert(_definingNamespace != null);
 
             var separatorPos = name.LastIndexOf("::", StringComparison.InvariantCulture);
             if (separatorPos == -1)

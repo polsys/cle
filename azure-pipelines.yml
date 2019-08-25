@@ -16,7 +16,7 @@ variables:
 steps:
 - task: DotNetCoreInstaller@0
   inputs:
-    version: '2.2.203'
+    version: '3.0.100-preview8-013656'
   displayName: 'Install .NET Core SDK that supports C# 8.0'
 - script: |
     dotnet tool install --tool-path . nbgv

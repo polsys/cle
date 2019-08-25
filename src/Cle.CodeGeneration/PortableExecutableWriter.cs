@@ -35,7 +35,7 @@ namespace Cle.CodeGeneration
 
             // Write the initial header with to-be-filled entries set to zero
             // In total, the header takes 1024 bytes
-            _exeStream.Write(_skeletonPeHeader, 0, _skeletonPeHeader.Length);
+            _exeStream.Write(SkeletonPeHeader);
             _exeStream.Seek(1024, SeekOrigin.Begin);
         }
 
@@ -48,7 +48,7 @@ namespace Cle.CodeGeneration
         public void StartNewMethod(int methodIndex, string methodName)
         {
             // Methods always start at multiple of 16 bytes
-            WritePadding(16, _int3Padding);
+            WritePadding(16, Int3Padding);
             _methodOffsets.Add(methodIndex, (int)_exeStream.Position);
 
             // Write a header for method disassembly
@@ -106,7 +106,7 @@ namespace Cle.CodeGeneration
             var tempBuffer = new byte[4];
 
             // Pad the code section to file alignment
-            WritePadding(FileAlignment, _int3Padding);
+            WritePadding(FileAlignment, Int3Padding);
 
             // Store the padded code section size
             var paddedSizeOfCode = (int)_exeStream.Position - PeHeaderSize;
@@ -152,16 +152,16 @@ namespace Cle.CodeGeneration
         /// Inserts padding until the stream position is a multiple of <paramref name="multipleToPad"/>.
         /// The <paramref name="content"/> array is repeated (possibly partially).
         /// </summary>
-        private void WritePadding(int multipleToPad, byte[] content)
+        private void WritePadding(int multipleToPad, ReadOnlySpan<byte> content)
         {
             var bytesToPad = RoundUp((int)_exeStream.Position, multipleToPad) - (int)_exeStream.Position;
 
             while (bytesToPad > content.Length)
             {
-                _exeStream.Write(content, 0, content.Length);
+                _exeStream.Write(content);
                 bytesToPad -= content.Length;
             }
-            _exeStream.Write(content, 0, bytesToPad);
+            _exeStream.Write(content.Slice(0, bytesToPad));
         }
 
         private static int RoundUp(int size, int alignment)
@@ -170,13 +170,12 @@ namespace Cle.CodeGeneration
             return size + (alignment - size % alignment) % alignment;
         }
 
-        // TODO: Once Stream.Write(ReadOnlySpan<byte>) overload is available, use the static data initialization trick
-        private readonly byte[] _int3Padding =
+        private static ReadOnlySpan<byte> Int3Padding => new byte[]
         {
             0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC
         };
 
-        private readonly byte[] _skeletonPeHeader =
+        private static ReadOnlySpan<byte> SkeletonPeHeader => new byte[]
         {
             // MS-DOS header (http://www.delorie.com/djgpp/doc/exe/)
             (byte)'M', (byte)'Z', 0x90, 0x00, 0x03, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00,
