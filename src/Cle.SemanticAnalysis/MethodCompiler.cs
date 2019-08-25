@@ -81,8 +81,8 @@ namespace Cle.SemanticAnalysis
             {
                 if (attribute.Name == "EntryPoint")
                 {
-                    // TODO: Check that the method has no parameters
-                    if (!returnType.Equals(SimpleType.Int32))
+                    // Check that the method returns int32 and has no parameters
+                    if (!returnType.Equals(SimpleType.Int32) || parameterTypes.Count > 0)
                     {
                         diagnosticSink.Add(DiagnosticCode.EntryPointMustBeDeclaredCorrectly, syntax.Position);
                         return null;
