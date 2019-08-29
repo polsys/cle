@@ -7,7 +7,7 @@ namespace Cle.SemanticAnalysis
     /// <summary>
     /// Logic for resolving a <see cref="TypeDefinition"/> from a type name.
     /// </summary>
-    internal class TypeResolver
+    internal static class TypeResolver
     {
         /// <summary>
         /// Tries to resolve the given type name.

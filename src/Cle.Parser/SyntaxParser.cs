@@ -132,7 +132,7 @@ namespace Cle.Parser
                     }
 
                     // Parameter list
-                    if (!TryParseParameterList(out var parameters))
+                    if (!TryParseParameterDeclarations(out var parameters))
                     {
                         return null;
                     }
@@ -182,46 +182,29 @@ namespace Cle.Parser
             }
 
             // Read the parameter list, if one is given
-            var parameters = ImmutableList<LiteralSyntax>.Empty;
+            var parameterExpressions = ImmutableList<ExpressionSyntax>.Empty;
             if (_lexer.PeekTokenType() == TokenType.OpenParen)
             {
-                _lexer.GetToken();
-
-                // There may be zero or more parameters
-                if (_lexer.PeekTokenType() != TokenType.CloseParen)
+                if (!TryParseParameterList(out parameterExpressions))
                 {
-                    while (true)
-                    {
-                        if (!TryParseExpression(out var expression))
-                        {
-                            return false;
-                        }
-
-                        // Intentional limitation: attribute parameters must be literals
-                        if (expression is LiteralSyntax literal)
-                        {
-                            parameters = parameters.Add(literal);
-                        }
-                        else
-                        {
-                            _diagnosticSink.Add(DiagnosticCode.AttributeParameterMustBeLiteral, expression.Position);
-                            return false;
-                        }
-
-                        if (_lexer.PeekTokenType() == TokenType.Comma)
-                        {
-                            _lexer.GetToken();
-                            continue;
-                        }
-                        else
-                        {
-                            break;
-                        }
-                    }
+                    return false;
                 }
+            }
 
-                if (!ExpectToken(TokenType.CloseParen, DiagnosticCode.ExpectedClosingParen))
+            // Assert that each parameter is a literal.
+            // This is done in order to simplify attribute resolution: no need to evaluate constants
+            // before evaluating attributes.
+            // TODO PERF: When replacing the immutable list data structure, add size hinting here
+            var parameterLiterals = ImmutableList<LiteralSyntax>.Empty;
+            foreach (var paramExpr in parameterExpressions)
+            {
+                if (paramExpr is LiteralSyntax literal)
                 {
+                    parameterLiterals = parameterLiterals.Add(literal);
+                }
+                else
+                {
+                    _diagnosticSink.Add(DiagnosticCode.AttributeParameterMustBeLiteral, paramExpr.Position);
                     return false;
                 }
             }
@@ -232,7 +215,7 @@ namespace Cle.Parser
                 return false;
             }
 
-            attribute = new AttributeSyntax(attributeName, parameters, startPosition);
+            attribute = new AttributeSyntax(attributeName, parameterLiterals, startPosition);
             return true;
         }
 
@@ -261,7 +244,7 @@ namespace Cle.Parser
             return true;
         }
 
-        private bool TryParseParameterList(out ImmutableList<ParameterDeclarationSyntax> parameters)
+        private bool TryParseParameterDeclarations(out ImmutableList<ParameterDeclarationSyntax> parameters)
         {
             parameters = ImmutableList<ParameterDeclarationSyntax>.Empty;
 
@@ -1090,9 +1073,6 @@ namespace Cle.Parser
             callSyntax = null;
             var callPosition = _lexer.LastPosition;
 
-            // Eat the open paren
-            _lexer.GetToken();
-
             // Validate the function name
             if (!NameParsing.IsValidFullName(functionName))
             {
@@ -1100,8 +1080,28 @@ namespace Cle.Parser
                 return false;
             }
 
+            // Read the parameter list: this also eats the open paren
+            if (!TryParseParameterList(out var parameters))
+            {
+                return false;
+            }
+
+            callSyntax = new FunctionCallSyntax(functionName, parameters, callPosition);
+            return true;
+        }
+
+        /// <summary>
+        /// Reads a parameter list for a function call or an attribute.
+        /// Logs an error and returns false if the list cannot be parsed.
+        /// Precondition: an open paren is the next token.
+        /// </summary>
+        private bool TryParseParameterList(out ImmutableList<ExpressionSyntax> parameters)
+        {
+            // Eat the open paren
+            EatAndAssertToken(TokenType.OpenParen);
+
             // Read parameters unless the parameter list is empty
-            var parameters = ImmutableList<ExpressionSyntax>.Empty;
+            parameters = ImmutableList<ExpressionSyntax>.Empty;
             if (_lexer.PeekTokenType() != TokenType.CloseParen)
             {
                 while (true)
@@ -1131,7 +1131,6 @@ namespace Cle.Parser
                 return false;
             }
 
-            callSyntax = new FunctionCallSyntax(functionName, parameters, callPosition);
             return true;
         }
 
