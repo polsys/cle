@@ -1,5 +1,6 @@
 ﻿using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using Cle.Common;
 using Cle.Common.TypeSystem;
 using Cle.Parser.SyntaxTree;
@@ -56,29 +57,124 @@ namespace Cle.SemanticAnalysis
             }
 
             // Apply the attributes
+            // Each attribute can be validated independently, so don't stop on first failure
             var isEntryPoint = false;
+            var isValid = true;
+            byte[]? importName = null;
+            byte[]? importLibrary = null;
             foreach (var attribute in syntax.Attributes)
             {
-                if (attribute.Name == "EntryPoint")
+                switch (attribute.Name)
                 {
-                    // Check that the method returns int32 and has no parameters
-                    if (!returnType.Equals(SimpleType.Int32) || parameterTypes.Count > 0)
-                    {
-                        diagnosticSink.Add(DiagnosticCode.EntryPointMustBeDeclaredCorrectly, syntax.Position);
-                        return null;
-                    }
-
-                    isEntryPoint = true;
-                }
-                else
-                {
-                    diagnosticSink.Add(DiagnosticCode.UnknownAttribute, attribute.Position, attribute.Name);
-                    return null;
+                    case "EntryPoint":
+                        isValid &= ValidateEntryPoint(syntax, diagnosticSink, returnType, parameterTypes);
+                        isEntryPoint = true;
+                        break;
+                    case "Import":
+                        isValid &= TryParseImportAttribute(attribute, diagnosticSink, out importName, out importLibrary);
+                        break;
+                    default:
+                        diagnosticSink.Add(DiagnosticCode.UnknownAttribute, attribute.Position, attribute.Name);
+                        isValid = false;
+                        break;
                 }
             }
 
-            return new MethodDeclaration(methodBodyIndex, returnType, parameterTypes, syntax.Visibility,
-                definingNamespace + "::" + syntax.Name, definingFilename, syntax.Position, isEntryPoint);
+            if (!isValid)
+            {
+                return null;
+            }
+
+            // Some attributes may not be applied to the same method
+            if (isEntryPoint && importName != null)
+            {
+                diagnosticSink.Add(DiagnosticCode.EntryPointAndImportNotCompatible, syntax.Position);
+                return null;
+            }
+
+            // Return a suitable subtype of the MethodDeclaration class
+            if (importName != null)
+            {
+                Debug.Assert(importLibrary != null);
+
+                return new ImportedMethodDeclaration(methodBodyIndex, returnType, parameterTypes, syntax.Visibility,
+                    definingNamespace + "::" + syntax.Name, definingFilename, syntax.Position, importName, importLibrary);
+            }
+            else
+            {
+                return new NativeMethodDeclaration(methodBodyIndex, returnType, parameterTypes, syntax.Visibility,
+                    definingNamespace + "::" + syntax.Name, definingFilename, syntax.Position, isEntryPoint);
+            }
+        }
+
+        private static bool ValidateEntryPoint(FunctionSyntax syntax, IDiagnosticSink diagnosticSink,
+            TypeDefinition returnType, ImmutableList<TypeDefinition> parameterTypes)
+        {
+            // The method must return int32 and take no parameters
+            if (returnType.Equals(SimpleType.Int32) && parameterTypes.Count == 0)
+            {
+                return true;
+            }
+
+            diagnosticSink.Add(DiagnosticCode.EntryPointMustBeDeclaredCorrectly, syntax.Position);
+            return false;
+        }
+
+        private static bool TryParseImportAttribute(AttributeSyntax attribute, IDiagnosticSink diagnosticSink,
+            [NotNullWhen(true)] out byte[]? nameBytes, [NotNullWhen(true)] out byte[]? libraryBytes)
+        {
+            nameBytes = libraryBytes = default;
+            var isValid = true;
+
+            // There must be exactly two string parameters: name and library
+            if (attribute.Parameters.Count != 2)
+            {
+                diagnosticSink.Add(DiagnosticCode.ParameterCountMismatch, attribute.Position,
+                    attribute.Parameters.Count.ToString(), "2");
+                return false;
+            }
+
+            if (attribute.Parameters[0] is StringLiteralSyntax nameLiteral &&
+                IsValidImportParameter(nameLiteral))
+            {
+                nameBytes = nameLiteral.Value;
+            }
+            else
+            {
+                diagnosticSink.Add(DiagnosticCode.ImportParameterNotValid, attribute.Parameters[0].Position);
+                isValid = false;
+            }
+
+            if (attribute.Parameters[1] is StringLiteralSyntax libraryLiteral &&
+                IsValidImportParameter(libraryLiteral))
+            {
+                libraryBytes = libraryLiteral.Value;
+            }
+            else
+            {
+                diagnosticSink.Add(DiagnosticCode.ImportParameterNotValid, attribute.Parameters[1].Position);
+                isValid = false;
+            }
+
+            return isValid;
+        }
+
+        private static bool IsValidImportParameter(StringLiteralSyntax parameterLiteral)
+        {
+            var bytes = parameterLiteral.Value;
+
+            // The string literal must be non-empty...
+            if (bytes.Length == 0)
+                return false;
+
+            // ...and contain only ASCII characters.
+            foreach (var b in bytes)
+            {
+                if ((b & 0b_1000_0000) != 0)
+                    return false;
+            }
+
+            return true;
         }
     }
 }

@@ -103,6 +103,10 @@ namespace Cle.Frontend
                     return "The main module does not contain a method marked as the entry point.";
                 case DiagnosticCode.MultipleEntryPointsProvided:
                     return "The main module already has an entry point.";
+                case DiagnosticCode.EntryPointAndImportNotCompatible:
+                    return "The [EntryPoint] and [Import] attributes may not be applied to the same method.";
+                case DiagnosticCode.ImportParameterNotValid:
+                    return "Expected a string literal that is not empty and only contains ASCII characters.";
                 case DiagnosticCode.TypeMismatch:
                     return $"Expression is of type {diagnostic.Actual} but expected {diagnostic.Expected}.";
                 case DiagnosticCode.IntegerConstantOutOfBounds:
