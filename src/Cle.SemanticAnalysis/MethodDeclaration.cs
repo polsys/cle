@@ -6,18 +6,15 @@ namespace Cle.SemanticAnalysis
 {
     /// <summary>
     /// Type information for a method.
+    /// See implementing classes <see cref="NativeMethodDeclaration"/> and <see cref="ImportedMethodDeclaration"/>.
     /// </summary>
-    public class MethodDeclaration
+    public abstract class MethodDeclaration
     {
         /// <summary>
-        /// Gets the index associated with the compiled method body.
+        /// Gets the internal index for referring to the method in the Intermediate Representation bytecode.
+        /// This also applies to methods that are imported instead of compiled.
         /// </summary>
         public int BodyIndex { get; }
-
-        /// <summary>
-        /// If true, this method is the entry point for an executable application.
-        /// </summary>
-        public bool IsEntryPoint { get; }
 
         /// <summary>
         /// Gets the return type of this method.
@@ -51,15 +48,14 @@ namespace Cle.SemanticAnalysis
         /// </summary>
         public TextPosition DefinitionPosition { get; }
 
-        public MethodDeclaration(
+        protected MethodDeclaration(
             int bodyIndex,
             TypeDefinition returnType, 
             ImmutableList<TypeDefinition> parameterTypes,
             Visibility visibility,
             string fullName,
             string definingFilename,
-            TextPosition sourcePosition,
-            bool isEntryPoint)
+            TextPosition sourcePosition)
         {
             BodyIndex = bodyIndex;
             ReturnType = returnType;
@@ -68,7 +64,6 @@ namespace Cle.SemanticAnalysis
             FullName = fullName;
             DefiningFilename = definingFilename;
             DefinitionPosition = sourcePosition;
-            IsEntryPoint = isEntryPoint;
         }
     }
 }

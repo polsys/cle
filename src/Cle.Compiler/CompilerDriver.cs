@@ -171,7 +171,7 @@ namespace Cle.Compiler
 
                     // If the declaration has an [EntryPoint] attribute, store that
                     // TODO: Only do this when compiling the the main module
-                    if (decl.IsEntryPoint)
+                    if (decl is NativeMethodDeclaration nativeMethod && nativeMethod.IsEntryPoint)
                     {
                         if (!compilation.TrySetEntryPointIndex(decl.BodyIndex))
                         {
@@ -212,7 +212,10 @@ namespace Cle.Compiler
                         throw new InvalidOperationException("Ambiguous or missing method declaration");
                     var declaration = possibleDeclarations[0];
 
-                    // Compile and store the method body
+                    // Compile and store the method body if there is one
+                    if (declaration is ImportedMethodDeclaration)
+                        continue;
+
                     var methodBody = compiler.CompileBody(methodSyntax, declaration,
                         sourceFile.Namespace, sourceFile.Filename);
                     if (methodBody != null)

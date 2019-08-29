@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Text;
 using Cle.Common;
 using Cle.Common.TypeSystem;
 using Cle.Parser.SyntaxTree;
@@ -22,9 +23,9 @@ namespace Cle.SemanticAnalysis.UnitTests
             var result = MethodDeclarationCompiler.Compile(syntax, "Namespace", "bool.cle", 7, declarationProvider, diagnostics);
 
             Assert.That(diagnostics.Diagnostics, Is.Empty);
-            Assert.That(result, Is.Not.Null);
-            Assert.That(result!.IsEntryPoint, Is.False);
-            Assert.That(result.ReturnType, Is.EqualTo(SimpleType.Bool));
+            Assert.That(result, Is.InstanceOf<NativeMethodDeclaration>());
+            Assert.That((result as NativeMethodDeclaration)!.IsEntryPoint, Is.False);
+            Assert.That(result!.ReturnType, Is.EqualTo(SimpleType.Bool));
             Assert.That(result.Visibility, Is.EqualTo(Visibility.Public));
             Assert.That(result.FullName, Is.EqualTo("Namespace::MethodName"));
             Assert.That(result.DefiningFilename, Is.EqualTo("bool.cle"));
@@ -45,9 +46,9 @@ namespace Cle.SemanticAnalysis.UnitTests
             var result = MethodDeclarationCompiler.Compile(syntax, "long::ns", "int32.cle", 8, declarationProvider, diagnostics);
 
             Assert.That(diagnostics.Diagnostics, Is.Empty);
-            Assert.That(result, Is.Not.Null);
-            Assert.That(result!.IsEntryPoint, Is.False);
-            Assert.That(result.ReturnType, Is.EqualTo(SimpleType.Int32));
+            Assert.That(result, Is.InstanceOf<NativeMethodDeclaration>());
+            Assert.That((result as NativeMethodDeclaration)!.IsEntryPoint, Is.False);
+            Assert.That(result!.ReturnType, Is.EqualTo(SimpleType.Int32));
             Assert.That(result.Visibility, Is.EqualTo(Visibility.Private));
             Assert.That(result.FullName, Is.EqualTo("long::ns::MethodName"));
             Assert.That(result.DefiningFilename, Is.EqualTo("int32.cle"));
@@ -136,8 +137,8 @@ namespace Cle.SemanticAnalysis.UnitTests
         public void Compile_does_not_accept_unknown_attribute()
         {
             var position = new TextPosition(140, 13, 4);
-            var parameters = ImmutableList<LiteralSyntax>.Empty;
-            var attribute = new AttributeSyntax("TotallyNonexistentAttribute", parameters, position);
+            var attributeParams = ImmutableList<LiteralSyntax>.Empty;
+            var attribute = new AttributeSyntax("TotallyNonexistentAttribute", attributeParams, position);
             var syntax = new FunctionSyntax("MethodName", "bool",
                 Visibility.Public, ImmutableList<ParameterDeclarationSyntax>.Empty,
                 ImmutableList<AttributeSyntax>.Empty.Add(attribute),
@@ -153,13 +154,38 @@ namespace Cle.SemanticAnalysis.UnitTests
         }
 
         [Test]
+        public void Compile_raises_error_for_each_unknown_attribute()
+        {
+            var attributeParams = ImmutableList<LiteralSyntax>.Empty;
+            var position1 = new TextPosition(140, 13, 4);
+            var position2 = new TextPosition(280, 17, 6);
+            var attribute1 = new AttributeSyntax("TotallyNonexistentAttribute", attributeParams, position1);
+            var attribute2 = new AttributeSyntax("AnotherNonexistentAttribute", attributeParams, position2);
+
+            var syntax = new FunctionSyntax("MethodName", "bool",
+                Visibility.Public, ImmutableList<ParameterDeclarationSyntax>.Empty,
+                ImmutableList<AttributeSyntax>.Empty.Add(attribute1).Add(attribute2),
+                new BlockSyntax(ImmutableList<StatementSyntax>.Empty, default), default);
+            var diagnostics = new TestingDiagnosticSink();
+            var declarationProvider = new TestingSingleFileDeclarationProvider();
+
+            var result = MethodDeclarationCompiler.Compile(syntax, "ns", "unknown.cle", 0, declarationProvider, diagnostics);
+
+            Assert.That(result, Is.Null);
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.UnknownAttribute, position1.Line, position1.ByteInLine)
+                .WithActual("TotallyNonexistentAttribute");
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.UnknownAttribute, position2.Line, position2.ByteInLine)
+                .WithActual("AnotherNonexistentAttribute");
+        }
+
+        [Test]
         public void Compile_entry_point_is_flagged()
         {
             var (result, diagnostics) = CompileEntryPointDeclaration(Visibility.Public, "int32", null);
 
             Assert.That(diagnostics.Diagnostics, Is.Empty);
-            Assert.That(result, Is.Not.Null);
-            Assert.That(result!.IsEntryPoint, Is.True);
+            Assert.That(result, Is.InstanceOf<NativeMethodDeclaration>());
+            Assert.That((result as NativeMethodDeclaration)!.IsEntryPoint, Is.True);
         }
 
         [Test]
@@ -168,8 +194,8 @@ namespace Cle.SemanticAnalysis.UnitTests
             var (result, diagnostics) = CompileEntryPointDeclaration(Visibility.Private, "int32", null);
 
             Assert.That(diagnostics.Diagnostics, Is.Empty);
-            Assert.That(result, Is.Not.Null);
-            Assert.That(result!.IsEntryPoint, Is.True);
+            Assert.That(result, Is.InstanceOf<NativeMethodDeclaration>());
+            Assert.That((result as NativeMethodDeclaration)!.IsEntryPoint, Is.True);
         }
 
         [Test]
@@ -200,7 +226,7 @@ namespace Cle.SemanticAnalysis.UnitTests
                 paramList = paramList.Add(parameter);
             }
 
-            var entryPointAttribute = new AttributeSyntax("EntryPoint", ImmutableList<LiteralSyntax>.Empty, default);
+            var entryPointAttribute = MakeEntryPointAttribute();
             var syntax = new FunctionSyntax("Main", returnType,
                 visibility, paramList, ImmutableList<AttributeSyntax>.Empty.Add(entryPointAttribute),
                 new BlockSyntax(ImmutableList<StatementSyntax>.Empty, default), new TextPosition(3, 1, 3));
@@ -210,6 +236,148 @@ namespace Cle.SemanticAnalysis.UnitTests
 
             var result = MethodDeclarationCompiler.Compile(syntax, "ns", "entrypoint.cle", 0, declarationProvider, diagnostics);
             return (result, diagnostics);
+        }
+
+        private static AttributeSyntax MakeEntryPointAttribute()
+        {
+            return new AttributeSyntax("EntryPoint", ImmutableList<LiteralSyntax>.Empty, default);
+        }
+
+        [Test]
+        public void Compile_imported_method()
+        {
+            var position = new TextPosition(17, 2, 3);
+            var syntax = new FunctionSyntax("MethodName", "bool",
+                Visibility.Public, ImmutableList<ParameterDeclarationSyntax>.Empty,
+                ImmutableList<AttributeSyntax>.Empty.Add(MakeImportAttribute("Method", "Library")),
+                null, position);
+            var diagnostics = new TestingDiagnosticSink();
+            var declarationProvider = new TestingSingleFileDeclarationProvider();
+
+            var result = MethodDeclarationCompiler.Compile(syntax, "ns", "import.cle", 0, declarationProvider, diagnostics);
+
+            Assert.That(result, Is.InstanceOf<ImportedMethodDeclaration>());
+            var import = (result as ImportedMethodDeclaration)!;
+            Assert.That(import.ImportName, Is.EqualTo(Encoding.UTF8.GetBytes("Method")));
+            Assert.That(import.ImportLibrary, Is.EqualTo(Encoding.UTF8.GetBytes("Library")));
+            Assert.That(import.DefinitionPosition, Is.EqualTo(position));
+            Assert.That(diagnostics.Diagnostics, Is.Empty);
+        }
+
+        [TestCase("")]
+        [TestCase("clé")]
+        public void Compile_import_attribute_with_invalid_name(string name)
+        {
+            var paramList = ImmutableList<LiteralSyntax>.Empty
+                .Add(new StringLiteralSyntax(Encoding.UTF8.GetBytes(name), new TextPosition(0, 1, 2)))
+                .Add(new StringLiteralSyntax(Encoding.UTF8.GetBytes("lib"), new TextPosition(0, 3, 4)));
+
+            var syntax = new FunctionSyntax("MethodName", "bool",
+                Visibility.Public, ImmutableList<ParameterDeclarationSyntax>.Empty,
+                ImmutableList<AttributeSyntax>.Empty.Add(new AttributeSyntax("Import", paramList, default)),
+                null, default);
+            var diagnostics = new TestingDiagnosticSink();
+            var declarationProvider = new TestingSingleFileDeclarationProvider();
+
+            var result = MethodDeclarationCompiler.Compile(syntax, "ns", "import.cle", 0, declarationProvider, diagnostics);
+
+            Assert.That(result, Is.Null);
+            Assert.That(diagnostics.Diagnostics, Has.Exactly(1).Items);
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.ImportParameterNotValid, paramList[0].Position);
+        }
+
+        [TestCase("")]
+        [TestCase("clé")]
+        public void Compile_import_attribute_with_invalid_library(string name)
+        {
+            var paramList = ImmutableList<LiteralSyntax>.Empty
+                .Add(new StringLiteralSyntax(Encoding.UTF8.GetBytes("fun"), new TextPosition(0, 1, 2)))
+                .Add(new StringLiteralSyntax(Encoding.UTF8.GetBytes(name), new TextPosition(0, 3, 4)));
+
+            var syntax = new FunctionSyntax("MethodName", "bool",
+                Visibility.Public, ImmutableList<ParameterDeclarationSyntax>.Empty,
+                ImmutableList<AttributeSyntax>.Empty.Add(new AttributeSyntax("Import", paramList, default)),
+                null, default);
+            var diagnostics = new TestingDiagnosticSink();
+            var declarationProvider = new TestingSingleFileDeclarationProvider();
+
+            var result = MethodDeclarationCompiler.Compile(syntax, "ns", "import.cle", 0, declarationProvider, diagnostics);
+
+            Assert.That(result, Is.Null);
+            Assert.That(diagnostics.Diagnostics, Has.Exactly(1).Items);
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.ImportParameterNotValid, paramList[1].Position);
+        }
+
+        [Test]
+        public void Compile_import_attribute_with_no_parameters()
+        {
+            var attributePosition = new TextPosition(1024, 58, 3);
+            var syntax = new FunctionSyntax("MethodName", "bool",
+                Visibility.Public, ImmutableList<ParameterDeclarationSyntax>.Empty,
+                ImmutableList<AttributeSyntax>.Empty.Add(
+                    new AttributeSyntax("Import", ImmutableList<LiteralSyntax>.Empty, attributePosition)),
+                null, default);
+            var diagnostics = new TestingDiagnosticSink();
+            var declarationProvider = new TestingSingleFileDeclarationProvider();
+
+            var result = MethodDeclarationCompiler.Compile(syntax, "ns", "import.cle", 0, declarationProvider, diagnostics);
+
+            Assert.That(result, Is.Null);
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.ParameterCountMismatch, attributePosition)
+                .WithExpected("2")
+                .WithActual("0");
+        }
+
+        [Test]
+        public void Compile_import_attribute_with_wrong_parameter_types()
+        {
+            var paramList = ImmutableList<LiteralSyntax>.Empty
+                .Add(new IntegerLiteralSyntax(14, new TextPosition(0, 1, 2)))
+                .Add(new BooleanLiteralSyntax(true, new TextPosition(0, 3, 4)));
+
+            var syntax = new FunctionSyntax("MethodName", "bool",
+                Visibility.Public, ImmutableList<ParameterDeclarationSyntax>.Empty,
+                ImmutableList<AttributeSyntax>.Empty.Add(new AttributeSyntax("Import", paramList, default)),
+                null, default);
+            var diagnostics = new TestingDiagnosticSink();
+            var declarationProvider = new TestingSingleFileDeclarationProvider();
+
+            var result = MethodDeclarationCompiler.Compile(syntax, "ns", "import.cle", 0, declarationProvider, diagnostics);
+
+            Assert.That(result, Is.Null);
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.ImportParameterNotValid, paramList[0].Position);
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.ImportParameterNotValid, paramList[1].Position);
+        }
+
+        [Test]
+        public void Compile_import_and_entry_point_attributes_may_not_coexist()
+        {
+            var position = new TextPosition(17, 2, 3);
+            var syntax = new FunctionSyntax("MethodName", "int32",
+                Visibility.Public, ImmutableList<ParameterDeclarationSyntax>.Empty,
+                ImmutableList<AttributeSyntax>.Empty
+                    .Add(MakeImportAttribute("Method", "Library"))
+                    .Add(MakeEntryPointAttribute()),
+                null, position);
+            var diagnostics = new TestingDiagnosticSink();
+            var declarationProvider = new TestingSingleFileDeclarationProvider();
+
+            var result = MethodDeclarationCompiler.Compile(syntax, "ns", "import.cle", 0, declarationProvider, diagnostics);
+
+            Assert.That(result, Is.Null);
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.EntryPointAndImportNotCompatible, position);
+        }
+
+        private static AttributeSyntax MakeImportAttribute(string name, string library)
+        {
+            var nameBytes = Encoding.UTF8.GetBytes(name);
+            var libraryBytes = Encoding.UTF8.GetBytes(library);
+
+            var paramList = ImmutableList<LiteralSyntax>.Empty
+                .Add(new StringLiteralSyntax(nameBytes, default))
+                .Add(new StringLiteralSyntax(libraryBytes, default));
+
+            return new AttributeSyntax("Import", paramList, default);
         }
     }
 }

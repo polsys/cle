@@ -7,6 +7,7 @@ An attribute has the syntax
 [attribute_name parameter_list]
 ```
 where `parameter_list` is an optional parenthesized list of comma-separated values.
+As of Clé 0.2, the values must be _literals_, not arbitrary expressions.
 Not all attributes have parameter lists.
 
 
@@ -18,6 +19,7 @@ The method marked with this attribute is called when the program is run.
 When the method returns, the program quits with return code equal to the returned value.
 
 This attribute is ignored in modules other than the main module.
+The method annotated with this attribute must not have the `[Import]` attribute.
 
 
 ## `[Import(name, library)]`
@@ -27,6 +29,7 @@ Both strings may only contain ASCII characters.
 
 The method marked with this attribute must not have a method body.
 The name of the method does not need to match the `name` parameter.
+The method annotated with this attribute must not have the `[EntryPoint]` attribute.
 
 There is no difference between calling an imported method and an ordinary method.
 However, passing anything else than simple types as parameters or return value requires special care, since the imported function may not be compatible with Clé type system or memory model.

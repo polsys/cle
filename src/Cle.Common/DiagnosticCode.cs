@@ -55,6 +55,8 @@
         EntryPointMustBeDeclaredCorrectly,
         NoEntryPointProvided,
         MultipleEntryPointsProvided,
+        EntryPointAndImportNotCompatible,
+        ImportParameterNotValid,
 
         TypeMismatch,
         VoidIsNotValidType,

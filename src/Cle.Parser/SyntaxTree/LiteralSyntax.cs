@@ -7,7 +7,7 @@ namespace Cle.Parser.SyntaxTree
     /// </summary>
     public abstract class LiteralSyntax : ExpressionSyntax
     {
-        public LiteralSyntax(TextPosition position)
+        protected LiteralSyntax(TextPosition position)
             : base(position)
         {
         }
