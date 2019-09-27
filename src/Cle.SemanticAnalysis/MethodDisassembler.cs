@@ -99,7 +99,17 @@ namespace Cle.SemanticAnalysis
                                 }
                                 outputBuilder.Append("#" + callInfo.ParameterIndices[i]);
                             }
-                            outputBuilder.AppendLine($") -> #{instruction.Destination}");
+
+                            // Add a suffix if the calling convention is not the default one
+                            if (callInfo.CallType == MethodCallType.Imported)
+                            {
+                                outputBuilder.AppendLine($") import -> #{instruction.Destination}");
+                            }
+                            else
+                            {
+                                outputBuilder.AppendLine($") -> #{instruction.Destination}");
+                            }
+
                             break;
 
                         case Opcode.CopyValue:

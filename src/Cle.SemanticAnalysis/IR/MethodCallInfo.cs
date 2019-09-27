@@ -22,11 +22,17 @@
         /// </summary>
         public string CalleeFullName { get; }
 
-        public MethodCallInfo(int calleeIndex, int[] parameterIndices, string calleeFullName)
+        /// <summary>
+        /// Gets the code generation implementation of the call.
+        /// </summary>
+        public MethodCallType CallType { get; }
+
+        public MethodCallInfo(int calleeIndex, int[] parameterIndices, string calleeFullName, MethodCallType callType)
         {
             CalleeIndex = calleeIndex;
             ParameterIndices = parameterIndices;
             CalleeFullName = calleeFullName;
+            CallType = callType;
         }
     }
 }

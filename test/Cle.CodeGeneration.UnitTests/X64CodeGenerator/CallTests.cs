@@ -29,6 +29,28 @@ LB_0:
         }
 
         [Test]
+        public void Parameterless_imported_call()
+        {
+            // DoNothing();
+            // return;
+            const string source = @"
+; #0   void
+; #1   void
+BB_0:
+    Call Test::DoNothing() import -> #0
+    Return #1";
+
+            const string expected = @"
+; Test::Method
+LB_0:
+    call qword ptr [Test::DoNothing]
+    xor eax, eax
+    ret
+";
+            EmitAndAssertDisassembly(source, expected);
+        }
+
+        [Test]
         public void Two_general_register_parameters_in_call()
         {
             // DoSomething(1, true);

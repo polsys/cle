@@ -185,7 +185,9 @@ namespace Cle.SemanticAnalysis
             }
 
             // Emit a call operation
-            var callInfoIndex = method.AddCallInfo(declaration.BodyIndex, parameterIndices, declaration.FullName);
+            var callType = declaration is ImportedMethodDeclaration ? MethodCallType.Imported : MethodCallType.Native;
+
+            var callInfoIndex = method.AddCallInfo(declaration.BodyIndex, parameterIndices, declaration.FullName, callType);
             var resultIndex = method.AddLocal(declaration.ReturnType, LocalFlags.None);
             builder.AppendInstruction(Opcode.Call, callInfoIndex, 0, resultIndex);
 

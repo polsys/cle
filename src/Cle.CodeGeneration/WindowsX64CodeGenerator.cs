@@ -249,6 +249,14 @@ namespace Cle.CodeGeneration
                         }
                         break;
                     }
+                    case LowOp.CallImported:
+                    {
+                        var calleeName = highMethod.CallInfos[inst.Left].CalleeFullName;
+
+                        emitter.EmitCallIndirectWithFixup((int)inst.Data, calleeName, out var fixup);
+                        _peWriter.AddCallFixup(fixup);
+                        break;
+                    }
                     case LowOp.Jump:
                     {
                         // Do not emit a jump for a simple fallthrough

@@ -39,7 +39,7 @@ namespace Cle.CodeGeneration.Lir
         public bool UsesDest => Op == LowOp.LoadInt || Op == LowOp.Move ||
                                 (Op >= LowOp.IntegerAdd && Op <= LowOp.BitwiseNot) ||
                                 (Op >= LowOp.SetIfEqual && Op <= LowOp.SetIfGreaterOrEqual) || 
-                                Op == LowOp.Call;
+                                Op == LowOp.Call || Op == LowOp.CallImported;
 
         public override bool Equals(object obj)
         {
@@ -232,11 +232,17 @@ namespace Cle.CodeGeneration.Lir
         /// </summary>
         JumpIfGreaterOrEqual,
         /// <summary>
-        /// Calls the method indexed by Data.
+        /// Calls the Clé native method indexed by Data.
         /// The Left operand contains the call info index for disassembly purposes.
         /// The return value is stored in Dest - this local must be in the fixed return location.
         /// </summary>
         Call,
+        /// <summary>
+        /// Calls the external method indexed by Data.
+        /// The Left operand contains the call info index for disassembly purposes.
+        /// The return value is stored in Dest - this local must be in the fixed return location.
+        /// </summary>
+        CallImported,
         /// <summary>
         /// Exits the method.
         /// The left operand is returned - this local must also be in the fixed return location.

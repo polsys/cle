@@ -32,6 +32,30 @@ BB_0:
         }
 
         [Test]
+        public void Standalone_method_call_to_imported_method_succeeds()
+        {
+            const string source = @"namespace Test::Namespace;
+public void CallImported()
+{
+    FromSomewhere();
+}
+
+[Import(""some_method"", ""SomeLibrary.dll"")]
+private void FromSomewhere() {}";
+            var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
+
+            Assert.That(diagnostics.Diagnostics, Is.Empty);
+            Assert.That(compiledMethod, Is.Not.Null);
+            
+            AssertDisassembly(compiledMethod!, @"
+; #0   void
+; #1   void
+BB_0:
+    Call Test::Namespace::FromSomewhere() import -> #0
+    Return #1");
+        }
+
+        [Test]
         public void Standalone_method_call_to_parameterized_bool_succeeds()
         {
             const string source = @"namespace Test;

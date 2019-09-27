@@ -5,22 +5,23 @@ namespace Cle.CodeGeneration.UnitTests.Lowering
 {
     internal class CallAndParamLoweringX64Tests : LoweringTestBase
     {
-        [Test]
-        public void Parameterless_void_call()
+        [TestCase("Call Other::Method()", "Call")]
+        [TestCase("Call Other::Method() import", "CallImported")]
+        public void Parameterless_void_call(string highOp, string expectedLowOp)
         {
-            const string source = @"
+            string source = @$"
 ; #0 void
 ; #1 void
 ; #2 void
 BB_0:
-    Call Other::Method() -> #0
-    Call Other::Method() -> #1
+    {highOp} -> #0
+    {highOp} -> #1
     Return #2
 ";
             var method = MethodAssembler.Assemble(source, "Test::Method");
             var lowered = LoweringX64.Lower(method);
 
-            const string expected = @"
+            string expected = @$"
 ; #0 void [?]
 ; #1 void [?]
 ; #2 void [?]
@@ -28,8 +29,8 @@ BB_0:
 ; #4 void [rax]
 ; #5 void [rax]
 LB_0:
-    Call 0 0 100 -> 3
-    Call 1 0 100 -> 4
+    {expectedLowOp} 0 0 100 -> 3
+    {expectedLowOp} 1 0 100 -> 4
     LoadInt 0 0 0 -> 5
     Return 5 0 0 -> 0
 ";

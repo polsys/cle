@@ -41,19 +41,20 @@ namespace Cle.SemanticAnalysis.UnitTests
             Assert.That(builder.ToString().Replace("\r\n", "\n"), Is.EqualTo(expected));
         }
 
-        [Test]
-        public void DisassembleBody_single_basic_block_with_call()
+        [TestCase(MethodCallType.Native, "")]
+        [TestCase(MethodCallType.Imported, " import")]
+        public void DisassembleBody_single_basic_block_with_call(MethodCallType callType, string expectedSuffix)
         {
             var graphBuilder = new BasicBlockGraphBuilder();
             var blockBuilder = graphBuilder.GetInitialBlockBuilder();
             blockBuilder.AppendInstruction(Opcode.Call, 0, 0, 1);
             blockBuilder.AppendInstruction(Opcode.Return, 2, 0, 0);
             var method = new CompiledMethod("Test::Method") { Body = graphBuilder.Build() };
-            method.AddCallInfo(17, new[] { 3, 6, 9, 12 }, "Test::Callee");
+            method.AddCallInfo(17, new[] { 3, 6, 9, 12 }, "Test::Callee", callType);
 
-            const string expected = "BB_0:\n" +
-                                    "    Call Test::Callee(#3, #6, #9, #12) -> #1\n" +
-                                    "    Return #2\n\n";
+            string expected = "BB_0:\n" +
+                              "    Call Test::Callee(#3, #6, #9, #12)" + expectedSuffix + " -> #1\n" +
+                              "    Return #2\n\n";
 
             var builder = new StringBuilder();
             MethodDisassembler.DisassembleBody(method, builder);

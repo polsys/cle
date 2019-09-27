@@ -61,9 +61,9 @@ namespace Cle.SemanticAnalysis.IR
         /// <param name="calleeIndex">The body index of the called method.</param>
         /// <param name="parameterLocals">Local indices for the parameters.</param>
         /// <param name="calleeName">The full name of the called method, used for debugging.</param>
-        public uint AddCallInfo(int calleeIndex, int[] parameterLocals, string calleeName)
+        public uint AddCallInfo(int calleeIndex, int[] parameterLocals, string calleeName, MethodCallType callType)
         {
-            _callInfos.Add(new MethodCallInfo(calleeIndex, parameterLocals, calleeName));
+            _callInfos.Add(new MethodCallInfo(calleeIndex, parameterLocals, calleeName, callType));
             return (uint)(_callInfos.Count - 1);
         }
     }

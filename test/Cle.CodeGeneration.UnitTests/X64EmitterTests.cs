@@ -357,6 +357,19 @@ namespace Cle.CodeGeneration.UnitTests
         }
 
         [Test]
+        public void EmitCallIndirectWithFixup_and_ApplyFixup_emit_indirect_call()
+        {
+            var emitter = GetEmitter(out var stream, out var disassembly);
+
+            emitter.EmitCallIndirectWithFixup(17, "Method::Name", out var fixup);
+
+            // Displacement is 4096 - 6 bytes for the call
+            emitter.ApplyFixup(fixup, 0x1000);
+            CollectionAssert.AreEqual(new byte[] { 0xFF, 0x15, 0xFA, 0x0F, 0x00, 0x00 }, stream.ToArray());
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("call qword ptr [Method::Name]"));
+        }
+
+        [Test]
         public void EmitGeneralUnaryOp_emits_32_bit_neg_of_new_register()
         {
             GetEmitter(out var stream, out var disassembly).EmitGeneralUnaryOp(

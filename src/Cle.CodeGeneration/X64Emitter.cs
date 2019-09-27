@@ -477,6 +477,26 @@ namespace Cle.CodeGeneration
         }
 
         /// <summary>
+        /// Emits an indirect call via an unspecified pointer and returns a <see cref="Fixup"/>
+        /// that can be used to set the target.
+        /// </summary>
+        /// <param name="targetIndex">Method index to call. This will be used as the fixup tag.</param>
+        /// <param name="methodName">The target name for disassembly.</param>
+        /// <param name="fixup">Information required for fixing the target later.</param>
+        public void EmitCallIndirectWithFixup(int targetIndex, string methodName, out Fixup fixup)
+        {
+            _disassemblyWriter?.WriteLine($"{Indent}call qword ptr [{methodName}]");
+
+            // Emit the indirect call opcode followed by ModRM
+            _outputStream.WriteByte(0xFF);
+            _outputStream.WriteByte(0x15);
+
+            // Then emit four bytes for the eventual pointer
+            fixup = new Fixup(FixupType.RelativeJump, targetIndex, (int)_outputStream.Position);
+            Emit4ByteImmediate(0);
+        }
+
+        /// <summary>
         /// Applies the given fixup.
         /// </summary>
         /// <param name="fixup">The fixup returned by a previous method call.</param>
