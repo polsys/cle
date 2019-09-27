@@ -169,33 +169,8 @@ namespace Cle.CodeGeneration.RegisterAllocation
                         live.Add(inst.Right);
                     }
 
-                    // Prevent X64 trashing the right operand of subtraction/shift (see associated unit test)
-                    // Additionally, the right operand of shift is fixed to RCX, but Lowering has handled that
-                    if (inst.Op == LowOp.IntegerSubtract ||
-                        inst.Op == LowOp.ShiftLeft || inst.Op == LowOp.ShiftArithmeticRight)
-                    {
-                        intervals[latestIntervalForLocal[inst.Right]].Use(instIndex + 1);
-                    }
-
-                    // In integer division, the dividend is stored in RDX:RAX.
-                    // The lower part is already handled since the source is a fixed temporary,
-                    // but we must prevent RDX from being used for the divisor.
-                    if (inst.Op == LowOp.IntegerDivide || inst.Op == LowOp.IntegerModulo)
-                    {
-                        intervals.Add(new Interval { Start = instIndex - 1, End = instIndex, Register = X64Register.Rdx });
-                    }
-
-                    // Calls trash some registers, so we need to add intervals for them
-                    if (inst.Op == LowOp.Call || inst.Op == LowOp.CallImported)
-                    {
-                        // RAX is already reserved as the call result is stored in a local
-                        intervals.Add(new Interval { Start = instIndex, End = instIndex, Register = X64Register.Rcx });
-                        intervals.Add(new Interval { Start = instIndex, End = instIndex, Register = X64Register.Rdx });
-                        intervals.Add(new Interval { Start = instIndex, End = instIndex, Register = X64Register.R8 });
-                        intervals.Add(new Interval { Start = instIndex, End = instIndex, Register = X64Register.R9 });
-                        intervals.Add(new Interval { Start = instIndex, End = instIndex, Register = X64Register.R10 });
-                        intervals.Add(new Interval { Start = instIndex, End = instIndex, Register = X64Register.R11 });
-                    }
+                    // Some instructions (e.g. calls) trash one or more registers
+                    AddX64SpecificIntervals(inst, instIndex);
                 }
 
                 // Remove Phi outputs from the live set
@@ -228,6 +203,8 @@ namespace Cle.CodeGeneration.RegisterAllocation
 
             Debug.Assert(instIndex == 0);
 
+            // LOCAL HELPER METHODS
+
             void AddIntervalForLocal(int localIndex, int start, int end)
             {
                 // If there already is an adjacent interval, update it instead of creating another
@@ -252,6 +229,37 @@ namespace Cle.CodeGeneration.RegisterAllocation
                     End = end
                 });
                 latestIntervalForLocal[localIndex] = intervals.Count - 1;
+            }
+
+            void AddX64SpecificIntervals(in LowInstruction inst, int instIndex)
+            {
+                // Prevent X64 trashing the right operand of subtraction/shift (see associated unit test)
+                // Additionally, the right operand of shift is fixed to RCX, but Lowering has handled that
+                if (inst.Op == LowOp.IntegerSubtract ||
+                    inst.Op == LowOp.ShiftLeft || inst.Op == LowOp.ShiftArithmeticRight)
+                {
+                    intervals[latestIntervalForLocal[inst.Right]].Use(instIndex + 1);
+                }
+
+                // In integer division, the dividend is stored in RDX:RAX.
+                // The lower part is already handled since the source is a fixed temporary,
+                // but we must prevent RDX from being used for the divisor.
+                if (inst.Op == LowOp.IntegerDivide || inst.Op == LowOp.IntegerModulo)
+                {
+                    intervals.Add(new Interval { Start = instIndex - 1, End = instIndex, Register = X64Register.Rdx });
+                }
+
+                // Calls trash some registers, so we need to add intervals for them
+                if (inst.Op == LowOp.Call || inst.Op == LowOp.CallImported)
+                {
+                    // RAX is already reserved as the call result is stored in a local
+                    intervals.Add(new Interval { Start = instIndex, End = instIndex, Register = X64Register.Rcx });
+                    intervals.Add(new Interval { Start = instIndex, End = instIndex, Register = X64Register.Rdx });
+                    intervals.Add(new Interval { Start = instIndex, End = instIndex, Register = X64Register.R8 });
+                    intervals.Add(new Interval { Start = instIndex, End = instIndex, Register = X64Register.R9 });
+                    intervals.Add(new Interval { Start = instIndex, End = instIndex, Register = X64Register.R10 });
+                    intervals.Add(new Interval { Start = instIndex, End = instIndex, Register = X64Register.R11 });
+                }
             }
         }
 
