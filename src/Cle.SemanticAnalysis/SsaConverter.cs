@@ -131,7 +131,7 @@ namespace Cle.SemanticAnalysis
 
                     // Emit a call
                     var callIndex = _newMethod.AddCallInfo(originalCallInfo.CalleeIndex, parameterValues,
-                        originalCallInfo.CalleeFullName);
+                        originalCallInfo.CalleeFullName, originalCallInfo.CallType);
                     builder.AppendInstruction(Opcode.Call, callIndex, 0, dest);
 
                     continue;

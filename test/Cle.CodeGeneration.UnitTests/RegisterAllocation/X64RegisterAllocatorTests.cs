@@ -261,8 +261,9 @@ LB_3:
             Assert.That(map.Get(1).location, Is.EqualTo(map.Get(3).location));
         }
 
-        [Test]
-        public void Call_instruction_reserves_registers()
+        [TestCase(LowOp.Call)]
+        [TestCase(LowOp.CallImported)]
+        public void Call_instruction_reserves_registers(LowOp callOp)
         {
             var method = new LowMethod<X64Register>();
             method.Locals.Add(new LowLocal<X64Register>(SimpleType.Bool));
@@ -281,7 +282,7 @@ LB_3:
                     new LowInstruction(LowOp.LoadInt, 3, 0, 0, 1), // Load 1 -> #3
                     new LowInstruction(LowOp.LoadInt, 4, 0, 0, 1), // Load 1 -> #4
 
-                    new LowInstruction(LowOp.Call, 5, 0, 0, 1234), // Call - this trashes rax, rcx, rdx, r8 and r9
+                    new LowInstruction(callOp, 5, 0, 0, 1234), // Call - this trashes rax, rcx, rdx, r8 and r9
 
                     new LowInstruction(LowOp.Test, 0, 0, 0, 0), // Test #0
                     new LowInstruction(LowOp.Test, 0, 1, 0, 0), // Test #1

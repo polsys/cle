@@ -128,8 +128,7 @@ namespace Cle.CodeGeneration
                         ConvertBranchIf(lowBlock, highBlock, (int)inst.Left);
                         break;
                     case Opcode.Call:
-                        ConvertCall(lowBlock, highMethod.CallInfos[(int)inst.Left], (int)inst.Left, inst.Destination,
-                            methodInProgress);
+                        ConvertCall(lowBlock, highMethod.CallInfos[(int)inst.Left], inst, methodInProgress);
                         break;
                     case Opcode.Divide:
                         ConvertDivisionOrModulo(in inst, lowBlock, methodInProgress);
@@ -334,9 +333,11 @@ namespace Cle.CodeGeneration
             lowBlock.Instructions.Add(new LowInstruction(LowOp.Return, 0, dest, 0, 0));
         }
 
-        private static void ConvertCall(LowBlock lowBlock, MethodCallInfo callInfo, int callInfoIndex, ushort dest,
+        private static void ConvertCall(LowBlock lowBlock, MethodCallInfo callInfo, in Instruction inst,
             LowMethod<X64Register> methodInProgress)
         {
+            var dest = inst.Destination;
+
             // Move parameters to correct locations
             // These are represented by short-lived temporaries in fixed locations,
             // and it is up to the register allocator to optimize this
@@ -351,8 +352,9 @@ namespace Cle.CodeGeneration
 
             methodInProgress.Locals.Add(new LowLocal<X64Register>(methodInProgress.Locals[dest].Type, X64Register.Rax));
             var destLocal = methodInProgress.Locals.Count - 1;
-            lowBlock.Instructions.Add(new LowInstruction(LowOp.Call, destLocal,
-                callInfoIndex, 0, (uint)callInfo.CalleeIndex));
+            var opcode = callInfo.CallType == MethodCallType.Imported ? LowOp.CallImported : LowOp.Call;
+            lowBlock.Instructions.Add(new LowInstruction(opcode, destLocal,
+                (int)inst.Left, 0, (uint)callInfo.CalleeIndex));
 
             // Then, unless the method returns void, do the same for the return value
             if (!methodInProgress.Locals[dest].Type.Equals(SimpleType.Void))

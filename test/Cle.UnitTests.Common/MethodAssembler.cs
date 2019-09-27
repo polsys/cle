@@ -149,7 +149,7 @@ namespace Cle.UnitTests.Common
                     calledMethodIndices.Add(functionName, functionIndex);
                 }
 
-                var destIndex = ushort.Parse(lineParts[lineParts.Length - 1].AsSpan(1));
+                var destIndex = ushort.Parse(lineParts[^1].AsSpan(1));
                 var paramListStart = line.IndexOf('(') + 1;
                 var parameterList = line.Substring(paramListStart, line.IndexOf(')') - paramListStart);
 
@@ -159,8 +159,13 @@ namespace Cle.UnitTests.Common
                     paramLocals.Add(int.Parse(param.AsSpan(1)));
                 }
 
+                // The call may include a suffix before the "->" - try to parse it
+                var callType = lineParts[^3] == "import" ?
+                    MethodCallType.Imported :
+                    MethodCallType.Native;
+
                 builder.AppendInstruction(Opcode.Call,
-                    method.AddCallInfo(functionIndex, paramLocals.ToArray(), functionName),0, destIndex);
+                    method.AddCallInfo(functionIndex, paramLocals.ToArray(), functionName, callType), 0, destIndex);
             }
             else if (IsUnary(opcode))
             {
