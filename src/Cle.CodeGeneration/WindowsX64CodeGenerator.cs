@@ -44,6 +44,16 @@ namespace Cle.CodeGeneration
         }
 
         /// <summary>
+        /// Adds an import table entry for the given method.
+        /// </summary>
+        /// <param name="method">Information about the method to import.</param>
+        /// <param name="methodIndex">The compiler internal index for identifying the method.</param>
+        public void EmitImport(ImportedMethod method, int methodIndex)
+        {
+            // TODO: Unimplemented in this commit
+        }
+
+        /// <summary>
         /// Emits native code for the given method.
         /// </summary>
         /// <param name="method">A compiled method in SSA form.</param>
