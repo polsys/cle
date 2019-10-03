@@ -7,6 +7,7 @@ using Cle.Common;
 using Cle.Parser;
 using Cle.Parser.SyntaxTree;
 using Cle.SemanticAnalysis;
+using Cle.SemanticAnalysis.IR;
 
 namespace Cle.Compiler
 {
@@ -212,9 +213,14 @@ namespace Cle.Compiler
                         throw new InvalidOperationException("Ambiguous or missing method declaration");
                     var declaration = possibleDeclarations[0];
 
-                    // Compile and store the method body if there is one
-                    if (declaration is ImportedMethodDeclaration)
+                    // Compile and store the method body if there is one,
+                    // or add a copy of the import information
+                    if (declaration is ImportedMethodDeclaration importDecl)
+                    {
+                        compilation.SetMethodBody(importDecl.BodyIndex,
+                            new ImportedMethod(importDecl.FullName, importDecl.ImportName, importDecl.ImportLibrary));
                         continue;
+                    }
 
                     var methodBody = compiler.CompileBody(methodSyntax, declaration,
                         sourceFile.Namespace, sourceFile.Filename);
@@ -248,9 +254,16 @@ namespace Cle.Compiler
             for (var i = 0; i < highestBodyIndex; i++)
             {
                 var methodBody = compilation.GetMethodBody(i);
-                var dumpWriterForMethod = debugLogger.ShouldLog(methodBody.FullName) ? debugLogger.Writer : null;
 
-                generator.EmitMethod(methodBody, i, compilation.EntryPointIndex == i, dumpWriterForMethod);
+                if (methodBody is CompiledMethod compiled)
+                {
+                    var dumpWriterForMethod = debugLogger.ShouldLog(methodBody.FullName) ? debugLogger.Writer : null;
+                    generator.EmitMethod(compiled, i, compilation.EntryPointIndex == i, dumpWriterForMethod);
+                }
+                else if (methodBody is ImportedMethod imported)
+                {
+                    generator.EmitImport(imported, i);
+                }
             }
 
             generator.FinalizeFile();

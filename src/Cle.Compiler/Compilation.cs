@@ -65,8 +65,8 @@ namespace Cle.Compiler
 
         private readonly object _declarationLock = new object();
 
-        private readonly IndexedRandomAccessStore<CompiledMethod> _methodBodies =
-            new IndexedRandomAccessStore<CompiledMethod>();
+        private readonly IndexedRandomAccessStore<MethodBody> _methodBodies =
+            new IndexedRandomAccessStore<MethodBody>();
 
         private readonly object _methodBodyLock = new object();
         private int _entryPointIndex = -1;
@@ -241,7 +241,7 @@ namespace Cle.Compiler
         /// Returns the method body associated with the given index.
         /// Throws if there is no method stored.
         /// </summary>
-        public CompiledMethod GetMethodBody(int index)
+        public MethodBody GetMethodBody(int index)
         {
             try
             {
@@ -261,7 +261,7 @@ namespace Cle.Compiler
         /// </summary>
         /// <param name="index">The method index from <see cref="ReserveMethodSlot"/>. Throws if this is not valid.</param>
         /// <param name="method">The method to store.</param>
-        public void SetMethodBody(int index, CompiledMethod method)
+        public void SetMethodBody(int index, MethodBody method)
         {
             try
             {

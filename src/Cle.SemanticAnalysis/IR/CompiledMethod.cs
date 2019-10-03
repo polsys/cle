@@ -8,14 +8,8 @@ namespace Cle.SemanticAnalysis.IR
     /// Represents a method that has passed semantic analysis and can be emitted.
     /// Instances are mutable and can be transformed via optimizations.
     /// </summary>
-    public class CompiledMethod
+    public sealed class CompiledMethod : MethodBody
     {
-        /// <summary>
-        /// Gets the full name of this method.
-        /// This can be used for debugging and emitting symbols.
-        /// </summary>
-        public string FullName { get; }
-
         /// <summary>
         /// Gets or sets the basic block graph for this method.
         /// </summary>
@@ -36,9 +30,9 @@ namespace Cle.SemanticAnalysis.IR
         private readonly List<LocalValue> _values = new List<LocalValue>();
         private readonly List<MethodCallInfo> _callInfos = new List<MethodCallInfo>();
 
-        public CompiledMethod(string fullName)
+        public CompiledMethod(string fullName) 
+            : base(fullName)
         {
-            FullName = fullName;
         }
 
         /// <summary>

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Immutable;
+using System.Text;
 using Cle.Common;
 using Cle.Parser.SyntaxTree;
 using Cle.SemanticAnalysis;
@@ -232,6 +233,18 @@ namespace Cle.Compiler.UnitTests
             var method = new CompiledMethod("Test::Method");
             Assert.That(() => compilation.SetMethodBody(1, method), Throws.Nothing);
             Assert.That(compilation.GetMethodBody(1), Is.SameAs(method));
+        }
+
+        [Test]
+        public void Imported_method_body_can_be_set_and_got()
+        {
+            var compilation = new Compilation();
+
+            Assert.That(compilation.ReserveMethodSlot(), Is.EqualTo(0));
+
+            var method = new ImportedMethod("Test::Method", Encoding.ASCII.GetBytes("func"), Encoding.ASCII.GetBytes("lib"));
+            Assert.That(() => compilation.SetMethodBody(0, method), Throws.Nothing);
+            Assert.That(compilation.GetMethodBody(0), Is.SameAs(method));
         }
 
         [Test]
