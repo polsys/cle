@@ -1,0 +1,41 @@
+// This test calls several imported functions from more than one library.
+// It verifies that the stack is correctly handled and that there may be several imports.
+//
+// Expected return code: 75.
+// No console output expected.
+
+namespace ReturnParameter;
+
+// Actually returns HANDLE, a 64-bit value, but we can do with 32 bits
+[Import("GetCurrentProcess", "Kernel32.dll")]
+private int32 GetCurrentProcess();
+
+[Import("GetSystemMetrics", "User32.dll")]
+private int32 GetSystemMetrics(int32 nIndex);
+
+[EntryPoint]
+public int32 Main()
+{
+    return DoWork();
+}
+
+// If the stack is smashed, this method will not return gracefully
+private int32 DoWork()
+{
+    // Clé did not support constants when this test was written
+    int32 SM_SHUTTINGDOWN = 8192;
+    if (GetSystemMetrics(SM_SHUTTINGDOWN) != 0)
+    {
+        return -2;
+    }
+    
+    // Technically we should not hard-code the value -1...
+    if (GetCurrentProcess() == -1)
+    {
+        return 75;
+    }
+    else
+    {
+        return -3;
+    }
+}

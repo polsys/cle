@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 
 namespace Cle.CodeGeneration
 {
@@ -21,6 +22,9 @@ namespace Cle.CodeGeneration
         private readonly List<Fixup> _callFixups = new List<Fixup>();
         // TODO: Consider an array instead
         private readonly Dictionary<int, int> _methodOffsets = new Dictionary<int, int>();
+
+        private readonly Dictionary<string, List<(int methodIndex, byte[] methodName)>> _imports
+            = new Dictionary<string, List<(int, byte[])>>();
 
         private const int FileAlignment = 0x0200; // 512 bytes, the minimum allowed
         private const int SectionAlignment = 0x1000; // 4096 bytes, the default page size
@@ -86,6 +90,34 @@ namespace Cle.CodeGeneration
         }
 
         /// <summary>
+        /// Adds an entry to the import table.
+        /// The table is written out when <see cref="FinalizeFile"/> is called.
+        /// </summary>
+        /// <param name="methodIndex">The index used for referring to this method.</param>
+        /// <param name="methodName">
+        /// ASCII-encoded method name.
+        /// Does not need to be unique even within library: multiple imports will be emitted.
+        /// </param>
+        /// <param name="libraryName">
+        /// ASCII-encoded library name.
+        /// Imports from a single library will be coalesced into one import table entry.
+        /// </param>
+        public void AddImport(int methodIndex, byte[] methodName, byte[] libraryName)
+        {
+            // For sensible comparisons, here we must finally allocate a string for the library name
+            // The syntax tree and IR do not do so, to preserve the information as is
+            var libraryString = Encoding.ASCII.GetString(libraryName).ToLowerInvariant();
+
+            if (!_imports.TryGetValue(libraryString, out var importList))
+            {
+                importList = new List<(int methodIndex, byte[] methodName)>();
+                _imports.Add(libraryString, importList);
+            }
+
+            importList.Add((methodIndex, methodName));
+        }
+
+        /// <summary>
         /// Records a method call fixup to be applied when <see cref="FinalizeFile"/> is called.
         /// </summary>
         /// <param name="fixup">The tag must contain the callee method index.</param>
@@ -100,52 +132,201 @@ namespace Cle.CodeGeneration
         /// </summary>
         public void FinalizeFile()
         {
+            // TODO: Refactor this method to be more generic - it's not easy to add a new section
             if (_entryPointOffset == 0)
                 throw new InvalidOperationException("No entry point has been set.");
 
-            var tempBuffer = new byte[4];
-
             // Pad the code section to file alignment
+            var sizeOfCode = (int)_exeStream.Position - PeHeaderSize;
+            var inMemorySizeOfCode = RoundUp(sizeOfCode, SectionAlignment);
             WritePadding(FileAlignment, Int3Padding);
 
-            // Store the padded code section size
-            var paddedSizeOfCode = (int)_exeStream.Position - PeHeaderSize;
-            WriteIntAt(paddedSizeOfCode, 156); // Image header: size of code
-            WriteIntAt(RoundUp(paddedSizeOfCode, SectionAlignment), 400); // .text section: in-memory size
-            WriteIntAt(paddedSizeOfCode, 408); // .text section: file size
+            // Emit the import section
+            var importSectionFileAddress = (int)_exeStream.Position;
+            var importSectionVirtualAddress = BaseOfCodeAddress + inMemorySizeOfCode;
+            EmitImports(importSectionVirtualAddress, inMemorySizeOfCode - RoundUp(sizeOfCode, FileAlignment));
+            var importSectionSize = (int)_exeStream.Position - importSectionFileAddress;
+            WritePadding(FileAlignment, ZeroPadding);
+
+            // Optional header
+            WriteIntAt(sizeOfCode, 156); // Size of code
+            WriteIntAt(importSectionSize, 160); // Size of initialized data
 
             // Store the entry point RVA
             var entryPointVirtualAddress = BaseOfCodeAddress - PeHeaderSize + _entryPointOffset;
             WriteIntAt(entryPointVirtualAddress, 168);
 
+            // Store the address and size of the import directory in the RVA table
+            WriteIntAt(importSectionVirtualAddress, 272);
+            WriteIntAt(importSectionSize, 276);
+
+            // .text section header
+            WriteIntAt(inMemorySizeOfCode, 400); // .text section: in-memory size
+            WriteIntAt(sizeOfCode, 408); // .text section: file size
+
+            // .idata section header
+            WriteIntAt(RoundUp(importSectionSize, SectionAlignment), 440);
+            WriteIntAt(importSectionVirtualAddress, 444);
+            WriteIntAt(importSectionSize, 448);
+            WriteIntAt(importSectionFileAddress, 452);
+
             // Store the image size as multiple of section alignment
-            // PE header + .text
-            var totalImageSize = SectionAlignment + RoundUp(paddedSizeOfCode, SectionAlignment);
+            // PE header + .text + .idata
+            var totalImageSize = SectionAlignment + inMemorySizeOfCode + RoundUp(importSectionSize, SectionAlignment);
             WriteIntAt(totalImageSize, 208);
 
             // Apply the last fixups
             ApplyCallFixups();
-            
-            void WriteIntAt(int value, int offset)
-            {
-                _exeStream.Seek(offset, SeekOrigin.Begin);
-                
-                // TODO: A bit of unsafe code to replace the arithmetic with a move
-                tempBuffer[0] = (byte)value;
-                tempBuffer[1] = (byte)(value >> 8);
-                tempBuffer[2] = (byte)(value >> 16);
-                tempBuffer[3] = (byte)(value >> 24);
+        }
 
-                _exeStream.Write(tempBuffer, 0, 4);
+        private void EmitImports(int importTableRva, int codeAndImportSectionGap)
+        {
+            var fileToRvaOffset = importTableRva - (int)_exeStream.Position;
+
+            // Determine the total size of the fixed-size tables
+            var directoryCount = _imports.Count + 1; // Empty entry marks the end of list
+            var importEntryCount = 0;
+            foreach (var directory in _imports)
+            {
+                // Again, an empty entry for each lookup table
+                importEntryCount += directory.Value.Count + 1;
             }
 
-            void ApplyCallFixups()
+            // Write the import directory table
+            // We can set most values since the data structures have fixed size,
+            // but we need to come back for the library name addresses
+            var currentLookupTablePosition = importTableRva + 20 * directoryCount;
+            var addressTableStart = currentLookupTablePosition + 8 * importEntryCount;
+            var currentAddressTablePosition = addressTableStart;
+
+            foreach (var directory in _imports)
             {
-                foreach (var fixup in _callFixups)
+                WriteInt(currentLookupTablePosition); // Lookup table RVA
+                WriteZeros(12); // Time stamp, forwarder chain, name RVA (this is fixed up later)
+                WriteInt(currentAddressTablePosition); // Import address table RVA
+
+                var lookupTableSize = (directory.Value.Count + 1) * 8;
+                currentLookupTablePosition += lookupTableSize;
+                currentAddressTablePosition += lookupTableSize;
+            }
+
+            // Write the last empty import directory
+            WriteZeros(20);
+
+            // Write the lookup table and the address table.
+            // These should have exactly same contents.
+            // Also store address table locations for method call fixups.
+            var nameTableContents = new List<int>(importEntryCount);
+            var currentNameTablePosition = currentAddressTablePosition;
+            currentAddressTablePosition = addressTableStart;
+
+            foreach (var directory in _imports)
+            {
+                foreach (var (methodIndex, methodName) in directory.Value)
                 {
-                    Emitter.ApplyFixup(fixup, _methodOffsets[fixup.Tag]);
+                    nameTableContents.Add(currentNameTablePosition);
+
+                    // We have to fix up the position because the emitter uses file offsets, not RVA offsets
+                    _methodOffsets.Add(methodIndex, currentAddressTablePosition - (SectionAlignment - PeHeaderSize));
+
+                    currentNameTablePosition += CalculateNameSize(methodName.Length);
+                    currentAddressTablePosition += 8;
+                }
+
+                // An empty entry indicates the end of list
+                nameTableContents.Add(0);
+                currentAddressTablePosition += 8;
+            }
+
+            // Then write the contents twice: first for name table and then for address table
+            for (var i = 0; i < 2; i++)
+            {
+                foreach (var entry in nameTableContents)
+                {
+                    // The name entry RVA is stored as low dword of a 64-bit value
+                    WriteInt(entry);
+                    WriteInt(0);
                 }
             }
+
+            // Write the name table
+            foreach (var directory in _imports)
+            {
+                foreach (var (_, methodName) in directory.Value)
+                {
+                    // Ordinal hint: we have it empty
+                    _exeStream.WriteByte(0);
+                    _exeStream.WriteByte(0);
+
+                    // The name
+                    _exeStream.Write(methodName.AsSpan());
+
+                    // A null terminator, and possibly padding to even
+                    _exeStream.WriteByte(0);
+                    if (_exeStream.Position % 2 != 0)
+                    {
+                        _exeStream.WriteByte(0);
+                    }
+                }
+            }
+
+            // Write the library names
+            var currentNameFixupPosition = importTableRva - fileToRvaOffset + 12;
+            foreach (var directory in _imports)
+            {
+                var nameRva = fileToRvaOffset + (int)_exeStream.Position;
+                _exeStream.Write(Encoding.ASCII.GetBytes(directory.Key));
+                _exeStream.WriteByte(0);
+
+                // Fix up the name
+                WriteIntAt(nameRva, currentNameFixupPosition);
+                _exeStream.Seek(0, SeekOrigin.End);
+                currentNameFixupPosition += 20;
+            }
+
+            static int CalculateNameSize(int nameLength)
+            {
+                // Two bytes for ordinal hint, the name bytes, a null byte, pad to even
+                return RoundUp(2 + nameLength + 1, 2);
+            }
+        }
+
+        private void ApplyCallFixups()
+        {
+            foreach (var fixup in _callFixups)
+            {
+                Emitter.ApplyFixup(fixup, _methodOffsets[fixup.Tag]);
+            }
+        }
+
+        private void WriteInt(int value)
+        {
+            Span<byte> tempBuffer = stackalloc byte[4];
+
+            // TODO: A bit of unsafe code to replace the arithmetic with a move
+            tempBuffer[0] = (byte)value;
+            tempBuffer[1] = (byte)(value >> 8);
+            tempBuffer[2] = (byte)(value >> 16);
+            tempBuffer[3] = (byte)(value >> 24);
+
+            _exeStream.Write(tempBuffer);
+        }
+
+        private void WriteIntAt(int value, int offset)
+        {
+            _exeStream.Seek(offset, SeekOrigin.Begin);
+            WriteInt(value);
+        }
+
+        private void WriteZeros(int byteCount)
+        {
+            while (byteCount > ZeroPadding.Length)
+            {
+                _exeStream.Write(ZeroPadding);
+                byteCount -= ZeroPadding.Length;
+            }
+
+            _exeStream.Write(ZeroPadding.Slice(0, byteCount));
         }
 
         /// <summary>
@@ -169,6 +350,11 @@ namespace Cle.CodeGeneration
             // The last "% alignment" is because the expression within parens may equal alignment
             return size + (alignment - size % alignment) % alignment;
         }
+
+        private static ReadOnlySpan<byte> ZeroPadding => new byte[]
+        {
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+        };
 
         private static ReadOnlySpan<byte> Int3Padding => new byte[]
         {
@@ -198,7 +384,7 @@ namespace Cle.CodeGeneration
             // PE header
             (byte)'P', (byte)'E', 0x00, 0x00, // Magic
             0x64, 0x86, // Machine type: x86-64
-            0x01, 0x00, // Number of sections - TODO Update this when adding data sections
+            0x02, 0x00, // Number of sections - TODO Update this when adding data sections
             0x00, 0x00, 0x00, 0x00, // Time stamp
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Deprecated (symbol table information)
             0xF0, 0x00, // Size of optional header
@@ -275,6 +461,22 @@ namespace Cle.CodeGeneration
             //   0x20000000 MEM_EXECUTE
             //   0x40000000 MEM_READ
             0x20, 0x00, 0x00, 0x60,
+            
+            // .idata section header
+            (byte)'.', (byte)'i', (byte)'d', (byte)'a', (byte)'t', (byte)'a', 0x00, 0x00, // Name
+            0x00, 0x00, 0x00, 0x00, // Virtual size - filled by FinalizeFile()
+            0x00, 0x00, 0x00, 0x00, // Virtual address relative to image base - filled by FinalizeFile()
+            0x00, 0x00, 0x00, 0x00, // Raw size - filled by FinalizeFile()
+            0x00, 0x00, 0x00, 0x00, // Pointer to raw data - filled by FinalizeFile()
+            0x00, 0x00, 0x00, 0x00, // Pointer to relocations
+            0x00, 0x00, 0x00, 0x00, // Deprecated (pointer to line numbers)
+            0x00, 0x00, // Number of relocations
+            0x00, 0x00, // Deprecated (number of line numbers)
+            // Section characteristics:
+            //   0x00000040 CNT_INITIALIZED_DATA
+            //   0x40000000 MEM_READ
+            //   0x80000000 MEM_WRITE
+            0x40, 0x00, 0x00, 0xC0,
         };
     }
 }
