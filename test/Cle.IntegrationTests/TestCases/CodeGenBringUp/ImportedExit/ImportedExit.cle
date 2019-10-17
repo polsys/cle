@@ -1,0 +1,17 @@
+// This test calls an imported function that takes a parameter and does not return.
+//
+// Expected return code: 30.
+// No console output expected.
+
+namespace ReturnParameter;
+
+// This test was written before Clé supported uint32
+[Import("ExitProcess", "Kernel32.dll")]
+private void ExitProcess(int32 exitCode);
+
+[EntryPoint]
+public int32 Main()
+{
+    ExitProcess(30);
+    return -1;
+}

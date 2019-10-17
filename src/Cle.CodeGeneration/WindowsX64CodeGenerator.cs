@@ -50,7 +50,7 @@ namespace Cle.CodeGeneration
         /// <param name="methodIndex">The compiler internal index for identifying the method.</param>
         public void EmitImport(ImportedMethod method, int methodIndex)
         {
-            // TODO: Unimplemented in this commit
+            _peWriter.AddImport(methodIndex, method.ImportName, method.ImportLibrary);
         }
 
         /// <summary>
