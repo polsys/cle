@@ -209,6 +209,50 @@ namespace Cle.CodeGeneration
         }
 
         /// <summary>
+        /// Emits a general-purpose binary operation with immediate argument and the specified operand width.
+        /// </summary>
+        /// <param name="op">The binary operation to emit.</param>
+        /// <param name="srcDest">The left location, used both as a source and a destination. Must not be an XMM register.</param>
+        /// <param name="immediate">The immediate value.</param>
+        /// <param name="operandSize">The operand width in bytes.</param>
+        public void EmitGeneralBinaryWithImmediate(BinaryOp op, StorageLocation<X64Register> srcDest,
+            int immediate, int operandSize)
+        {
+            // TODO: This only supports the 8-bit form as of now
+            if ((immediate & 0xFFFFFF00) != 0)
+                throw new NotImplementedException("4-byte immediates");
+            if (operandSize != 4 && operandSize != 8)
+                throw new NotImplementedException("Other operand widths");
+
+            if (!srcDest.IsRegister)
+                throw new NotImplementedException("Binary op on stack");
+            if (srcDest.Register >= X64Register.Xmm0)
+                throw new InvalidOperationException("Trying to emit a general-purpose op on a SIMD register.");
+            
+            DisassembleRegImm(GetGeneralBinaryName(op), srcDest.Register, immediate, operandSize);
+
+            var (encodedLeft, needR) = GetRegisterEncoding(srcDest.Register);
+            EmitRexPrefixIfNeeded(operandSize == 8, needR, false, false);
+
+            if (op == BinaryOp.Add)
+            {
+                _outputStream.WriteByte(0x83);
+                _outputStream.WriteByte((byte)(encodedLeft | 0b1100_0000));
+            }
+            else if (op == BinaryOp.Subtract)
+            {
+                _outputStream.WriteByte(0x83);
+                _outputStream.WriteByte((byte)(encodedLeft | 0b1110_1000));
+            }
+            else
+            {
+                throw new NotImplementedException("Only add and sub implemented so far");
+            }
+
+            _outputStream.WriteByte((byte)immediate);
+        }
+
+        /// <summary>
         /// Emits a shift instruction where the shift amount is stored in the cl register.
         /// </summary>
         /// <param name="shiftType">The shift operation to emit.</param>
@@ -542,6 +586,15 @@ namespace Cle.CodeGeneration
             var rightName = GetRegisterName(right, operandSize);
 
             _disassemblyWriter.WriteLine($"{Indent}{opcode} {leftName}, {rightName}");
+        }
+
+        private void DisassembleRegImm(string opcode, X64Register left, long immediate, int operandSize)
+        {
+            if (_disassemblyWriter is null)
+                return;
+
+            var leftName = GetRegisterName(left, operandSize);
+            _disassemblyWriter.WriteLine($"{Indent}{opcode} {leftName}, 0x{immediate:x}");
         }
 
         private void Emit8ByteImmediate(ulong bytes)

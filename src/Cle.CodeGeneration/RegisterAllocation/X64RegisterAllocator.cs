@@ -387,7 +387,7 @@ namespace Cle.CodeGeneration.RegisterAllocation
         private static LowMethod<X64Register> RewriteMethod(LowMethod<X64Register> original,
             List<Interval> intervals, int[] blockEnds)
         {
-            var result = new LowMethod<X64Register>(original.Locals, new List<LowBlock>(original.Blocks.Count));
+            var result = new LowMethod<X64Register>(original.Locals, new List<LowBlock>(original.Blocks.Count), original.IsLeafMethod);
 
             // Replace instruction operands with references to intervals instead of locals
             var instIndex = 0;

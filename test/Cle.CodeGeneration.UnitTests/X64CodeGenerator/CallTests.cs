@@ -16,13 +16,16 @@ BB_0:
     Call Test::DoNothing() -> #0
     Return #1";
 
-            // TODO: A good peephole optimizer would convert the call to a jmp
+            // The stack must be aligned at 16 bytes and assigned shadow space for the callee
+            // TODO: A good peephole optimizer would convert the call to a jmp (removing the stack adjustment)
             // TODO: The return value could be left uninitialized (currently, LSRA wants SSA form)
             const string expected = @"
 ; Test::Method
 LB_0:
+    sub rsp, 0x28
     call Test::DoNothing
     xor eax, eax
+    add rsp, 0x28
     ret
 ";
             EmitAndAssertDisassembly(source, expected);
@@ -43,8 +46,10 @@ BB_0:
             const string expected = @"
 ; Test::Method
 LB_0:
+    sub rsp, 0x28
     call qword ptr [Test::DoNothing]
     xor eax, eax
+    add rsp, 0x28
     ret
 ";
             EmitAndAssertDisassembly(source, expected);
@@ -69,10 +74,12 @@ BB_0:
             const string expected = @"
 ; Test::Method
 LB_0:
+    sub rsp, 0x28
     mov ecx, 0x1
     mov edx, 0x1
     call Test::DoSomething
     xor eax, eax
+    add rsp, 0x28
     ret
 ";
             EmitAndAssertDisassembly(source, expected);
