@@ -8,7 +8,7 @@ namespace Cle.CodeGeneration.Lir
     /// Represents a method in Lowered Intermediate Representation, a form that is closer to the
     /// target assembly language than the general IR.
     ///
-    /// This class offers little safety guarantees as it is internal to the code generation.
+    /// This class offers few safety guarantees as it is internal to the code generation.
     /// </summary>
     internal class LowMethod<TRegister>
         where TRegister : struct, Enum
@@ -17,15 +17,22 @@ namespace Cle.CodeGeneration.Lir
 
         public readonly List<LowBlock> Blocks;
 
+        /// <summary>
+        /// Gets or sets whether this method does not call any other methods.
+        /// By default <c>true</c>.
+        /// </summary>
+        public bool IsLeafMethod { get; set; }
+
         public LowMethod()
-            : this(new List<LowLocal<TRegister>>(), new List<LowBlock>())
+            : this(new List<LowLocal<TRegister>>(), new List<LowBlock>(), true)
         {
         }
 
-        public LowMethod(List<LowLocal<TRegister>> locals, List<LowBlock> blocks)
+        public LowMethod(List<LowLocal<TRegister>> locals, List<LowBlock> blocks, bool isLeafMethod)
         {
             Locals = locals;
             Blocks = blocks;
+            IsLeafMethod = isLeafMethod;
         }
 
         /// <summary>

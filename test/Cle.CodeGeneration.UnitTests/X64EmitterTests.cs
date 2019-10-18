@@ -511,6 +511,32 @@ namespace Cle.CodeGeneration.UnitTests
         }
 
         [Test]
+        public void EmitGeneralBinaryWithImmediate_emits_8_bit_stack_add()
+        {
+            GetEmitter(out var stream, out var disassembly).EmitGeneralBinaryWithImmediate(
+                BinaryOp.Add,
+                new StorageLocation<X64Register>(X64Register.Rsp),
+                0x28,
+                8);
+
+            CollectionAssert.AreEqual(new byte[] { 0x48, 0x83, 0xC4, 0x28 }, stream.ToArray());
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("add rsp, 0x28"));
+        }
+
+        [Test]
+        public void EmitGeneralBinaryWithImmediate_emits_8_bit_stack_sub()
+        {
+            GetEmitter(out var stream, out var disassembly).EmitGeneralBinaryWithImmediate(
+                BinaryOp.Subtract,
+                new StorageLocation<X64Register>(X64Register.Rsp),
+                0x20,
+                8);
+
+            CollectionAssert.AreEqual(new byte[] { 0x48, 0x83, 0xEC, 0x20 }, stream.ToArray());
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("sub rsp, 0x20"));
+        }
+
+        [Test]
         public void EmitShift_emits_32_bit_left_shift_of_basic_register()
         {
             GetEmitter(out var stream, out var disassembly).EmitShift(

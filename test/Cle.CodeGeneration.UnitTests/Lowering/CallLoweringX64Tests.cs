@@ -9,7 +9,7 @@ namespace Cle.CodeGeneration.UnitTests.Lowering
         [TestCase("Call Other::Method() import", "CallImported")]
         public void Parameterless_void_call(string highOp, string expectedLowOp)
         {
-            string source = @$"
+            var source = @$"
 ; #0 void
 ; #1 void
 ; #2 void
@@ -21,7 +21,7 @@ BB_0:
             var method = MethodAssembler.Assemble(source, "Test::Method");
             var lowered = LoweringX64.Lower(method);
 
-            string expected = @$"
+            var expected = @$"
 ; #0 void [?]
 ; #1 void [?]
 ; #2 void [?]
@@ -35,6 +35,7 @@ LB_0:
     Return 5 0 0 -> 0
 ";
             AssertDump(lowered, expected);
+            Assert.That(lowered.IsLeafMethod, Is.False);
         }
 
         [Test]

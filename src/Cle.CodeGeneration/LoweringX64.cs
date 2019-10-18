@@ -31,12 +31,15 @@ namespace Cle.CodeGeneration
             }
 
             // Convert each basic block
+            var methodHasCalls = false;
             for (var i = 0; i < highMethod.Body.BasicBlocks.Count; i++)
             {
                 var highBlock = highMethod.Body.BasicBlocks[i];
-                lowMethod.Blocks.Add(ConvertBlock(highBlock, highMethod, lowMethod, i == 0, paramCount));
+                lowMethod.Blocks.Add(ConvertBlock(highBlock, highMethod, lowMethod, i == 0, paramCount, out var blockHasCalls));
+                methodHasCalls |= blockHasCalls;
             }
 
+            lowMethod.IsLeafMethod = !methodHasCalls;
             return lowMethod;
         }
 
@@ -58,7 +61,8 @@ namespace Cle.CodeGeneration
         }
 
         private static LowBlock ConvertBlock(BasicBlock highBlock, CompiledMethod highMethod,
-            LowMethod<X64Register> methodInProgress, bool isFirstBlock, int paramCount)
+            LowMethod<X64Register> methodInProgress, bool isFirstBlock, int paramCount,
+            out bool containsCalls)
         {
             var lowBlock = new LowBlock
             {
@@ -95,7 +99,21 @@ namespace Cle.CodeGeneration
             }
 
             // Convert the instructions
+            containsCalls = false;
             var returns = false;
+            ConvertInstructions(highBlock, highMethod, lowBlock, methodInProgress, ref containsCalls, ref returns);
+
+            if (!returns)
+            {
+                lowBlock.Instructions.Add(new LowInstruction(LowOp.Jump, highBlock.DefaultSuccessor, 0, 0, 0));
+            }
+
+            return lowBlock;
+        }
+
+        private static void ConvertInstructions(BasicBlock highBlock, CompiledMethod highMethod,
+            LowBlock lowBlock, LowMethod<X64Register> methodInProgress, ref bool containsCalls, ref bool returns)
+        {
             foreach (var inst in highBlock.Instructions)
             {
                 switch (inst.Operation)
@@ -128,6 +146,7 @@ namespace Cle.CodeGeneration
                         ConvertBranchIf(lowBlock, highBlock, (int)inst.Left);
                         break;
                     case Opcode.Call:
+                        containsCalls = true;
                         ConvertCall(lowBlock, highMethod.CallInfos[(int)inst.Left], inst, methodInProgress);
                         break;
                     case Opcode.Divide:
@@ -160,13 +179,6 @@ namespace Cle.CodeGeneration
                         throw new NotImplementedException("Unimplemented opcode to lower: " + inst.Operation);
                 }
             }
-
-            if (!returns)
-            {
-                lowBlock.Instructions.Add(new LowInstruction(LowOp.Jump, highBlock.DefaultSuccessor, 0, 0, 0));
-            }
-
-            return lowBlock;
         }
 
         private static void ConvertBinaryArithmetic(in Instruction inst, LowBlock lowBlock,
@@ -249,7 +261,7 @@ namespace Cle.CodeGeneration
             }
             else
             {
-                throw new ArgumentOutOfRangeException(nameof(op));
+                throw new ArgumentOutOfRangeException(nameof(inst.Operation));
             }
         }
 
@@ -275,7 +287,7 @@ namespace Cle.CodeGeneration
             else if (op == Opcode.ShiftRight)
                 lowOp = LowOp.ShiftArithmeticRight; // TODO: Unsigned shift
             else
-                throw new ArgumentOutOfRangeException(nameof(op));
+                throw new ArgumentOutOfRangeException(nameof(inst.Operation));
 
             lowBlock.Instructions.Add(new LowInstruction(lowOp, inst.Destination, (int)inst.Left, amountIndex, 0));
         }

@@ -116,11 +116,11 @@ namespace Cle.CodeGeneration
             var block = method.Blocks[blockIndex];
             var emitter = _peWriter.Emitter;
 
-            // If this is the first block, save callee-saved registers
-            // TODO: We also have to allocate shadow space for called methods, but we don't support spilling yet
+            // If this is the first block, save callee-saved registers and allocate shadow space for called methods
+            // TODO: The shadow space could be reserved by the register allocator instead, once it supports the stack
             if (blockIndex == 0)
             {
-                EmitRegisterSave(emitter);
+                EmitRegisterSave(emitter, method);
             }
 
             foreach (var inst in block.Instructions)
@@ -304,7 +304,7 @@ namespace Cle.CodeGeneration
                         EmitConditionalJump(X64Condition.GreaterOrEqual, inst.Dest, blockIndex);
                         break;
                     case LowOp.Return:
-                        EmitReturn(emitter);
+                        EmitReturn(emitter, method);
                         return;
                     case LowOp.Nop:
                         break;
@@ -421,8 +421,16 @@ namespace Cle.CodeGeneration
             }
         }
 
-        private void EmitReturn(X64Emitter emitter)
+        private void EmitReturn(X64Emitter emitter, LowMethod<X64Register> method)
         {
+            // Deallocate possible shadow space, and possible padding to 16 bytes
+            if (!method.IsLeafMethod)
+            {
+                // Return address + 4 registers + even number of parameters = not 16-bytes aligned
+                var stackAdjustment = _savedRegisters.Count % 2 == 0 ? 0x28 : 0x20;
+                emitter.EmitGeneralBinaryWithImmediate(BinaryOp.Add, X64Register.Rsp, stackAdjustment, 8);
+            }
+
             // Pop saved registers in reverse order
             for (var i = _savedRegisters.Count - 1; i >= 0; i--)
             {
@@ -432,13 +440,20 @@ namespace Cle.CodeGeneration
             emitter.EmitRet();
         }
 
-        private void EmitRegisterSave(X64Emitter emitter)
+        private void EmitRegisterSave(X64Emitter emitter, LowMethod<X64Register> method)
         {
             // Push the registers onto the stack in order
             // TODO: Consider replacing this with moves
             foreach (var reg in _savedRegisters)
             {
                 emitter.EmitPush(reg);
+            }
+
+            // Allocate shadow space for callees and pad the stack to 16 bytes
+            if (!method.IsLeafMethod)
+            {
+                var stackAdjustment = _savedRegisters.Count % 2 == 0 ? 0x28 : 0x20;
+                emitter.EmitGeneralBinaryWithImmediate(BinaryOp.Subtract, X64Register.Rsp, stackAdjustment, 8);
             }
         }
 
