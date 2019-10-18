@@ -30,6 +30,8 @@ namespace Cle.CodeGeneration
         private int _currentSectionFileAddress;
         private int _currentSectionIndex;
 
+        private readonly byte[] _tempBufferForWriteIntOnly = new byte[4];
+
         private const int FileAlignment = 0x0200; // 512 bytes, the minimum allowed
         private const int SectionAlignment = 0x1000; // 4096 bytes, the default page size
         private const int BaseOfCodeAddress = 0x00001000; // The default
@@ -316,15 +318,14 @@ namespace Cle.CodeGeneration
 
         private void WriteInt(int value)
         {
-            Span<byte> tempBuffer = stackalloc byte[4];
+            // Perf: As of 18-Oct-2019, this is significantly faster than a stackalloc Span, and slightly faster
+            // than using unsafe code as in X64Emitter (but not much, and for ulongs unsafe is faster)
+            _tempBufferForWriteIntOnly[0] = (byte)value;
+            _tempBufferForWriteIntOnly[1] = (byte)(value >> 8);
+            _tempBufferForWriteIntOnly[2] = (byte)(value >> 16);
+            _tempBufferForWriteIntOnly[3] = (byte)(value >> 24);
 
-            // TODO: A bit of unsafe code to replace the arithmetic with a move
-            tempBuffer[0] = (byte)value;
-            tempBuffer[1] = (byte)(value >> 8);
-            tempBuffer[2] = (byte)(value >> 16);
-            tempBuffer[3] = (byte)(value >> 24);
-
-            _exeStream.Write(tempBuffer);
+            _exeStream.Write(_tempBufferForWriteIntOnly);
         }
 
         private void WriteIntAt(int value, int offset)
