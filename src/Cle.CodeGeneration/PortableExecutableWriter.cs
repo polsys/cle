@@ -26,6 +26,10 @@ namespace Cle.CodeGeneration
         private readonly Dictionary<string, List<(int methodIndex, byte[] methodName)>> _imports
             = new Dictionary<string, List<(int, byte[])>>();
 
+        private int _currentSectionRva = BaseOfCodeAddress; // Assuming that the .text section comes first
+        private int _currentSectionFileAddress;
+        private int _currentSectionIndex;
+
         private const int FileAlignment = 0x0200; // 512 bytes, the minimum allowed
         private const int SectionAlignment = 0x1000; // 4096 bytes, the default page size
         private const int BaseOfCodeAddress = 0x00001000; // The default
@@ -41,6 +45,7 @@ namespace Cle.CodeGeneration
             // In total, the header takes 1024 bytes
             _exeStream.Write(SkeletonPeHeader);
             _exeStream.Seek(1024, SeekOrigin.Begin);
+            _currentSectionFileAddress = (int)_exeStream.Position;
         }
 
         /// <summary>
@@ -127,59 +132,69 @@ namespace Cle.CodeGeneration
         }
 
         /// <summary>
-        /// Creates the necessary section paddings and writes the PE header.
-        /// This must be called after all methods and data have been emitted.
+        /// Creates the necessary section padding, writes import and data sections and writes the PE header.
+        /// This must be called after all methods, imports and data have been emitted.
         /// </summary>
         public void FinalizeFile()
         {
-            // TODO: Refactor this method to be more generic - it's not easy to add a new section
             if (_entryPointOffset == 0)
                 throw new InvalidOperationException("No entry point has been set.");
 
             // Pad the code section to file alignment
-            var sizeOfCode = (int)_exeStream.Position - PeHeaderSize;
-            var inMemorySizeOfCode = RoundUp(sizeOfCode, SectionAlignment);
-            WritePadding(FileAlignment, Int3Padding);
+            var (_, codeFileSize) = EndSection(Int3Padding);
+            var inMemorySizeOfCode = RoundUp(codeFileSize, SectionAlignment);
 
             // Emit the import section
-            var importSectionFileAddress = (int)_exeStream.Position;
-            var importSectionVirtualAddress = BaseOfCodeAddress + inMemorySizeOfCode;
-            EmitImports(importSectionVirtualAddress, inMemorySizeOfCode - RoundUp(sizeOfCode, FileAlignment));
-            var importSectionSize = (int)_exeStream.Position - importSectionFileAddress;
-            WritePadding(FileAlignment, ZeroPadding);
+            EmitImports(_currentSectionRva);
+            var (importRva, importFileSize) = EndSection(ZeroPadding);
+            var inMemorySizeOfImports = RoundUp(importFileSize, SectionAlignment);
 
             // Optional header
-            WriteIntAt(sizeOfCode, 156); // Size of code
-            WriteIntAt(importSectionSize, 160); // Size of initialized data
+            WriteIntAt(codeFileSize, 156); // Size of code
+            WriteIntAt(importFileSize, 160); // Size of initialized data
 
             // Store the entry point RVA
             var entryPointVirtualAddress = BaseOfCodeAddress - PeHeaderSize + _entryPointOffset;
             WriteIntAt(entryPointVirtualAddress, 168);
 
-            // Store the address and size of the import directory in the RVA table
-            WriteIntAt(importSectionVirtualAddress, 272);
-            WriteIntAt(importSectionSize, 276);
-
-            // .text section header
-            WriteIntAt(inMemorySizeOfCode, 400); // .text section: in-memory size
-            WriteIntAt(sizeOfCode, 408); // .text section: file size
-
-            // .idata section header
-            WriteIntAt(RoundUp(importSectionSize, SectionAlignment), 440);
-            WriteIntAt(importSectionVirtualAddress, 444);
-            WriteIntAt(importSectionSize, 448);
-            WriteIntAt(importSectionFileAddress, 452);
-
             // Store the image size as multiple of section alignment
             // PE header + .text + .idata
-            var totalImageSize = SectionAlignment + inMemorySizeOfCode + RoundUp(importSectionSize, SectionAlignment);
+            var totalImageSize = SectionAlignment + inMemorySizeOfCode + inMemorySizeOfImports;
             WriteIntAt(totalImageSize, 208);
+
+            // Store the address and size of the import directory in the RVA table
+            WriteIntAt(importRva, 272);
+            WriteIntAt(importFileSize, 276);
 
             // Apply the last fixups
             ApplyCallFixups();
         }
 
-        private void EmitImports(int importTableRva, int codeAndImportSectionGap)
+        private (int startVirtualAddress, int fileSize) EndSection(ReadOnlySpan<byte> padding)
+        {
+            var startVirtualAddress = _currentSectionRva;
+
+            // Pad the section to file alignment
+            var fileSize = (int)_exeStream.Length - _currentSectionFileAddress;
+            WritePadding(FileAlignment, padding);
+
+            // Update the appropriate section header
+            var sectionHeaderPosition = 0x190 + 0x28 * _currentSectionIndex;
+            WriteIntAt(RoundUp(fileSize, SectionAlignment), sectionHeaderPosition);
+            WriteIntAt(startVirtualAddress, sectionHeaderPosition + 4);
+            WriteIntAt(fileSize, sectionHeaderPosition + 8);
+            WriteIntAt(_currentSectionFileAddress, sectionHeaderPosition + 12);
+
+            // Update values for the next section
+            _exeStream.Seek(0, SeekOrigin.End);
+            _currentSectionIndex++;
+            _currentSectionFileAddress = (int)_exeStream.Position;
+            _currentSectionRva += RoundUp(fileSize, SectionAlignment);
+
+            return (startVirtualAddress, fileSize);
+        }
+
+        private void EmitImports(int importTableRva)
         {
             var fileToRvaOffset = importTableRva - (int)_exeStream.Position;
 
@@ -448,10 +463,10 @@ namespace Cle.CodeGeneration
             
             // .text section header
             (byte)'.', (byte)'t', (byte)'e', (byte)'x', (byte)'t', 0x00, 0x00, 0x00, // Name
-            0x00, 0x00, 0x00, 0x00, // Virtual size - filled by FinalizeFile()
-            0x00, 0x10, 0x00, 0x00, // Virtual address relative to image base
-            0x00, 0x00, 0x00, 0x00, // Raw size - filled by FinalizeFile()
-            0x00, 0x04, 0x00, 0x00, // Pointer to raw data - immediately after the headers
+            0x00, 0x00, 0x00, 0x00, // Virtual size - filled by EndSection()
+            0x00, 0x00, 0x00, 0x00, // Virtual address relative to image base - filled by EndSection()
+            0x00, 0x00, 0x00, 0x00, // Raw size - filled by EndSection()
+            0x00, 0x00, 0x00, 0x00, // Pointer to raw data - filled by EndSection()
             0x00, 0x00, 0x00, 0x00, // Pointer to relocations
             0x00, 0x00, 0x00, 0x00, // Deprecated (pointer to line numbers)
             0x00, 0x00, // Number of relocations
@@ -464,10 +479,10 @@ namespace Cle.CodeGeneration
             
             // .idata section header
             (byte)'.', (byte)'i', (byte)'d', (byte)'a', (byte)'t', (byte)'a', 0x00, 0x00, // Name
-            0x00, 0x00, 0x00, 0x00, // Virtual size - filled by FinalizeFile()
-            0x00, 0x00, 0x00, 0x00, // Virtual address relative to image base - filled by FinalizeFile()
-            0x00, 0x00, 0x00, 0x00, // Raw size - filled by FinalizeFile()
-            0x00, 0x00, 0x00, 0x00, // Pointer to raw data - filled by FinalizeFile()
+            0x00, 0x00, 0x00, 0x00, // Virtual size - filled by EndSection()
+            0x00, 0x00, 0x00, 0x00, // Virtual address relative to image base - filled by EndSection()
+            0x00, 0x00, 0x00, 0x00, // Raw size - filled by EndSection()
+            0x00, 0x00, 0x00, 0x00, // Pointer to raw data - filled by EndSection()
             0x00, 0x00, 0x00, 0x00, // Pointer to relocations
             0x00, 0x00, 0x00, 0x00, // Deprecated (pointer to line numbers)
             0x00, 0x00, // Number of relocations
