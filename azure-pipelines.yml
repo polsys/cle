@@ -14,10 +14,10 @@ variables:
   configuration: 'Release'
 
 steps:
-- task: DotNetCoreInstaller@0
+- task: UseDotNet@2
   inputs:
-    version: '3.0.100-preview8-013656'
-  displayName: 'Install .NET Core SDK that supports C# 8.0'
+    version: '3.0.x'
+  displayName: 'Install .NET Core 3.0 SDK'
 - script: |
     dotnet tool install --tool-path . nbgv
     .\nbgv cloud
