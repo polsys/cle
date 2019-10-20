@@ -300,6 +300,45 @@ namespace Cle.CodeGeneration
         }
 
         /// <summary>
+        /// Emits a shift instruction where the shift amount is a known constant.
+        /// </summary>
+        /// <param name="shiftType">The shift operation to emit.</param>
+        /// <param name="srcDest">The left location, used both as a source and a destination. Must not be an XMM register.</param>
+        /// <param name="amount">The shift amount, masked to log2(8*<paramref name="operandSize"/>) bits.</param>
+        /// <param name="operandSize">The operand width in bytes.</param>
+        public void EmitShiftWithImmediate(ShiftType shiftType, StorageLocation<X64Register> srcDest, int amount, int operandSize)
+        {
+            if (operandSize != 4 && operandSize != 8)
+                throw new NotImplementedException("Other operand widths");
+            if (!srcDest.IsRegister)
+                throw new NotImplementedException("Shift on stack");
+            if (srcDest.Register >= X64Register.Xmm0)
+                throw new InvalidOperationException("Trying to emit a general-purpose op on a SIMD register.");
+
+            var (encodedReg, needB) = GetRegisterEncoding(srcDest.Register);
+            EmitRexPrefixIfNeeded(operandSize == 8, false, false, needB);
+            _outputStream.WriteByte(0xC1);
+
+            // The shift type is encoded in the ModRM byte
+            switch (shiftType)
+            {
+                case ShiftType.Left:
+                    _outputStream.WriteByte((byte)(0b1110_0000 | encodedReg));
+                    DisassembleRegImm("shl", srcDest.Register, amount, operandSize);
+                    break;
+                case ShiftType.ArithmeticRight:
+                    _outputStream.WriteByte((byte)(0b1111_1000 | encodedReg));
+                    DisassembleRegImm("sar", srcDest.Register, amount, operandSize);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(shiftType));
+            }
+
+            // Write the shift amount (masked to proper size by processor)
+            _outputStream.WriteByte((byte)amount);
+        }
+
+        /// <summary>
         /// Emits a signed divide instruction with the specified width.
         /// The dividend must be stored in RDX:RAX.
         /// To sign-extend RAX to RDX, use

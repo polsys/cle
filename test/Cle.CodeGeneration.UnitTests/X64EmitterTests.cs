@@ -614,6 +614,19 @@ namespace Cle.CodeGeneration.UnitTests
         }
 
         [Test]
+        public void EmitShiftWithImmediate_emits_32_bit_left_shift_of_basic_register()
+        {
+            GetEmitter(out var stream, out var disassembly).EmitShiftWithImmediate(
+                ShiftType.Left,
+                new StorageLocation<X64Register>(X64Register.Rdx),
+                7,
+                4);
+
+            CollectionAssert.AreEqual(new byte[] { 0xC1, 0xE2, 0x07 }, stream.ToArray());
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("shl edx, 0x7"));
+        }
+
+        [Test]
         public void EmitShift_emits_64_bit_arithmetic_right_shift_of_new_register()
         {
             GetEmitter(out var stream, out var disassembly).EmitShift(
@@ -623,6 +636,19 @@ namespace Cle.CodeGeneration.UnitTests
 
             CollectionAssert.AreEqual(new byte[] { 0x49, 0xD3, 0xF8 }, stream.ToArray());
             Assert.That(disassembly.ToString().Trim(), Is.EqualTo("sar r8, cl"));
+        }
+
+        [Test]
+        public void EmitShiftWithImmediate_emits_64_bit_arithmetic_right_shift_of_new_register()
+        {
+            GetEmitter(out var stream, out var disassembly).EmitShiftWithImmediate(
+                ShiftType.ArithmeticRight,
+                new StorageLocation<X64Register>(X64Register.R8),
+                17,
+                8);
+
+            CollectionAssert.AreEqual(new byte[] { 0x49, 0xC1, 0xF8, 0x11 }, stream.ToArray());
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("sar r8, 0x11"));
         }
 
         [Test]

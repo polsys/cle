@@ -12,6 +12,8 @@ namespace Cle.CodeGeneration
     internal static class PeepholeOptimizer<TRegister>
         where TRegister: struct, Enum
     {
+        private const int FixedLocationSentinel = 100000;
+
         /// <summary>
         /// Optimizes the given LIR.
         /// </summary>
@@ -38,7 +40,7 @@ namespace Cle.CodeGeneration
             for (var i = 0; i < method.Locals.Count; i++)
             {
                 if (method.Locals[i].RequiredLocation.IsSet)
-                    uses[i] += 100; // Distinguish from ordinary locals
+                    uses[i] += FixedLocationSentinel; // Distinguish from ordinary locals
             }
 
             // Go through the instructions and count reads (not writes)
@@ -146,6 +148,21 @@ namespace Cle.CodeGeneration
         private static bool PeepLoadConvertibleToImmediate(in LowInstruction current, in LowInstruction next,
             List<LowInstruction> block, int[] localUses, int currentPos)
         {
+            if ((next.Op == LowOp.ShiftLeft || next.Op == LowOp.ShiftArithmeticRight) &&
+                localUses[current.Dest] == FixedLocationSentinel + 1)
+            {
+                // When #2 is used only once
+                // (Note that the "shift by variable" instruction requires the amount to be in RDX)
+                // ----
+                // Load 1234 -> #2
+                // Shift #1 #2 -> #3
+                // ----
+                // Shift #1 1234 -> #3
+                block[currentPos + 1] = new LowInstruction(next.Op, next.Dest, next.Left, -1, current.Data);
+                block.RemoveAt(currentPos);
+                return true;
+            }
+
             if (ValueIsAtMost4Bytes(current.Data) && localUses[current.Dest] == 1)
             {
                 if (IsArithmeticWithImmediateRight(next.Op) && current.Dest == next.Right)

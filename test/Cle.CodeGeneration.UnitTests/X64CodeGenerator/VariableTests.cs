@@ -168,6 +168,8 @@ LB_0:
         [TestCase("Add", "add")]
         [TestCase("Subtract", "sub")]
         [TestCase("Multiply", "imul")]
+        [TestCase("ShiftLeft", "shl")]
+        [TestCase("ShiftRight", "sar")]
         public void Basic_int32_arithmetic_with_immediate_right(string highOp, string expectedAsmOp)
         {
             // private int32 F(int32 value) { return value {op} 7; }
