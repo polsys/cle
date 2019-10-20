@@ -113,6 +113,19 @@ namespace Cle.CodeGeneration
                         return true;
                     }
                 }
+
+                if (IsArithmeticWithImmediateRight(next.Op) && ValueIsAtMost4Bytes(current.Data)
+                    && current.Op == LowOp.LoadInt
+                    && localUses[current.Dest] == 1
+                    && current.Dest == next.Right)
+                {
+                    // Load 1234 -> #2
+                    // Arithmetic #1 #2 -> #3
+                    // ----
+                    // Arithmetic #1 1234 -> #3
+                    block[currentPos + 1] = new LowInstruction(next.Op, next.Dest, next.Left, -1, current.Data);
+                    block.RemoveAt(currentPos);
+                }
             }
 
             if (instructionsLeft >= 2
@@ -176,6 +189,17 @@ namespace Cle.CodeGeneration
             }
 
             return false;
+        }
+
+        private static bool ValueIsAtMost4Bytes(ulong value)
+        {
+            // Take the sign extension into account
+            return (long)value >= int.MinValue && value <= int.MaxValue;
+        }
+
+        private static bool IsArithmeticWithImmediateRight(LowOp op)
+        {
+            return op == LowOp.IntegerAdd || op == LowOp.IntegerSubtract || op == LowOp.IntegerMultiply;
         }
 
         private static bool IsConditionalSet(LowOp op)

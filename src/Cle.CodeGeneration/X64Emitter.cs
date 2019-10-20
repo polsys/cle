@@ -218,12 +218,8 @@ namespace Cle.CodeGeneration
         public void EmitGeneralBinaryWithImmediate(BinaryOp op, StorageLocation<X64Register> srcDest,
             int immediate, int operandSize)
         {
-            // TODO: This only supports the 8-bit form as of now
-            if ((immediate & 0xFFFFFF00) != 0)
-                throw new NotImplementedException("4-byte immediates");
             if (operandSize != 4 && operandSize != 8)
                 throw new NotImplementedException("Other operand widths");
-
             if (!srcDest.IsRegister)
                 throw new NotImplementedException("Binary op on stack");
             if (srcDest.Register >= X64Register.Xmm0)
@@ -231,25 +227,39 @@ namespace Cle.CodeGeneration
             
             DisassembleRegImm(GetGeneralBinaryName(op), srcDest.Register, immediate, operandSize);
 
-            var (encodedLeft, needR) = GetRegisterEncoding(srcDest.Register);
-            EmitRexPrefixIfNeeded(operandSize == 8, needR, false, false);
+            var byteImmediate = immediate >= sbyte.MinValue && immediate <= sbyte.MaxValue;
+
+            var (encodedLeft, needB) = GetRegisterEncoding(srcDest.Register);
+            EmitRexPrefixIfNeeded(operandSize == 8, false, false, needB);
 
             if (op == BinaryOp.Add)
             {
-                _outputStream.WriteByte(0x83);
+                _outputStream.WriteByte(byteImmediate ? (byte)0x83 : (byte)0x81);
                 _outputStream.WriteByte((byte)(encodedLeft | 0b1100_0000));
             }
             else if (op == BinaryOp.Subtract)
             {
-                _outputStream.WriteByte(0x83);
+                _outputStream.WriteByte(byteImmediate ? (byte)0x83 : (byte)0x81);
                 _outputStream.WriteByte((byte)(encodedLeft | 0b1110_1000));
+            }
+            else if (op == BinaryOp.Multiply)
+            {
+                _outputStream.WriteByte(byteImmediate ? (byte)0x6B : (byte)0x69);
+                EmitModRmForRegisterToRegister(encodedLeft, encodedLeft);
             }
             else
             {
-                throw new NotImplementedException("Only add and sub implemented so far");
+                throw new ArgumentOutOfRangeException(nameof(op));
             }
 
-            _outputStream.WriteByte((byte)immediate);
+            if (byteImmediate)
+            {
+                _outputStream.WriteByte((byte)immediate);
+            }
+            else
+            {
+                Emit4ByteImmediate((uint)immediate);
+            }
         }
 
         /// <summary>
@@ -594,7 +604,7 @@ namespace Cle.CodeGeneration
                 return;
 
             var leftName = GetRegisterName(left, operandSize);
-            _disassemblyWriter.WriteLine($"{Indent}{opcode} {leftName}, 0x{immediate:x}");
+            _disassemblyWriter.WriteLine($"{Indent}{opcode} {leftName}, 0x{immediate:X}");
         }
 
         private void Emit8ByteImmediate(ulong bytes)
