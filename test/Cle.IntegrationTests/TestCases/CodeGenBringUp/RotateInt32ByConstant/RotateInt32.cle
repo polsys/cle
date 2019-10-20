@@ -1,0 +1,18 @@
+// This test verifies int32 shift operators with constant arguments.
+// Since the integer type is signed, this algorithm is incorrect for negative values.
+//
+// Expected return code: 10.
+// No console output expected.
+
+namespace Rotate::Int32::ByConstant;
+
+[EntryPoint]
+public int32 Main()
+{
+    return RotateLeftBy3(1073741825); // 0x4000_0001 rotated by 3 is 0xA
+}
+
+private int32 RotateLeftBy3(int32 value)
+{
+    return (value << 3) | (value >> (32 - 3));
+}

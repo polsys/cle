@@ -49,11 +49,17 @@ LB_0:
         [TestCase(LowOp.IntegerAdd)]
         [TestCase(LowOp.IntegerSubtract)]
         [TestCase(LowOp.IntegerMultiply)]
+        [TestCase(LowOp.ShiftLeft)]
+        [TestCase(LowOp.ShiftArithmeticRight)]
         public void Load_right_and_arithmetic_are_folded(LowOp arithmeticOp)
         {
+            // The right operand of shift has special location on x64
+            var isShift = arithmeticOp == LowOp.ShiftLeft || arithmeticOp == LowOp.ShiftArithmeticRight;
+            var rightLocation = isShift ? X64Register.Rdx : X64Register.Invalid;
+
             var method = new LowMethod<X64Register>();
             method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32, requiredLocation: X64Register.Rcx));
-            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32));
+            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32, requiredLocation: rightLocation));
             method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32));
             method.Blocks.Add(new LowBlock
             {
@@ -66,7 +72,7 @@ LB_0:
 
             var expected = @$"
 ; #0 int32 [rcx]
-; #1 int32 [?]
+; #1 int32 [{(isShift ? "rdx" : "?")}]
 ; #2 int32 [?]
 LB_0:
     {arithmeticOp} 0 -1 1234 -> 2

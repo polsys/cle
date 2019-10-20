@@ -405,9 +405,18 @@ namespace Cle.CodeGeneration
             var (destLocation, destLocalIndex) = allocation.Get(inst.Dest);
             var operandSize = method.Locals[destLocalIndex].Type.SizeInBytes;
 
-            // The same logic as for unary operations, since the shift amount is in rcx
-            if (srcLocation == destLocation)
+            if (inst.Right == -1)
             {
+                // Shift by a constant
+                if (srcLocation != destLocation)
+                {
+                    emitter.EmitMov(destLocation, srcLocation, operandSize);
+                }
+                emitter.EmitShiftWithImmediate(shiftType, destLocation, (int)inst.Data, operandSize);
+            }
+            else if (srcLocation == destLocation)
+            {
+                // Non-constant amount: the same logic as for unary operations, since the shift amount is in rcx
                 emitter.EmitShift(shiftType, srcLocation, operandSize);
             }
             else

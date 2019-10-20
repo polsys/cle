@@ -22,6 +22,7 @@ namespace Cle.IntegrationTests
         [TestCase("ReturnInt", 42)]
         [TestCase("ReturnParameter", 100)]
         [TestCase("RotateInt32", 10)]
+        [TestCase("RotateInt32ByConstant", 10)]
         [TestCase("SimpleForwardPhi", 50)]
         [TestCase("SimpleWhileLoop", 45)]
         [TestCase("SimpleWhileLoop2", 36)]
