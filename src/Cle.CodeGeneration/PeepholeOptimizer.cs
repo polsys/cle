@@ -60,7 +60,7 @@ namespace Cle.CodeGeneration
             while (currentPos < block.Count)
             {
                 // Do not advance if an optimization was applied, since another optimization may now be available
-                if (!PeepBasic(block, currentPos, localUses))
+                if (!ApplyBasicPatterns(block, currentPos, localUses))
                     currentPos++;
             }
         }
@@ -69,7 +69,7 @@ namespace Cle.CodeGeneration
         /// Applies peephole patterns that are important for code quality even in non-optimizing builds.
         /// These fix up silly patterns created by lowering and help out register allocation.
         /// </summary>
-        private static bool PeepBasic(List<LowInstruction> block, int currentPos, int[] localUses)
+        private static bool ApplyBasicPatterns(List<LowInstruction> block, int currentPos, int[] localUses)
         {
             var current = block[currentPos]; // TODO: This might be an expensive copy
             var instructionsLeft = block.Count - currentPos - 1;
@@ -78,60 +78,110 @@ namespace Cle.CodeGeneration
             {
                 var next = block[currentPos + 1];
 
-                if (next.Op == LowOp.Move)
+                if (next.Op == LowOp.Move &&
+                    PeepMovePrecededByLoadOrMove(in current, in next, block, localUses, currentPos))
                 {
-                    if (current.Op == LowOp.LoadInt && next.Left == current.Dest && localUses[current.Dest] == 1)
-                    {
-                        // When #0 is used only in the move instruction
-                        // ----
-                        // Load val -> #0
-                        // Move #0 -> #1
-                        // ----
-                        // Load val -> #1
-                        block[currentPos + 1] = new LowInstruction(LowOp.LoadInt, next.Dest, 0, 0, current.Data);
-                        block.RemoveAt(currentPos);
-                        return true;
-                    }
-                    else if (current.Op == LowOp.Move && next.Left == current.Dest && localUses[current.Dest] == 1)
-                    {
-                        // Same as above but with Move instead of Load
-                        // This pattern occurs a lot in method calls
-                        block[currentPos + 1] = new LowInstruction(LowOp.Move, next.Dest, current.Left, 0, 0);
-                        block.RemoveAt(currentPos);
-                        return true;
-                    }
-                    else if (IsConditionalSet(current.Op) && next.Left == current.Dest && localUses[current.Dest] == 1)
-                    {
-                        // When #0 is used only in the move instruction
-                        // ----
-                        // SetIfXXX -> #0
-                        // Move #0 -> #1
-                        // ----
-                        // SetIfXXX -> #1
-                        block[currentPos + 1] = new LowInstruction(current.Op, next.Dest, 0, 0, 0);
-                        block.RemoveAt(currentPos);
-                        return true;
-                    }
+                    return true;
                 }
 
-                if (IsArithmeticWithImmediateRight(next.Op) && ValueIsAtMost4Bytes(current.Data)
-                    && current.Op == LowOp.LoadInt
-                    && localUses[current.Dest] == 1
-                    && current.Dest == next.Right)
+                if (current.Op == LowOp.LoadInt &&
+                    PeepLoadConvertibleToImmediate(in current, in next, block, localUses, currentPos))
                 {
+                    return true;
+                }
+            }
+
+            if (instructionsLeft >= 2 &&
+                IsConditionalSet(current.Op) &&
+                PeepRedundancyAfterConditionalSet(in current, block, localUses, currentPos))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool PeepMovePrecededByLoadOrMove(in LowInstruction current, in LowInstruction next,
+            List<LowInstruction> block, int[] localUses, int currentPos)
+        {
+            if (next.Left == current.Dest && localUses[current.Dest] == 1)
+            {
+                if (current.Op == LowOp.LoadInt)
+                {
+                    // When #0 is used only in the move instruction
+                    // ----
+                    // Load val -> #0
+                    // Move #0 -> #1
+                    // ----
+                    // Load val -> #1
+                    block[currentPos + 1] = new LowInstruction(LowOp.LoadInt, next.Dest, 0, 0, current.Data);
+                    block.RemoveAt(currentPos);
+                    return true;
+                }
+                else if (current.Op == LowOp.Move)
+                {
+                    // Same as above but with Move instead of Load
+                    // This pattern occurs a lot in method calls
+                    block[currentPos + 1] = new LowInstruction(LowOp.Move, next.Dest, current.Left, 0, 0);
+                    block.RemoveAt(currentPos);
+                    return true;
+                }
+                else if (IsConditionalSet(current.Op))
+                {
+                    // When #0 is used only in the move instruction
+                    // ----
+                    // SetIfXXX -> #0
+                    // Move #0 -> #1
+                    // ----
+                    // SetIfXXX -> #1
+                    block[currentPos + 1] = new LowInstruction(current.Op, next.Dest, 0, 0, 0);
+                    block.RemoveAt(currentPos);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool PeepLoadConvertibleToImmediate(in LowInstruction current, in LowInstruction next,
+            List<LowInstruction> block, int[] localUses, int currentPos)
+        {
+            if (ValueIsAtMost4Bytes(current.Data) && localUses[current.Dest] == 1)
+            {
+                if (IsArithmeticWithImmediateRight(next.Op) && current.Dest == next.Right)
+                {
+                    // When #2 is used only once
+                    // ----
                     // Load 1234 -> #2
                     // Arithmetic #1 #2 -> #3
                     // ----
                     // Arithmetic #1 1234 -> #3
                     block[currentPos + 1] = new LowInstruction(next.Op, next.Dest, next.Left, -1, current.Data);
                     block.RemoveAt(currentPos);
+                    return true;
+                }
+
+                if (IsArithmeticWithImmediateLeft(next.Op) && current.Dest == next.Left)
+                {
+                    // When #2 is used only once, and the arithmetic operation is commutative
+                    // ----
+                    // Load 1234 -> #2
+                    // Arithmetic #2 #1 -> #3
+                    // ----
+                    // Arithmetic #1 () 1234 -> #3
+                    block[currentPos + 1] = new LowInstruction(next.Op, next.Dest, next.Right, -1, current.Data);
+                    block.RemoveAt(currentPos);
+                    return true;
                 }
             }
 
-            if (instructionsLeft >= 2
-                && IsConditionalSet(current.Op)
-                && block[currentPos + 1].Op == LowOp.Test
-                && block[currentPos + 2].Op == LowOp.SetIfEqual)
+            return false;
+        }
+
+        private static bool PeepRedundancyAfterConditionalSet(in LowInstruction current,
+            List<LowInstruction> block, int[] localUses, int currentPos)
+        {
+            if (block[currentPos + 1].Op == LowOp.Test && block[currentPos + 2].Op == LowOp.SetIfEqual)
             {
                 // This pattern is created by lowering of a logical NOT. In HIR, only the ==, < and <= comparisons
                 // are represented directly and their negations are implemented via a logical negation.
@@ -155,10 +205,7 @@ namespace Cle.CodeGeneration
                 return true;
             }
 
-            if (instructionsLeft >= 2
-                && IsConditionalSet(block[currentPos].Op)
-                && block[currentPos + 1].Op == LowOp.Test
-                && block[currentPos + 2].Op == LowOp.JumpIfNotEqual)
+            if (block[currentPos + 1].Op == LowOp.Test && block[currentPos + 2].Op == LowOp.JumpIfNotEqual)
             {
                 // This pattern is created by lowering because the high IR does not explicitly distinguish
                 // whether the comparison result is a temporary or a proper variable.
@@ -200,6 +247,11 @@ namespace Cle.CodeGeneration
         private static bool IsArithmeticWithImmediateRight(LowOp op)
         {
             return op == LowOp.IntegerAdd || op == LowOp.IntegerSubtract || op == LowOp.IntegerMultiply;
+        }
+
+        private static bool IsArithmeticWithImmediateLeft(LowOp op)
+        {
+            return op == LowOp.IntegerAdd || op == LowOp.IntegerMultiply;
         }
 
         private static bool IsConditionalSet(LowOp op)
