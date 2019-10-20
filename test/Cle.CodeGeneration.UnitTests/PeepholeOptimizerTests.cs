@@ -74,8 +74,37 @@ LB_0:
             OptimizeAndVerify(method, expected);
         }
 
-        [Test]
-        public void Load_and_arithmetic_are_not_folded_if_immediate_requires_8_bytes()
+        [TestCase(LowOp.IntegerAdd)]
+        // Does not apply to IntegerSubtract due to non-commutativity
+        [TestCase(LowOp.IntegerMultiply)]
+        public void Load_left_and_arithmetic_are_folded(LowOp arithmeticOp)
+        {
+            var method = new LowMethod<X64Register>();
+            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32, requiredLocation: X64Register.Rcx));
+            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32));
+            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32));
+            method.Blocks.Add(new LowBlock
+            {
+                Instructions =
+                {
+                    new LowInstruction(LowOp.LoadInt, 1, 0, 0, 1234), // Load 1234 -> #1
+                    new LowInstruction(arithmeticOp, 2, 1, 0, 0) // #1 op #0 -> #2
+                }
+            });
+
+            var expected = @$"
+; #0 int32 [rcx]
+; #1 int32 [?]
+; #2 int32 [?]
+LB_0:
+    {arithmeticOp} 0 -1 1234 -> 2
+";
+            OptimizeAndVerify(method, expected);
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void Load_and_arithmetic_are_not_folded_if_immediate_requires_8_bytes(bool immediateOnRight)
         {
             var method = new LowMethod<X64Register>();
             method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32, requiredLocation: X64Register.Rcx));
@@ -86,7 +115,8 @@ LB_0:
                 Instructions =
                 {
                     new LowInstruction(LowOp.LoadInt, 1, 0, 0, 0x1_FFFF_FFFF), // Load 1234 -> #1
-                    new LowInstruction(LowOp.IntegerAdd, 2, 0, 1, 0) // #0 + #1 -> #2
+                    new LowInstruction(LowOp.IntegerAdd, 2,
+                        immediateOnRight ? 0 : 1, immediateOnRight ? 1 : 0, 0) // #0 + #1 -> #2
                 }
             });
 

@@ -189,6 +189,30 @@ LB_0:
 ";
             EmitAndAssertDisassembly(source, expected);
         }
+
+        [TestCase("Add", "add")]
+        [TestCase("Multiply", "imul")]
+        public void Basic_int32_arithmetic_with_immediate_left(string highOp, string expectedAsmOp)
+        {
+            // private int32 F(int32 value) { return 7 {op} value; }
+            var source = $@"
+; #0   int32 param
+; #1   int32
+; #2   int32
+BB_0:
+    Load 7 -> #1
+    {highOp} #1 ? #0 -> #2
+    Return #2
+";
+            var expected = $@"
+; Test::Method
+LB_0:
+    {expectedAsmOp} ecx, 0x7
+    mov eax, ecx
+    ret
+";
+            EmitAndAssertDisassembly(source, expected);
+        }
         
         [TestCase("Subtract", "sub")]
         public void Basic_non_commutative_int32_arithmetic(string highOp, string expectedAsmOp)
