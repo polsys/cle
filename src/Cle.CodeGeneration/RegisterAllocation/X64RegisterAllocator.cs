@@ -163,7 +163,9 @@ namespace Cle.CodeGeneration.RegisterAllocation
                         AddIntervalForLocal(inst.Left, blockStart, instIndex);
                         live.Add(inst.Left);
                     }
-                    if (inst.UsesRight && !live.Contains(inst.Right))
+
+                    // The right-hand operand may be set to -1 to signal a constant (immediate) argument
+                    if (inst.UsesRight && inst.Right >= 0 && !live.Contains(inst.Right))
                     {
                         AddIntervalForLocal(inst.Right, blockStart, instIndex);
                         live.Add(inst.Right);
@@ -234,9 +236,10 @@ namespace Cle.CodeGeneration.RegisterAllocation
             void AddX64SpecificIntervals(in LowInstruction inst, int instIndex)
             {
                 // Prevent X64 trashing the right operand of subtraction/shift (see associated unit test)
+                // except when the right operand is a constant.
                 // Additionally, the right operand of shift is fixed to RCX, but Lowering has handled that
-                if (inst.Op == LowOp.IntegerSubtract ||
-                    inst.Op == LowOp.ShiftLeft || inst.Op == LowOp.ShiftArithmeticRight)
+                if ((inst.Op == LowOp.IntegerSubtract || inst.Op == LowOp.ShiftLeft || inst.Op == LowOp.ShiftArithmeticRight)
+                    && inst.Right >= 0)
                 {
                     intervals[latestIntervalForLocal[inst.Right]].Use(instIndex + 1);
                 }
@@ -409,7 +412,7 @@ namespace Cle.CodeGeneration.RegisterAllocation
                     newBlock.Instructions.Add(new LowInstruction(inst.Op,
                         inst.UsesDest ? ConvertLocalToInterval(inst.Dest, intervals, instIndex) : inst.Dest,
                         inst.UsesLeft ? ConvertLocalToInterval(inst.Left, intervals, instIndex) : inst.Left,
-                        inst.UsesRight ? ConvertLocalToInterval(inst.Right, intervals, instIndex) : inst.Right,
+                        inst.UsesRight && inst.Right >= 0 ? ConvertLocalToInterval(inst.Right, intervals, instIndex) : inst.Right,
                         inst.Data));
                     instIndex++;
                 }

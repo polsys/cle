@@ -46,6 +46,53 @@ LB_0:
             OptimizeAndVerify(method, expected);
         }
 
+        [TestCase(LowOp.IntegerAdd)]
+        [TestCase(LowOp.IntegerSubtract)]
+        [TestCase(LowOp.IntegerMultiply)]
+        public void Load_right_and_arithmetic_are_folded(LowOp arithmeticOp)
+        {
+            var method = new LowMethod<X64Register>();
+            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32, requiredLocation: X64Register.Rcx));
+            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32));
+            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32));
+            method.Blocks.Add(new LowBlock
+            {
+                Instructions =
+                {
+                    new LowInstruction(LowOp.LoadInt, 1, 0, 0, 1234), // Load 1234 -> #1
+                    new LowInstruction(arithmeticOp, 2, 0, 1, 0) // #0 op #1 -> #2
+                }
+            });
+
+            var expected = @$"
+; #0 int32 [rcx]
+; #1 int32 [?]
+; #2 int32 [?]
+LB_0:
+    {arithmeticOp} 0 -1 1234 -> 2
+";
+            OptimizeAndVerify(method, expected);
+        }
+
+        [Test]
+        public void Load_and_arithmetic_are_not_folded_if_immediate_requires_8_bytes()
+        {
+            var method = new LowMethod<X64Register>();
+            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32, requiredLocation: X64Register.Rcx));
+            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32));
+            method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32));
+            method.Blocks.Add(new LowBlock
+            {
+                Instructions =
+                {
+                    new LowInstruction(LowOp.LoadInt, 1, 0, 0, 0x1_FFFF_FFFF), // Load 1234 -> #1
+                    new LowInstruction(LowOp.IntegerAdd, 2, 0, 1, 0) // #0 + #1 -> #2
+                }
+            });
+
+            OptimizeAndVerifyUnchanged(method);
+        }
+
         [Test]
         public void Load_and_several_unnecessary_moves_are_folded()
         {

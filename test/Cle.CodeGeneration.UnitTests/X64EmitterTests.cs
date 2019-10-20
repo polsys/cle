@@ -511,7 +511,7 @@ namespace Cle.CodeGeneration.UnitTests
         }
 
         [Test]
-        public void EmitGeneralBinaryWithImmediate_emits_8_bit_stack_add()
+        public void EmitGeneralBinaryWithImmediate_emits_64_bit_stack_add_with_byte_immediate()
         {
             GetEmitter(out var stream, out var disassembly).EmitGeneralBinaryWithImmediate(
                 BinaryOp.Add,
@@ -524,7 +524,33 @@ namespace Cle.CodeGeneration.UnitTests
         }
 
         [Test]
-        public void EmitGeneralBinaryWithImmediate_emits_8_bit_stack_sub()
+        public void EmitGeneralBinaryWithImmediate_emits_32_bit_add_with_negative_byte_immediate()
+        {
+            GetEmitter(out var stream, out var disassembly).EmitGeneralBinaryWithImmediate(
+                BinaryOp.Add,
+                new StorageLocation<X64Register>(X64Register.Rax),
+                -1,
+                4);
+
+            CollectionAssert.AreEqual(new byte[] { 0x83, 0xC0, 0xFF }, stream.ToArray());
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("add eax, 0xFFFFFFFFFFFFFFFF"));
+        }
+
+        [Test]
+        public void EmitGeneralBinaryWithImmediate_emits_32_bit_add_with_dword_immediate()
+        {
+            GetEmitter(out var stream, out var disassembly).EmitGeneralBinaryWithImmediate(
+                BinaryOp.Add,
+                new StorageLocation<X64Register>(X64Register.R9),
+                0x0DDF00D,
+                4);
+
+            CollectionAssert.AreEqual(new byte[] { 0x41, 0x81, 0xC1, 0x0D, 0xF0, 0xDD, 0x00 }, stream.ToArray());
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("add r9d, 0xDDF00D"));
+        }
+
+        [Test]
+        public void EmitGeneralBinaryWithImmediate_emits_64_bit_stack_sub_with_byte_immediate()
         {
             GetEmitter(out var stream, out var disassembly).EmitGeneralBinaryWithImmediate(
                 BinaryOp.Subtract,
@@ -534,6 +560,45 @@ namespace Cle.CodeGeneration.UnitTests
 
             CollectionAssert.AreEqual(new byte[] { 0x48, 0x83, 0xEC, 0x20 }, stream.ToArray());
             Assert.That(disassembly.ToString().Trim(), Is.EqualTo("sub rsp, 0x20"));
+        }
+
+        [Test]
+        public void EmitGeneralBinaryWithImmediate_emits_32_bit_sub_with_dword_immediate()
+        {
+            GetEmitter(out var stream, out var disassembly).EmitGeneralBinaryWithImmediate(
+                BinaryOp.Subtract,
+                new StorageLocation<X64Register>(X64Register.R13),
+                -0x1234,
+                4);
+
+            CollectionAssert.AreEqual(new byte[] { 0x41, 0x81, 0xED, 0xCC, 0xED, 0xFF, 0xFF }, stream.ToArray());
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("sub r13d, 0xFFFFFFFFFFFFEDCC"));
+        }
+
+        [Test]
+        public void EmitGeneralBinaryWithImmediate_emits_64_bit_imul_with_byte_immediate()
+        {
+            GetEmitter(out var stream, out var disassembly).EmitGeneralBinaryWithImmediate(
+                BinaryOp.Multiply,
+                new StorageLocation<X64Register>(X64Register.Rdx),
+                0x12,
+                8);
+
+            CollectionAssert.AreEqual(new byte[] { 0x48, 0x6B, 0xD2, 0x12 }, stream.ToArray());
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("imul rdx, 0x12"));
+        }
+
+        [Test]
+        public void EmitGeneralBinaryWithImmediate_emits_64_bit_imul_with_dword_immediate()
+        {
+            GetEmitter(out var stream, out var disassembly).EmitGeneralBinaryWithImmediate(
+                BinaryOp.Multiply,
+                new StorageLocation<X64Register>(X64Register.Rdx),
+                0x1234,
+                8);
+
+            CollectionAssert.AreEqual(new byte[] { 0x48, 0x69, 0xD2, 0x34, 0x12, 0x00, 0x00 }, stream.ToArray());
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("imul rdx, 0x1234"));
         }
 
         [Test]

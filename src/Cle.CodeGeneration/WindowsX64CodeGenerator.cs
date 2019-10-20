@@ -344,37 +344,55 @@ namespace Cle.CodeGeneration
             var emitter = _peWriter.Emitter;
 
             var (leftLocation, _) = allocation.Get(inst.Left);
-            var (rightLocation, _) = allocation.Get(inst.Right);
             var (destLocation, destLocalIndex) = allocation.Get(inst.Dest);
-            var isCommutative = op != BinaryOp.Subtract;
 
             // Despite the name, this function also handles bools.
             // For arithmetic, they are most efficiently handled as 32-bit integers.
             var destLocal = method.Locals[destLocalIndex];
             var operandSize = destLocal.Type.Equals(SimpleType.Bool) ? 4 : destLocal.Type.SizeInBytes;
 
-            if (leftLocation == destLocation)
+            if (inst.Right == -1)
             {
-                // The ideal case: we can emit "op left, right"
-                emitter.EmitGeneralBinaryOp(op, leftLocation, rightLocation, operandSize);
-            }
-            else if (rightLocation == destLocation)
-            {
-                if (isCommutative)
+                // The right operand is an immediate, so emit the immediate form
+                // We may need to do a temporary move first
+                // TODO code quality: not needed for imul since it has "dest = src * imm" form
+                if (leftLocation != destLocation)
                 {
-                    // Still good: "op right, left"
-                    emitter.EmitGeneralBinaryOp(op, rightLocation, leftLocation, operandSize);
+                    emitter.EmitMov(destLocation, leftLocation, operandSize);
                 }
-                else
-                {
-                    throw new InvalidOperationException("Register allocator should not let this happen");
-                }
+
+                emitter.EmitGeneralBinaryWithImmediate(op, destLocation, (int)inst.Data, operandSize);
+                return;
             }
             else
             {
-                // We have to do a temporary move first
-                emitter.EmitMov(destLocation, leftLocation, operandSize);
-                emitter.EmitGeneralBinaryOp(op, destLocation, rightLocation, operandSize);
+                // The right operand is a local as well
+                var (rightLocation, _) = allocation.Get(inst.Right);
+                var isCommutative = op != BinaryOp.Subtract;
+
+                if (leftLocation == destLocation)
+                {
+                    // The ideal case: we can emit "op left, right"
+                    emitter.EmitGeneralBinaryOp(op, leftLocation, rightLocation, operandSize);
+                }
+                else if (rightLocation == destLocation)
+                {
+                    if (isCommutative)
+                    {
+                        // Still good: "op right, left"
+                        emitter.EmitGeneralBinaryOp(op, rightLocation, leftLocation, operandSize);
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException("Register allocator should not let this happen");
+                    }
+                }
+                else
+                {
+                    // We have to do a temporary move first
+                    emitter.EmitMov(destLocation, leftLocation, operandSize);
+                    emitter.EmitGeneralBinaryOp(op, destLocation, rightLocation, operandSize);
+                }
             }
         }
 

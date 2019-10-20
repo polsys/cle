@@ -110,14 +110,17 @@ namespace Cle.CodeGeneration.Lir
 
         /// <summary>
         /// Sums the Left and Right locals and stores the result in Dest local.
+        /// If Right == -1, a constant in Data is used instead (at most 4 bytes, sign-extended to 8 if necessary).
         /// </summary>
         IntegerAdd,
         /// <summary>
         /// Subtracts the Right local from the Left local and stores the result in Dest local.
+        /// If Right == -1, a constant in Data is used instead (at most 4 bytes, sign-extended to 8 if necessary).
         /// </summary>
         IntegerSubtract,
         /// <summary>
         /// Multiplies the Left and Right locals and stores the result in Dest local.
+        /// If Right == -1, a constant in Data is used instead (at most 4 bytes, sign-extended to 8 if necessary).
         /// </summary>
         IntegerMultiply,
         /// <summary>
