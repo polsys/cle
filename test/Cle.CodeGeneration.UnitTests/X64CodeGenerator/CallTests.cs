@@ -75,8 +75,8 @@ BB_0:
 ; Test::Method
 LB_0:
     sub rsp, 0x28
-    mov ecx, 0x1
-    mov edx, 0x1
+    mov ecx, 0x00000001
+    mov edx, 0x00000001
     call Test::DoSomething
     xor eax, eax
     add rsp, 0x28

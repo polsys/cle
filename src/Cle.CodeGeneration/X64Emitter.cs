@@ -47,23 +47,32 @@ namespace Cle.CodeGeneration
                 throw new NotImplementedException("Load to stack");
             if (dest.Register >= X64Register.Xmm0)
                 throw new NotImplementedException("Load to XMM register");
-
-            // TODO: Replace "mov reg, 0" with "xor reg, reg" once arithmetic ops are implemented
             
             var (registerEncoding, needB) = GetRegisterEncoding(dest.Register);
 
-            // If the operand can fit into a 32 bit immediate, emit a 32-bit load
             if (bytes <= uint.MaxValue)
             {
-                _disassemblyWriter?.WriteLine($"{Indent}mov {GetRegisterName(dest.Register, 4)}, 0x{bytes:X}");
+                // A 32-bit load with zero extension
+                _disassemblyWriter?.WriteLine($"{Indent}mov {GetRegisterName(dest.Register, 4)}, 0x{bytes:X8}");
 
                 EmitRexPrefixIfNeeded(false, false, false, needB);
                 _outputStream.WriteByte((byte)(0xB8 | registerEncoding));
                 Emit4ByteImmediate((uint)bytes);
             }
+            else if ((long)bytes >= int.MinValue && (long)bytes <= int.MaxValue)
+            {
+                // 32-bit load with sign extension to 64 bits
+                _disassemblyWriter?.WriteLine($"{Indent}mov {GetRegisterName(dest.Register, 8)}, 0x{(uint)bytes:X8}");
+
+                EmitRexPrefixIfNeeded(true, false, false, needB);
+                _outputStream.WriteByte(0xC7);
+                EmitModRmForSingleRegister(registerEncoding);
+                Emit4ByteImmediate((uint)bytes);
+            }
             else
             {
-                _disassemblyWriter?.WriteLine($"{Indent}mov {GetRegisterName(dest.Register, 8)}, 0x{bytes:X}");
+                // Full 64-bit load
+                _disassemblyWriter?.WriteLine($"{Indent}mov {GetRegisterName(dest.Register, 8)}, 0x{bytes:X16}");
 
                 EmitRexPrefixIfNeeded(true, false, false, needB);
                 _outputStream.WriteByte((byte)(0xB8 | registerEncoding));
