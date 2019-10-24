@@ -4,20 +4,20 @@ namespace Cle.CodeGeneration.UnitTests.X64CodeGenerator
 {
     public class VariableTests : X64CodeGeneratorTestBase
     {
-        [Test]
-        public void Constant_integer_load_and_return()
+        [TestCase(42, "mov eax, 0x0000002A")]
+        [TestCase(-1, "mov rax, 0xFFFFFFFF")] // Sign-extended to full 64 bits
+        public void Constant_integer_load_and_return(int value, string expectedInstruction)
         {
-            // return 42;
-            const string source = @"
+            var source = $@"
 ; #0   int32
 BB_0:
-    Load 42 -> #0
+    Load {value} -> #0
     Return #0
 ";
-            const string expected = @"
+            var expected = $@"
 ; Test::Method
 LB_0:
-    mov eax, 0x2A
+    {expectedInstruction}
     ret
 ";
             EmitAndAssertDisassembly(source, expected);
@@ -127,8 +127,8 @@ BB_0:
             const string expected = @"
 ; Test::Method
 LB_0:
-    mov ecx, 0x1
-    mov edx, 0x1
+    mov ecx, 0x00000001
+    mov edx, 0x00000001
     and ecx, edx
     cmp ecx, 0x00
     sete al
@@ -170,8 +170,8 @@ BB_0:
             var expected = $@"
 ; Test::Method
 LB_0:
-    mov ecx, 0x2A
-    mov edx, 0x64
+    mov ecx, 0x0000002A
+    mov edx, 0x00000064
     mov eax, ecx
     {expectedAsmOp} eax, edx
     {expectedAsmOp} eax, ecx
@@ -262,8 +262,8 @@ BB_0:
             var expected = $@"
 ; Test::Method
 LB_0:
-    mov ecx, 0x2A
-    mov edx, 0x64
+    mov ecx, 0x0000002A
+    mov edx, 0x00000064
     mov eax, ecx
     {expectedAsmOp} eax, edx
     mov r8d, ecx
@@ -299,7 +299,7 @@ BB_0:
             var expected = $@"
 ; Test::Method
 LB_0:
-    mov ecx, 0x2B
+    mov ecx, 0x0000002B
     mov edx, ecx
     {expectedAsmOp} edx
     {expectedAsmOp} ecx
@@ -329,8 +329,8 @@ BB_0:
             const string expected = @"
 ; Test::Method
 LB_0:
-    mov ecx, 0x2A
-    mov r8d, 0xA
+    mov ecx, 0x0000002A
+    mov r8d, 0x0000000A
     mov eax, ecx
     cdq
     idiv r8d
@@ -357,8 +357,8 @@ BB_0:
             const string expected = @"
 ; Test::Method
 LB_0:
-    mov ecx, 0x2A
-    mov r8d, 0xA
+    mov ecx, 0x0000002A
+    mov r8d, 0x0000000A
     mov eax, ecx
     cdq
     idiv r8d
@@ -399,8 +399,8 @@ BB_0:
             var expected = $@"
 ; Test::Method
 LB_0:
-    mov eax, 0x2B
-    mov edx, 0x11
+    mov eax, 0x0000002B
+    mov edx, 0x00000011
     mov ecx, edx
     mov r8d, eax
     {expectedAsmOp} r8d, cl

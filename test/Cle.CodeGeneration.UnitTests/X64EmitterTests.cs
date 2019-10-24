@@ -45,7 +45,7 @@ namespace Cle.CodeGeneration.UnitTests
                 0x18);
 
             CollectionAssert.AreEqual(new byte[] { 0xBA, 0x18, 0x00, 0x00, 0x00 }, stream.ToArray());
-            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("mov edx, 0x18"));
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("mov edx, 0x00000018"));
         }
 
         [Test]
@@ -80,6 +80,30 @@ namespace Cle.CodeGeneration.UnitTests
             CollectionAssert.AreEqual(new byte[] { 0x49, 0xBF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F },
                 stream.ToArray());
             Assert.That(disassembly.ToString().Trim(), Is.EqualTo("mov r15, 0x7FFFFFFFFFFFFFFF"));
+        }
+
+        [Test]
+        public void EmitLoad_emits_sign_extended_32_bit_load()
+        {
+            GetEmitter(out var stream, out var disassembly).EmitLoad(
+                new StorageLocation<X64Register>(X64Register.Rax),
+                unchecked((ulong)-1));
+
+            CollectionAssert.AreEqual(new byte[] { 0x48, 0xC7, 0xC0, 0xFF, 0xFF, 0xFF, 0xFF },
+                stream.ToArray());
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("mov rax, 0xFFFFFFFF"));
+        }
+
+        [Test]
+        public void EmitLoad_emits_sign_extended_32_bit_load_to_new_register()
+        {
+            GetEmitter(out var stream, out var disassembly).EmitLoad(
+                new StorageLocation<X64Register>(X64Register.R10),
+                unchecked((ulong)-1234));
+
+            CollectionAssert.AreEqual(new byte[] { 0x49, 0xC7, 0xC2, 0x2E, 0xFB, 0xFF, 0xFF },
+                stream.ToArray());
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("mov r10, 0xFFFFFB2E"));
         }
 
         [Test]
