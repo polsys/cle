@@ -46,12 +46,13 @@ LB_0:
             OptimizeAndVerify(method, expected);
         }
 
-        [TestCase(LowOp.IntegerAdd)]
-        [TestCase(LowOp.IntegerSubtract)]
-        [TestCase(LowOp.IntegerMultiply)]
-        [TestCase(LowOp.ShiftLeft)]
-        [TestCase(LowOp.ShiftArithmeticRight)]
-        public void Load_right_and_arithmetic_are_folded(LowOp arithmeticOp)
+        [TestCase(LowOp.IntegerAdd, 1234)]
+        [TestCase(LowOp.IntegerSubtract, 240)]
+        [TestCase(LowOp.IntegerMultiply, -240)]
+        [TestCase(LowOp.ShiftLeft, 7)]
+        [TestCase(LowOp.ShiftArithmeticRight, long.MaxValue)] // Shift doesn't care about the immediate size
+        [TestCase(LowOp.Compare, -1234)]
+        public void Load_right_and_arithmetic_are_folded(LowOp arithmeticOp, long constant)
         {
             // The right operand of shift has special location on x64
             var isShift = arithmeticOp == LowOp.ShiftLeft || arithmeticOp == LowOp.ShiftArithmeticRight;
@@ -65,7 +66,7 @@ LB_0:
             {
                 Instructions =
                 {
-                    new LowInstruction(LowOp.LoadInt, 1, 0, 0, 1234), // Load 1234 -> #1
+                    new LowInstruction(LowOp.LoadInt, 1, 0, 0, (ulong)constant), // Load constant -> #1
                     new LowInstruction(arithmeticOp, 2, 0, 1, 0) // #0 op #1 -> #2
                 }
             });
@@ -75,7 +76,7 @@ LB_0:
 ; #1 int32 [{(isShift ? "rdx" : "?")}]
 ; #2 int32 [?]
 LB_0:
-    {arithmeticOp} 0 -1 1234 -> 2
+    {arithmeticOp} 0 -1 {(ulong)constant} -> 2
 ";
             OptimizeAndVerify(method, expected);
         }
@@ -108,9 +109,10 @@ LB_0:
             OptimizeAndVerify(method, expected);
         }
 
-        [TestCase(false)]
-        [TestCase(true)]
-        public void Load_and_arithmetic_are_not_folded_if_immediate_requires_8_bytes(bool immediateOnRight)
+        [TestCase(LowOp.IntegerAdd, false)]
+        [TestCase(LowOp.IntegerAdd, true)]
+        [TestCase(LowOp.Compare, true)]
+        public void Load_and_arithmetic_are_not_folded_if_immediate_requires_8_bytes(LowOp op, bool immediateOnRight)
         {
             var method = new LowMethod<X64Register>();
             method.Locals.Add(new LowLocal<X64Register>(SimpleType.Int32, requiredLocation: X64Register.Rcx));
@@ -121,8 +123,8 @@ LB_0:
                 Instructions =
                 {
                     new LowInstruction(LowOp.LoadInt, 1, 0, 0, 0x1_FFFF_FFFF), // Load 1234 -> #1
-                    new LowInstruction(LowOp.IntegerAdd, 2,
-                        immediateOnRight ? 0 : 1, immediateOnRight ? 1 : 0, 0) // #0 + #1 -> #2
+                    new LowInstruction(op, 2,
+                        immediateOnRight ? 0 : 1, immediateOnRight ? 1 : 0, 0) // #0 op #1 -> #2
                 }
             });
 

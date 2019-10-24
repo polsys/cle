@@ -40,8 +40,7 @@ BB_2:
 ; Test::Method
 LB_0:
     mov ecx, 0x2A
-    mov edx, 0x64
-    cmp ecx, edx
+    cmp ecx, 0x64
     {expectedConditionalJump} LB_1
     jmp LB_2
 LB_1:
@@ -92,8 +91,7 @@ BB_2:
 ; Test::Method
 LB_0:
     mov ecx, 0x2A
-    mov edx, 0x64
-    cmp ecx, edx
+    cmp ecx, 0x64
     {expectedConditionalJump} LB_1
     jmp LB_2
 LB_1:

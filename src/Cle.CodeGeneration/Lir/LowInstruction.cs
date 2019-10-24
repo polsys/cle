@@ -137,12 +137,14 @@ namespace Cle.CodeGeneration.Lir
         /// Shifts the Left local left by the amount specified in the Right local (modulo operand size)
         /// and stores the result in the Dest local.
         /// The Right local must be stored in the platform-specified location.
+        /// If Right == -1, the shift amount is a constant stored in Data instead.
         /// </summary>
         ShiftLeft,
         /// <summary>
         /// Shifts the Left local right by the amount specified in the Right local (modulo operand size),
         /// propagating the sign bit, and stores the result in the Dest local.
         /// The Right local must be stored in the platform-specified location.
+        /// If Right == -1, the shift amount is a constant stored in Data instead.
         /// </summary>
         ShiftArithmeticRight,
         /// <summary>
@@ -173,6 +175,8 @@ namespace Cle.CodeGeneration.Lir
 
         /// <summary>
         /// Compares Left and Right and stores the result in processor flags.
+        /// If Right == -1, the value of the Left local is compared against Data (width specified by Left,
+        /// at most 4 bytes, sign-extended to 8 if necessary).
         /// </summary>
         Compare,
         /// <summary>

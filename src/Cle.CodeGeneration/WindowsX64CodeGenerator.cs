@@ -215,7 +215,16 @@ namespace Cle.CodeGeneration
                             var leftLocal = method.Locals[leftLocalIndex];
                             var operandSize = leftLocal.Type.Equals(SimpleType.Bool) ? 4 : leftLocal.Type.SizeInBytes;
 
-                            emitter.EmitCmp(leftLocation, allocation.Get(inst.Right).location, operandSize);
+                            if (inst.Right == -1)
+                            {
+                                // Comparison with a constant
+                                emitter.EmitCmpWithImmediate(leftLocation, (int)inst.Data, operandSize);
+                            }
+                            else
+                            {
+                                // Comparison with another local
+                                emitter.EmitCmp(leftLocation, allocation.Get(inst.Right).location, operandSize);
+                            }
                             break;
                         }
                     case LowOp.Test:
