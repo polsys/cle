@@ -181,6 +181,7 @@ namespace Cle.CodeGeneration
                 if (IsArithmeticWithImmediateLeft(next.Op) && current.Dest == next.Left)
                 {
                     // When #2 is used only once, and the arithmetic operation is commutative
+                    // (That is, subtraction and compare are left out.)
                     // ----
                     // Load 1234 -> #2
                     // Arithmetic #2 #1 -> #3
@@ -258,12 +259,12 @@ namespace Cle.CodeGeneration
         private static bool ValueIsAtMost4Bytes(ulong value)
         {
             // Take the sign extension into account
-            return (long)value >= int.MinValue && value <= int.MaxValue;
+            return (long)value >= int.MinValue && (long)value <= int.MaxValue;
         }
 
         private static bool IsArithmeticWithImmediateRight(LowOp op)
         {
-            return op == LowOp.IntegerAdd || op == LowOp.IntegerSubtract || op == LowOp.IntegerMultiply;
+            return op == LowOp.IntegerAdd || op == LowOp.IntegerSubtract || op == LowOp.IntegerMultiply || op == LowOp.Compare;
         }
 
         private static bool IsArithmeticWithImmediateLeft(LowOp op)

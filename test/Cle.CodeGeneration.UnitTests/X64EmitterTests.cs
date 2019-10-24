@@ -260,6 +260,30 @@ namespace Cle.CodeGeneration.UnitTests
         }
 
         [Test]
+        public void EmitCmpWithImmediate_emits_64_bit_compare_with_byte_immediate()
+        {
+            GetEmitter(out var stream, out var disassembly).EmitCmpWithImmediate(
+                new StorageLocation<X64Register>(X64Register.Rax),
+                -1,
+                8);
+
+            CollectionAssert.AreEqual(new byte[] { 0x48, 0x83, 0xF8, 0xFF }, stream.ToArray());
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("cmp rax, 0xFF"));
+        }
+
+        [Test]
+        public void EmitCmpWithImmediate_emits_32_bit_compare_with_dword_immediate()
+        {
+            GetEmitter(out var stream, out var disassembly).EmitCmpWithImmediate(
+                new StorageLocation<X64Register>(X64Register.Rbp),
+                0x12345678,
+                4);
+
+            CollectionAssert.AreEqual(new byte[] { 0x81, 0xFD, 0x78, 0x56, 0x34, 0x12 }, stream.ToArray());
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("cmp ebp, 0x12345678"));
+        }
+
+        [Test]
         public void EmitTest_emits_32_bit_logical_compare_between_basic_and_new_registers()
         {
             GetEmitter(out var stream, out var disassembly).EmitTest(
@@ -533,7 +557,7 @@ namespace Cle.CodeGeneration.UnitTests
                 4);
 
             CollectionAssert.AreEqual(new byte[] { 0x83, 0xC0, 0xFF }, stream.ToArray());
-            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("add eax, 0xFFFFFFFFFFFFFFFF"));
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("add eax, 0xFF"));
         }
 
         [Test]
@@ -546,7 +570,7 @@ namespace Cle.CodeGeneration.UnitTests
                 4);
 
             CollectionAssert.AreEqual(new byte[] { 0x41, 0x81, 0xC1, 0x0D, 0xF0, 0xDD, 0x00 }, stream.ToArray());
-            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("add r9d, 0xDDF00D"));
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("add r9d, 0x00DDF00D"));
         }
 
         [Test]
@@ -572,7 +596,7 @@ namespace Cle.CodeGeneration.UnitTests
                 4);
 
             CollectionAssert.AreEqual(new byte[] { 0x41, 0x81, 0xED, 0xCC, 0xED, 0xFF, 0xFF }, stream.ToArray());
-            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("sub r13d, 0xFFFFFFFFFFFFEDCC"));
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("sub r13d, 0xFFFFEDCC"));
         }
 
         [Test]
@@ -598,7 +622,7 @@ namespace Cle.CodeGeneration.UnitTests
                 8);
 
             CollectionAssert.AreEqual(new byte[] { 0x48, 0x69, 0xD2, 0x34, 0x12, 0x00, 0x00 }, stream.ToArray());
-            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("imul rdx, 0x1234"));
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("imul rdx, 0x00001234"));
         }
 
         [Test]
@@ -623,7 +647,7 @@ namespace Cle.CodeGeneration.UnitTests
                 4);
 
             CollectionAssert.AreEqual(new byte[] { 0xC1, 0xE2, 0x07 }, stream.ToArray());
-            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("shl edx, 0x7"));
+            Assert.That(disassembly.ToString().Trim(), Is.EqualTo("shl edx, 0x07"));
         }
 
         [Test]

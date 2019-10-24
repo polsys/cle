@@ -28,24 +28,20 @@ LB_0:
         [TestCase("LessOrEqual", "setle")]
         public void Bool_assignment_via_comparison(string highOp, string expectedLowOp)
         {
-            // int32 a = 42;
-            // int32 b = 100;
-            // return a op b;
+            // private bool Fun(int32 a, int32 b) {
+            //   return a op b;
+            // }
             var source = $@"
-; #0   int32
-; #1   int32
+; #0   int32 param
+; #1   int32 param
 ; #2   bool
 BB_0:
-    Load 42 -> #0
-    Load 100 -> #1
     {highOp} #0 ?? #1 -> #2
     Return #2
 ";
             var expected = $@"
 ; Test::Method
 LB_0:
-    mov ecx, 0x2A
-    mov edx, 0x64
     cmp ecx, edx
     {expectedLowOp} al
     movzx eax, al
@@ -59,17 +55,15 @@ LB_0:
         [TestCase("LessOrEqual", "setg")]
         public void Bool_assignment_via_inverted_comparison(string highOp, string expectedLowOp)
         {
-            // int32 a = 42;
-            // int32 b = 100;
-            // return a op b;
+            // private bool Fun(int32 a, int32 b) {
+            //   return a op b;
+            // }
             var source = $@"
-; #0   int32
-; #1   int32
+; #0   int32 param
+; #1   int32 param
 ; #2   bool
 ; #3   bool
 BB_0:
-    Load 42 -> #0
-    Load 100 -> #1
     {highOp} #0 ?? #1 -> #2
     BitwiseNot #2 -> #3
     Return #3
@@ -77,8 +71,6 @@ BB_0:
             var expected = $@"
 ; Test::Method
 LB_0:
-    mov ecx, 0x2A
-    mov edx, 0x64
     cmp ecx, edx
     {expectedLowOp} al
     movzx eax, al
@@ -88,9 +80,36 @@ LB_0:
         }
 
         [Test]
+        public void Bool_assignment_via_constant_comparison()
+        {
+            // private bool Fun(int32 a) {
+            //   return a >= 42;
+            // }
+            var source = $@"
+; #0   int32 param
+; #1   int32
+; #2   bool
+; #3   bool
+BB_0:
+    Load 42 -> #1
+    Less #0 >= #1 -> #2
+    BitwiseNot #2 -> #3
+    Return #3
+";
+            var expected = $@"
+; Test::Method
+LB_0:
+    cmp ecx, 0x2A
+    setge al
+    movzx eax, al
+    ret
+";
+            EmitAndAssertDisassembly(source, expected);
+        }
+
+        [Test]
         public void Bool_arithmetic_and_comparison()
         {
-            // return 42;
             const string source = @"
 ; #0   bool
 ; #1   bool
@@ -111,8 +130,7 @@ LB_0:
     mov ecx, 0x1
     mov edx, 0x1
     and ecx, edx
-    xor edx, edx
-    cmp ecx, edx
+    cmp ecx, 0x00
     sete al
     movzx eax, al
     ret
@@ -185,7 +203,7 @@ BB_0:
             var expected = $@"
 ; Test::Method
 LB_0:
-    {expectedAsmOp} ecx, 0x7
+    {expectedAsmOp} ecx, 0x07
     mov eax, ecx
     ret
 ";
@@ -209,7 +227,7 @@ BB_0:
             var expected = $@"
 ; Test::Method
 LB_0:
-    {expectedAsmOp} ecx, 0x7
+    {expectedAsmOp} ecx, 0x07
     mov eax, ecx
     ret
 ";

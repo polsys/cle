@@ -224,11 +224,10 @@ namespace Cle.CodeGeneration
                 throw new NotImplementedException("Binary op on stack");
             if (srcDest.Register >= X64Register.Xmm0)
                 throw new InvalidOperationException("Trying to emit a general-purpose op on a SIMD register.");
-            
-            DisassembleRegImm(GetGeneralBinaryName(op), srcDest.Register, immediate, operandSize);
 
             var byteImmediate = immediate >= sbyte.MinValue && immediate <= sbyte.MaxValue;
-
+            DisassembleRegImm(GetGeneralBinaryName(op), srcDest.Register, immediate, byteImmediate, operandSize);
+            
             var (encodedLeft, needB) = GetRegisterEncoding(srcDest.Register);
             EmitRexPrefixIfNeeded(operandSize == 8, false, false, needB);
 
@@ -324,11 +323,11 @@ namespace Cle.CodeGeneration
             {
                 case ShiftType.Left:
                     _outputStream.WriteByte((byte)(0b1110_0000 | encodedReg));
-                    DisassembleRegImm("shl", srcDest.Register, amount, operandSize);
+                    DisassembleRegImm("shl", srcDest.Register, amount, true, operandSize);
                     break;
                 case ShiftType.ArithmeticRight:
                     _outputStream.WriteByte((byte)(0b1111_1000 | encodedReg));
-                    DisassembleRegImm("sar", srcDest.Register, amount, operandSize);
+                    DisassembleRegImm("sar", srcDest.Register, amount, true, operandSize);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(shiftType));
@@ -400,6 +399,36 @@ namespace Cle.CodeGeneration
             EmitRexPrefixIfNeeded(operandSize == 8, needR, false, needB);
             _outputStream.WriteByte(0x3B);
             EmitModRmForRegisterToRegister(encodedDest, encodedSrc);
+        }
+
+        /// <summary>
+        /// Emits a cmp instruction with a constant right operand, and specified operand width.
+        /// </summary>
+        public void EmitCmpWithImmediate(StorageLocation<X64Register> left, int right, int operandSize)
+        {
+            if (operandSize != 4 && operandSize != 8)
+                throw new NotImplementedException("Other operand widths");
+            if (!left.IsRegister)
+                throw new NotImplementedException("Cmp on stack");
+            if (left.Register >= X64Register.Xmm0)
+                throw new NotImplementedException("SIMD compare");
+
+            var byteImmediate = right >= sbyte.MinValue && right <= sbyte.MaxValue;
+            var (encodedDest, needB) = GetRegisterEncoding(left.Register);
+
+            DisassembleRegImm("cmp", left.Register, right, byteImmediate, operandSize);
+
+            EmitRexPrefixIfNeeded(operandSize == 8, false, false, needB);
+            _outputStream.WriteByte(byteImmediate ? (byte)0x83 : (byte)0x81);
+            _outputStream.WriteByte((byte)(0b1111_1000 | encodedDest));
+            if (byteImmediate)
+            {
+                _outputStream.WriteByte((byte)right);
+            }
+            else
+            {
+                Emit4ByteImmediate((uint)right);
+            }
         }
 
         /// <summary>
@@ -637,13 +666,20 @@ namespace Cle.CodeGeneration
             _disassemblyWriter.WriteLine($"{Indent}{opcode} {leftName}, {rightName}");
         }
 
-        private void DisassembleRegImm(string opcode, X64Register left, long immediate, int operandSize)
+        private void DisassembleRegImm(string opcode, X64Register left, int immediate, bool byteImm, int operandSize)
         {
             if (_disassemblyWriter is null)
                 return;
 
             var leftName = GetRegisterName(left, operandSize);
-            _disassemblyWriter.WriteLine($"{Indent}{opcode} {leftName}, 0x{immediate:X}");
+            if (byteImm)
+            {
+                _disassemblyWriter.WriteLine($"{Indent}{opcode} {leftName}, 0x{(byte)immediate:X2}");
+            }
+            else
+            {
+                _disassemblyWriter.WriteLine($"{Indent}{opcode} {leftName}, 0x{immediate:X8}");
+            }
         }
 
         private void Emit8ByteImmediate(ulong bytes)
