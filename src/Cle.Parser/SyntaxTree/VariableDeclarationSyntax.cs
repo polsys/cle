@@ -10,7 +10,7 @@ namespace Cle.Parser.SyntaxTree
         /// <summary>
         /// Gets the declared type of the variable.
         /// </summary>
-        public string TypeName { get; }
+        public TypeSyntax Type { get; }
 
         /// <summary>
         /// Gets the name of the variable.
@@ -23,13 +23,13 @@ namespace Cle.Parser.SyntaxTree
         public ExpressionSyntax InitialValueExpression { get; }
 
         public VariableDeclarationSyntax(
-            string typeName,
+            TypeSyntax type,
             string name,
             ExpressionSyntax initialValue,
             TextPosition position)
             : base(position)
         {
-            TypeName = typeName;
+            Type = type;
             Name = name;
             InitialValueExpression = initialValue;
         }

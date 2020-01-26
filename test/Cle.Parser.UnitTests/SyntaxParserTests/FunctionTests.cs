@@ -20,7 +20,7 @@ private void Function()
             var function = syntaxTree.Functions[0];
             Assert.That(function.Visibility, Is.EqualTo(Visibility.Private));
             Assert.That(function.Name, Is.EqualTo("Function"));
-            Assert.That(function.ReturnTypeName, Is.EqualTo("void"));
+            Assert.That(function.ReturnType, Is.EqualTo("void"));
             Assert.That(function.Parameters, Is.Empty);
 
             Assert.That(function.Block, Is.Not.Null);
@@ -43,7 +43,7 @@ public int32 Function2()
             var function = syntaxTree.Functions[0];
             Assert.That(function.Visibility, Is.EqualTo(Visibility.Public));
             Assert.That(function.Name, Is.EqualTo("Function2"));
-            Assert.That(function.ReturnTypeName, Is.EqualTo("int32"));
+            Assert.That(function.ReturnType, Is.EqualTo("int32"));
         }
 
         [Test]
@@ -60,7 +60,7 @@ internal Other::Namespace::Type _fun()
             var function = syntaxTree.Functions[0];
             Assert.That(function.Visibility, Is.EqualTo(Visibility.Internal));
             Assert.That(function.Name, Is.EqualTo("_fun"));
-            Assert.That(function.ReturnTypeName, Is.EqualTo("Other::Namespace::Type"));
+            Assert.That(function.ReturnType, Is.EqualTo("Other::Namespace::Type"));
         }
 
         [Test]
@@ -77,10 +77,10 @@ private int32 Function(int32 a, Custom::Type _second_param)
             var function = syntaxTree.Functions[0];
             Assert.That(function.Parameters, Has.Exactly(2).Items);
             Assert.That(function.Parameters[0].Name, Is.EqualTo("a"));
-            Assert.That(function.Parameters[0].TypeName, Is.EqualTo("int32"));
+            Assert.That(function.Parameters[0].Type, Is.EqualTo("int32"));
             Assert.That(function.Parameters[0].Position.ByteInLine, Is.EqualTo(23));
             Assert.That(function.Parameters[1].Name, Is.EqualTo("_second_param"));
-            Assert.That(function.Parameters[1].TypeName, Is.EqualTo("Custom::Type"));
+            Assert.That(function.Parameters[1].Type, Is.EqualTo("Custom::Type"));
             Assert.That(function.Parameters[1].Position.ByteInLine, Is.EqualTo(32));
         }
 
@@ -102,14 +102,14 @@ internal int32 Integer()
             var first = syntaxTree.Functions[0];
             Assert.That(first.Visibility, Is.EqualTo(Visibility.Internal));
             Assert.That(first.Name, Is.EqualTo("Integer"));
-            Assert.That(first.ReturnTypeName, Is.EqualTo("int32"));
+            Assert.That(first.ReturnType, Is.EqualTo("int32"));
             Assert.That(first.Position.Line, Is.EqualTo(3));
             Assert.That(first.Position.ByteInLine, Is.EqualTo(0));
 
             var second = syntaxTree.Functions[1];
             Assert.That(second.Visibility, Is.EqualTo(Visibility.Public));
             Assert.That(second.Name, Is.EqualTo("Boolean"));
-            Assert.That(second.ReturnTypeName, Is.EqualTo("bool"));
+            Assert.That(second.ReturnType, Is.EqualTo("bool"));
             Assert.That(second.Position.Line, Is.EqualTo(7));
             Assert.That(second.Position.ByteInLine, Is.EqualTo(1));
         }
@@ -125,7 +125,7 @@ public int32 Imported();";
 
             Assert.That(syntaxTree.Functions[0].Visibility, Is.EqualTo(Visibility.Public));
             Assert.That(syntaxTree.Functions[0].Name, Is.EqualTo("Imported"));
-            Assert.That(syntaxTree.Functions[0].ReturnTypeName, Is.EqualTo("int32"));
+            Assert.That(syntaxTree.Functions[0].ReturnType, Is.EqualTo("int32"));
             Assert.That(syntaxTree.Functions[0].Block, Is.Null);
         }
 

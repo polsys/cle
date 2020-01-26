@@ -10,7 +10,7 @@ namespace Cle.Parser.SyntaxTree
         /// <summary>
         /// Gets the declared type of the parameter.
         /// </summary>
-        public string TypeName { get; }
+        public TypeSyntax Type { get; }
 
         /// <summary>
         /// Gets the name of the parameter.
@@ -18,12 +18,12 @@ namespace Cle.Parser.SyntaxTree
         public string Name { get; }
 
         public ParameterDeclarationSyntax(
-            string typeName,
+            TypeSyntax type,
             string name,
             TextPosition position)
             : base(position)
         {
-            TypeName = typeName;
+            Type = type;
             Name = name;
         }
     }

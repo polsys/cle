@@ -21,9 +21,8 @@ namespace Cle.Parser.SyntaxTree
 
         /// <summary>
         /// Gets the declared return type of this function.
-        /// The type name may be full or simple and the type might not exist.
         /// </summary>
-        public string ReturnTypeName { get; }
+        public TypeSyntax ReturnType { get; }
 
         /// <summary>
         /// Gets the parameter list of this function.
@@ -44,7 +43,7 @@ namespace Cle.Parser.SyntaxTree
 
         public FunctionSyntax(
             string name,
-            string returnType,
+            TypeSyntax returnType,
             Visibility visibility,
             ImmutableList<ParameterDeclarationSyntax> parameters,
             ImmutableList<AttributeSyntax> attributes,
@@ -53,7 +52,7 @@ namespace Cle.Parser.SyntaxTree
             : base(position)
         {
             Name = name;
-            ReturnTypeName = returnType;
+            ReturnType = returnType;
             Visibility = visibility;
             Parameters = parameters;
             Attributes = attributes;

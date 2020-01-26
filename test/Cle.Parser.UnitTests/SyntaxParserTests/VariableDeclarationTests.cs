@@ -21,7 +21,7 @@ private void Function()
 
             var declaration = (VariableDeclarationSyntax)block.Statements[0];
             Assert.That(declaration.Name, Is.EqualTo("answer"));
-            Assert.That(declaration.TypeName, Is.EqualTo("int32"));
+            Assert.That(declaration.Type, Is.EqualTo("int32"));
             Assert.That(declaration.InitialValueExpression, Is.InstanceOf<IntegerLiteralSyntax>());
         }
 
@@ -40,7 +40,7 @@ private void Function()
 
             var declaration = (VariableDeclarationSyntax)block.Statements[0];
             Assert.That(declaration.Name, Is.EqualTo("answer"));
-            Assert.That(declaration.TypeName, Is.EqualTo("int32"));
+            Assert.That(declaration.Type, Is.EqualTo("int32"));
             Assert.That(declaration.InitialValueExpression, Is.InstanceOf<BinaryExpressionSyntax>());
         }
 
@@ -59,7 +59,7 @@ private void Function()
 
             var declaration = (VariableDeclarationSyntax)block.Statements[0];
             Assert.That(declaration.Name, Is.EqualTo("_is_42_THE_answer"));
-            Assert.That(declaration.TypeName, Is.EqualTo("bool"));
+            Assert.That(declaration.Type, Is.EqualTo("bool"));
             Assert.That(declaration.InitialValueExpression, Is.InstanceOf<BooleanLiteralSyntax>());
         }
 
@@ -79,7 +79,7 @@ private void Function()
 
             var declaration = (VariableDeclarationSyntax)block.Statements[0];
             Assert.That(declaration.Name, Is.EqualTo("variable"));
-            Assert.That(declaration.TypeName, Is.EqualTo("UserDefined::TypeName"));
+            Assert.That(declaration.Type, Is.EqualTo("UserDefined::TypeName"));
             Assert.That(declaration.InitialValueExpression, Is.InstanceOf<BooleanLiteralSyntax>());
         }
 

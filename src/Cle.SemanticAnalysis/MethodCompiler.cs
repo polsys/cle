@@ -381,7 +381,7 @@ namespace Cle.SemanticAnalysis
             var localCount = _methodInProgress.Values.Count;
 
             // Resolve the type and verify that it is not void
-            if (!TypeResolver.TryResolve(declaration.TypeName, _diagnostics, declaration.Position, out var type))
+            if (!TypeResolver.TryResolve(declaration.Type, _diagnostics, declaration.Position, out var type))
             {
                 return false;
             }

@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using Cle.Common;
 using Cle.Common.TypeSystem;
+using Cle.Parser.SyntaxTree;
 
 namespace Cle.SemanticAnalysis
 {
@@ -12,15 +13,15 @@ namespace Cle.SemanticAnalysis
         /// <summary>
         /// Tries to resolve the given type name.
         /// </summary>
-        /// <param name="typeName">The simple or full type name.</param>
+        /// <param name="type">The simple or full type name.</param>
         /// <param name="diagnostics">A diagnostics sink for resolution errors.</param>
         /// <param name="position">The source position of the type name, used for diagnostics.</param>
         /// <param name="resolvedType">If this method returns true, the resolved type.</param>
-        public static bool TryResolve(string typeName, IDiagnosticSink diagnostics, TextPosition position, 
+        public static bool TryResolve(TypeSyntax type, IDiagnosticSink diagnostics, TextPosition position, 
             [NotNullWhen(true)] out TypeDefinition? resolvedType)
         {
             // TODO: Proper type resolution with a declaration provider
-            switch (typeName)
+            switch (((TypeNameSyntax)type).TypeName)
             {
                 case "bool":
                     resolvedType = SimpleType.Bool;
@@ -32,7 +33,7 @@ namespace Cle.SemanticAnalysis
                     resolvedType = SimpleType.Void;
                     break;
                 default:
-                    diagnostics.Add(DiagnosticCode.TypeNotFound, position, typeName);
+                    diagnostics.Add(DiagnosticCode.TypeNotFound, position, type.ToString());
                     resolvedType = null;
                     return false;
             }
