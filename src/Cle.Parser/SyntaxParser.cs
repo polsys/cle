@@ -110,13 +110,8 @@ namespace Cle.Parser
                     // TODO: Class definitions
 
                     // Parse the function definition: type
-                    if (!ExpectIdentifier(DiagnosticCode.ExpectedType, out var typeName))
+                    if (!TryParseType(DiagnosticCode.ExpectedType, out var returnType))
                     {
-                        return null;
-                    }
-                    if (!NameParsing.IsValidFullName(typeName))
-                    {
-                        _diagnosticSink.Add(DiagnosticCode.InvalidTypeName, _lexer.LastPosition, typeName);
                         return null; // TODO: Recovery
                     }
 
@@ -155,7 +150,7 @@ namespace Cle.Parser
                     }
 
                     // Add the parsed function to the syntax tree
-                    functionListBuilder.Add(new FunctionSyntax(functionName, typeName, visibility, 
+                    functionListBuilder.Add(new FunctionSyntax(functionName, returnType, visibility, 
                         parameters, attributes, methodBody, itemPosition));
                 }
                 else
@@ -183,12 +178,9 @@ namespace Cle.Parser
 
             // Read the parameter list, if one is given
             var parameterExpressions = ImmutableList<ExpressionSyntax>.Empty;
-            if (_lexer.PeekTokenType() == TokenType.OpenParen)
+            if (_lexer.PeekTokenType() == TokenType.OpenParen && !TryParseParameterList(out parameterExpressions))
             {
-                if (!TryParseParameterList(out parameterExpressions))
-                {
-                    return false;
-                }
+                return false;
             }
 
             // Assert that each parameter is a literal.
@@ -261,13 +253,8 @@ namespace Cle.Parser
                     var paramPosition = _lexer.Position;
 
                     // Read the type name
-                    if (!ExpectIdentifier(DiagnosticCode.ExpectedParameterDeclaration, out var typeName))
+                    if (!TryParseType(DiagnosticCode.ExpectedParameterDeclaration, out var paramType))
                     {
-                        return false;
-                    }
-                    if (!NameParsing.IsValidFullName(typeName))
-                    {
-                        _diagnosticSink.Add(DiagnosticCode.InvalidTypeName, _lexer.LastPosition, typeName);
                         return false;
                     }
 
@@ -283,7 +270,7 @@ namespace Cle.Parser
                     }
 
                     // Add it to the list
-                    parameters = parameters.Add(new ParameterDeclarationSyntax(typeName, paramName, paramPosition));
+                    parameters = parameters.Add(new ParameterDeclarationSyntax(paramType, paramName, paramPosition));
 
                     // If the next token is a comma, there is another parameter to parse
                     if (_lexer.PeekTokenType() == TokenType.Comma)
@@ -305,6 +292,24 @@ namespace Cle.Parser
             return true;
         }
         
+        private bool TryParseType(DiagnosticCode noIdentifierError, [NotNullWhen(true)] out TypeSyntax? type)
+        {
+            type = null;
+
+            if (!ExpectIdentifier(noIdentifierError, out var typeName))
+            {
+                return false;
+            }
+            if (!NameParsing.IsValidFullName(typeName))
+            {
+                _diagnosticSink.Add(DiagnosticCode.InvalidTypeName, _lexer.LastPosition, typeName);
+                return false;
+            }
+
+            type = new TypeNameSyntax(typeName, _lexer.LastPosition);
+            return true;
+        }
+
         private bool TryParseBlock([NotNullWhen(true)] out BlockSyntax? block)
         {
             block = null;
@@ -468,12 +473,9 @@ namespace Cle.Parser
             // In case of the former, the keyword is immediately followed by a semicolon.
             // In case of the latter, parse the expression.
             ExpressionSyntax? expression = null;
-            if (_lexer.PeekTokenType() != TokenType.Semicolon)
+            if (_lexer.PeekTokenType() != TokenType.Semicolon && !TryParseExpression(out expression))
             {
-                if (!TryParseExpression(out expression))
-                {
-                    return false;
-                }
+                return false;
             }
 
             // Eat the semicolon
@@ -573,7 +575,8 @@ namespace Cle.Parser
                     Debug.Assert(initialValue != null);
 
                     // The statement is valid, just check for the semicolon before returning
-                    statement = new VariableDeclarationSyntax(firstIdentifier, variableName, initialValue, startPosition);
+                    var type = new TypeNameSyntax(firstIdentifier, startPosition);
+                    statement = new VariableDeclarationSyntax(type, variableName, initialValue, startPosition);
                     break;
 
                 case TokenType.Equals:
@@ -680,6 +683,7 @@ namespace Cle.Parser
                 Debug.Assert(right != null);
 
                 // Update the result
+                Debug.Assert(currentSyntax != null);
                 currentSyntax = new BinaryExpressionSyntax(operation, currentSyntax, right, operatorPosition);
                 return true;
             }
@@ -745,6 +749,7 @@ namespace Cle.Parser
                 Debug.Assert(right != null);
 
                 // Update the result
+                Debug.Assert(currentSyntax != null);
                 currentSyntax = new BinaryExpressionSyntax(operation, currentSyntax, right, operatorPosition);
                 return true;
             }
@@ -799,6 +804,7 @@ namespace Cle.Parser
                 Debug.Assert(right != null);
 
                 // Update the result
+                Debug.Assert(currentSyntax != null);
                 currentSyntax = new BinaryExpressionSyntax(operation, currentSyntax, right, operatorPosition);
                 return true;
             }
@@ -852,6 +858,7 @@ namespace Cle.Parser
                 Debug.Assert(right != null);
 
                 // Update the result
+                Debug.Assert(currentSyntax != null);
                 currentSyntax = new BinaryExpressionSyntax(operation, currentSyntax, right, operatorPosition);
                 return true;
             }
@@ -908,6 +915,7 @@ namespace Cle.Parser
                 Debug.Assert(right != null);
 
                 // Update the result
+                Debug.Assert(currentSyntax != null);
                 currentSyntax = new BinaryExpressionSyntax(operation, currentSyntax, right, operatorPosition);
                 return true;
             }

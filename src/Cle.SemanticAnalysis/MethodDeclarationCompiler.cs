@@ -32,7 +32,8 @@ namespace Cle.SemanticAnalysis
             IDiagnosticSink diagnosticSink)
         {
             // Resolve the return type
-            if (!TypeResolver.TryResolve(syntax.ReturnTypeName, diagnosticSink, syntax.Position, out var returnType))
+            if (!TypeResolver.TryResolve(syntax.ReturnType, diagnosticSink, syntax.ReturnType.Position,
+                out var returnType))
             {
                 return null;
             }
@@ -43,7 +44,7 @@ namespace Cle.SemanticAnalysis
             var parameterTypes = ImmutableList<TypeDefinition>.Empty;
             foreach (var param in syntax.Parameters)
             {
-                if (!TypeResolver.TryResolve(param.TypeName, diagnosticSink, param.Position, out var paramType))
+                if (!TypeResolver.TryResolve(param.Type, diagnosticSink, param.Position, out var paramType))
                 {
                     return null;
                 }

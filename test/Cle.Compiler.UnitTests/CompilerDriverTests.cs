@@ -50,7 +50,7 @@ public NonexistentType Main() {}";
                 Assert.That(result.Diagnostics[0].Code, Is.EqualTo(DiagnosticCode.TypeNotFound));
                 Assert.That(result.Diagnostics[0].Actual, Is.EqualTo("NonexistentType"));
                 Assert.That(result.Diagnostics[0].Position.Line, Is.EqualTo(3));
-                Assert.That(result.Diagnostics[0].Position.ByteInLine, Is.EqualTo(0));
+                Assert.That(result.Diagnostics[0].Position.ByteInLine, Is.EqualTo(7));
                 Assert.That(result.Diagnostics[0].Module, Is.EqualTo("."));
                 Assert.That(result.Diagnostics[0].Filename, Is.EqualTo("main.cle"));
             }

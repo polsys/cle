@@ -14,9 +14,7 @@ namespace Cle.SemanticAnalysis.UnitTests
         public void Compile_parameterless_bool_method_succeeds()
         {
             var position = new TextPosition(13, 3, 4);
-            var syntax = new FunctionSyntax("MethodName", "bool",
-                Visibility.Public, ImmutableList<ParameterDeclarationSyntax>.Empty, ImmutableList<AttributeSyntax>.Empty,
-                new BlockSyntax(ImmutableList<StatementSyntax>.Empty, default), position);
+            var syntax = MakeParameterlessMethod(Visibility.Public, "bool", position);
             var diagnostics = new TestingDiagnosticSink();
             var declarationProvider = new TestingSingleFileDeclarationProvider();
 
@@ -37,9 +35,7 @@ namespace Cle.SemanticAnalysis.UnitTests
         public void Compile_parameterless_int32_method_succeeds()
         {
             var position = new TextPosition(280, 14, 8);
-            var syntax = new FunctionSyntax("MethodName", "int32",
-                Visibility.Private, ImmutableList<ParameterDeclarationSyntax>.Empty, ImmutableList<AttributeSyntax>.Empty,
-                new BlockSyntax(ImmutableList<StatementSyntax>.Empty, default), position);
+            var syntax = MakeParameterlessMethod(Visibility.Private, "int32", position);
             var diagnostics = new TestingDiagnosticSink();
             var declarationProvider = new TestingSingleFileDeclarationProvider();
 
@@ -59,9 +55,11 @@ namespace Cle.SemanticAnalysis.UnitTests
         [Test]
         public void Compile_parameterless_method_with_unknown_type_fails()
         {
-            var syntax = new FunctionSyntax("MethodName", "UltimateBool", 
-                Visibility.Public, ImmutableList<ParameterDeclarationSyntax>.Empty, ImmutableList<AttributeSyntax>.Empty,
-                new BlockSyntax(ImmutableList<StatementSyntax>.Empty, default), new TextPosition(3, 1, 3));
+            var typePosition = new TextPosition(3, 1, 3);
+            var syntax = new FunctionSyntax("MethodName", new TypeNameSyntax("UltimateBool", typePosition),
+                   Visibility.Public, ImmutableList<ParameterDeclarationSyntax>.Empty,
+                   ImmutableList<AttributeSyntax>.Empty,
+                   new BlockSyntax(ImmutableList<StatementSyntax>.Empty, default), default);
             var diagnostics = new TestingDiagnosticSink();
             var declarationProvider = new TestingSingleFileDeclarationProvider();
 
@@ -75,10 +73,10 @@ namespace Cle.SemanticAnalysis.UnitTests
         public void Compile_method_with_parameters_succeeds()
         {
             var parameters = ImmutableList<ParameterDeclarationSyntax>.Empty
-                .Add(new ParameterDeclarationSyntax("int32", "intParam", default))
-                .Add(new ParameterDeclarationSyntax("bool", "boolParam", default));
+                .Add(MakeParameter("int32", "intParam", default))
+                .Add(MakeParameter("bool", "boolParam", default));
 
-            var syntax = new FunctionSyntax("MethodName", "int32",
+            var syntax = new FunctionSyntax("MethodName", MakeType("int32"),
                 Visibility.Private, parameters, ImmutableList<AttributeSyntax>.Empty,
                 new BlockSyntax(ImmutableList<StatementSyntax>.Empty, default), default);
             var diagnostics = new TestingDiagnosticSink();
@@ -98,9 +96,9 @@ namespace Cle.SemanticAnalysis.UnitTests
         {
             var position = new TextPosition(140, 13, 4);
             var parameters = ImmutableList<ParameterDeclarationSyntax>.Empty
-                .Add(new ParameterDeclarationSyntax("NonExistentType", "param", position));
+                .Add(MakeParameter("NonExistentType", "param", position));
 
-            var syntax = new FunctionSyntax("MethodName", "int32",
+            var syntax = new FunctionSyntax("MethodName", MakeType("int32"),
                 Visibility.Private, parameters, ImmutableList<AttributeSyntax>.Empty,
                 new BlockSyntax(ImmutableList<StatementSyntax>.Empty, default), default);
             var diagnostics = new TestingDiagnosticSink();
@@ -118,9 +116,9 @@ namespace Cle.SemanticAnalysis.UnitTests
         {
             var position = new TextPosition(140, 13, 4);
             var parameters = ImmutableList<ParameterDeclarationSyntax>.Empty
-                .Add(new ParameterDeclarationSyntax("void", "param", position));
+                .Add(MakeParameter("void", "param", position));
 
-            var syntax = new FunctionSyntax("MethodName", "int32",
+            var syntax = new FunctionSyntax("MethodName", MakeType("int32"),
                 Visibility.Private, parameters, ImmutableList<AttributeSyntax>.Empty,
                 new BlockSyntax(ImmutableList<StatementSyntax>.Empty, default), default);
             var diagnostics = new TestingDiagnosticSink();
@@ -139,7 +137,7 @@ namespace Cle.SemanticAnalysis.UnitTests
             var position = new TextPosition(140, 13, 4);
             var attributeParams = ImmutableList<LiteralSyntax>.Empty;
             var attribute = new AttributeSyntax("TotallyNonexistentAttribute", attributeParams, position);
-            var syntax = new FunctionSyntax("MethodName", "bool",
+            var syntax = new FunctionSyntax("MethodName", MakeType("bool"),
                 Visibility.Public, ImmutableList<ParameterDeclarationSyntax>.Empty,
                 ImmutableList<AttributeSyntax>.Empty.Add(attribute),
                 new BlockSyntax(ImmutableList<StatementSyntax>.Empty, default), default);
@@ -162,7 +160,7 @@ namespace Cle.SemanticAnalysis.UnitTests
             var attribute1 = new AttributeSyntax("TotallyNonexistentAttribute", attributeParams, position1);
             var attribute2 = new AttributeSyntax("AnotherNonexistentAttribute", attributeParams, position2);
 
-            var syntax = new FunctionSyntax("MethodName", "bool",
+            var syntax = new FunctionSyntax("MethodName", MakeType("bool"),
                 Visibility.Public, ImmutableList<ParameterDeclarationSyntax>.Empty,
                 ImmutableList<AttributeSyntax>.Empty.Add(attribute1).Add(attribute2),
                 new BlockSyntax(ImmutableList<StatementSyntax>.Empty, default), default);
@@ -210,7 +208,7 @@ namespace Cle.SemanticAnalysis.UnitTests
         [Test]
         public void Compile_entry_point_must_not_have_parameters()
         {
-            var parameter = new ParameterDeclarationSyntax("int32", "param", default);
+            var parameter = MakeParameter("int32", "param", default);
             var (result, diagnostics) = CompileEntryPointDeclaration(Visibility.Public, "int32", parameter);
 
             Assert.That(result, Is.Null);
@@ -227,7 +225,7 @@ namespace Cle.SemanticAnalysis.UnitTests
             }
 
             var entryPointAttribute = MakeEntryPointAttribute();
-            var syntax = new FunctionSyntax("Main", returnType,
+            var syntax = new FunctionSyntax("Main", MakeType(returnType),
                 visibility, paramList, ImmutableList<AttributeSyntax>.Empty.Add(entryPointAttribute),
                 new BlockSyntax(ImmutableList<StatementSyntax>.Empty, default), new TextPosition(3, 1, 3));
 
@@ -238,16 +236,11 @@ namespace Cle.SemanticAnalysis.UnitTests
             return (result, diagnostics);
         }
 
-        private static AttributeSyntax MakeEntryPointAttribute()
-        {
-            return new AttributeSyntax("EntryPoint", ImmutableList<LiteralSyntax>.Empty, default);
-        }
-
         [Test]
         public void Compile_imported_method()
         {
             var position = new TextPosition(17, 2, 3);
-            var syntax = new FunctionSyntax("MethodName", "bool",
+            var syntax = new FunctionSyntax("MethodName", MakeType("bool"),
                 Visibility.Public, ImmutableList<ParameterDeclarationSyntax>.Empty,
                 ImmutableList<AttributeSyntax>.Empty.Add(MakeImportAttribute("Method", "Library")),
                 null, position);
@@ -272,7 +265,7 @@ namespace Cle.SemanticAnalysis.UnitTests
                 .Add(new StringLiteralSyntax(Encoding.UTF8.GetBytes(name), new TextPosition(0, 1, 2)))
                 .Add(new StringLiteralSyntax(Encoding.UTF8.GetBytes("lib"), new TextPosition(0, 3, 4)));
 
-            var syntax = new FunctionSyntax("MethodName", "bool",
+            var syntax = new FunctionSyntax("MethodName", MakeType("bool"),
                 Visibility.Public, ImmutableList<ParameterDeclarationSyntax>.Empty,
                 ImmutableList<AttributeSyntax>.Empty.Add(new AttributeSyntax("Import", paramList, default)),
                 null, default);
@@ -294,7 +287,7 @@ namespace Cle.SemanticAnalysis.UnitTests
                 .Add(new StringLiteralSyntax(Encoding.UTF8.GetBytes("fun"), new TextPosition(0, 1, 2)))
                 .Add(new StringLiteralSyntax(Encoding.UTF8.GetBytes(name), new TextPosition(0, 3, 4)));
 
-            var syntax = new FunctionSyntax("MethodName", "bool",
+            var syntax = new FunctionSyntax("MethodName", MakeType("bool"),
                 Visibility.Public, ImmutableList<ParameterDeclarationSyntax>.Empty,
                 ImmutableList<AttributeSyntax>.Empty.Add(new AttributeSyntax("Import", paramList, default)),
                 null, default);
@@ -312,7 +305,7 @@ namespace Cle.SemanticAnalysis.UnitTests
         public void Compile_import_attribute_with_no_parameters()
         {
             var attributePosition = new TextPosition(1024, 58, 3);
-            var syntax = new FunctionSyntax("MethodName", "bool",
+            var syntax = new FunctionSyntax("MethodName", MakeType("bool"),
                 Visibility.Public, ImmutableList<ParameterDeclarationSyntax>.Empty,
                 ImmutableList<AttributeSyntax>.Empty.Add(
                     new AttributeSyntax("Import", ImmutableList<LiteralSyntax>.Empty, attributePosition)),
@@ -335,7 +328,7 @@ namespace Cle.SemanticAnalysis.UnitTests
                 .Add(new IntegerLiteralSyntax(14, new TextPosition(0, 1, 2)))
                 .Add(new BooleanLiteralSyntax(true, new TextPosition(0, 3, 4)));
 
-            var syntax = new FunctionSyntax("MethodName", "bool",
+            var syntax = new FunctionSyntax("MethodName", MakeType("bool"),
                 Visibility.Public, ImmutableList<ParameterDeclarationSyntax>.Empty,
                 ImmutableList<AttributeSyntax>.Empty.Add(new AttributeSyntax("Import", paramList, default)),
                 null, default);
@@ -353,7 +346,7 @@ namespace Cle.SemanticAnalysis.UnitTests
         public void Compile_import_and_entry_point_attributes_may_not_coexist()
         {
             var position = new TextPosition(17, 2, 3);
-            var syntax = new FunctionSyntax("MethodName", "int32",
+            var syntax = new FunctionSyntax("MethodName", MakeType("int32"),
                 Visibility.Public, ImmutableList<ParameterDeclarationSyntax>.Empty,
                 ImmutableList<AttributeSyntax>.Empty
                     .Add(MakeImportAttribute("Method", "Library"))
@@ -368,6 +361,11 @@ namespace Cle.SemanticAnalysis.UnitTests
             diagnostics.AssertDiagnosticAt(DiagnosticCode.EntryPointAndImportNotCompatible, position);
         }
 
+        private static AttributeSyntax MakeEntryPointAttribute()
+        {
+            return new AttributeSyntax("EntryPoint", ImmutableList<LiteralSyntax>.Empty, default);
+        }
+
         private static AttributeSyntax MakeImportAttribute(string name, string library)
         {
             var nameBytes = Encoding.UTF8.GetBytes(name);
@@ -379,5 +377,22 @@ namespace Cle.SemanticAnalysis.UnitTests
 
             return new AttributeSyntax("Import", paramList, default);
         }
+
+        private static FunctionSyntax MakeParameterlessMethod(Visibility visibility,
+            string returnType, TextPosition position)
+        {
+            return new FunctionSyntax("MethodName",
+                new TypeNameSyntax(returnType, default),
+                visibility,
+                ImmutableList<ParameterDeclarationSyntax>.Empty,
+                ImmutableList<AttributeSyntax>.Empty,
+                new BlockSyntax(ImmutableList<StatementSyntax>.Empty, default),
+                position);
+        }
+
+        private static ParameterDeclarationSyntax MakeParameter(string type, string name,
+            TextPosition position) => new ParameterDeclarationSyntax(MakeType(type), name, position);
+
+        private static TypeNameSyntax MakeType(string typeName) => new TypeNameSyntax(typeName, default);
     }
 }
