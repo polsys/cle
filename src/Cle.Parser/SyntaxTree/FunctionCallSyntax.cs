@@ -11,14 +11,14 @@ namespace Cle.Parser.SyntaxTree
         /// <summary>
         /// Gets the name of the called function.
         /// </summary>
-        public string Function { get; }
+        public IdentifierSyntax Function { get; }
 
         /// <summary>
         /// Gets the parameters in order.
         /// </summary>
         public ImmutableList<ExpressionSyntax> Parameters { get; }
 
-        public FunctionCallSyntax(string function,
+        public FunctionCallSyntax(IdentifierSyntax function,
             ImmutableList<ExpressionSyntax> parameters, TextPosition position)
             : base(position)
         {

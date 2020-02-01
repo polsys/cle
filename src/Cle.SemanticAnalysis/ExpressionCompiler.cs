@@ -101,7 +101,7 @@ namespace Cle.SemanticAnalysis
                 value = Temporary.FromConstant(SimpleType.Bool, ConstantValue.Bool(boolean.Value));
                 return true;
             }
-            else if (syntax is NamedValueSyntax named)
+            else if (syntax is IdentifierSyntax named)
             {
                 if (!nameResolver.TryResolveVariable(named.Name, out var valueNumber))
                 {
@@ -148,10 +148,10 @@ namespace Cle.SemanticAnalysis
             value = default;
 
             // Get the callee
-            var matchingMethods = nameResolver.ResolveMethod(call.Function);
+            var matchingMethods = nameResolver.ResolveMethod(call.Function.Name);
             if (matchingMethods.Count == 0)
             {
-                diagnostics.Add(DiagnosticCode.MethodNotFound, call.Position, call.Function);
+                diagnostics.Add(DiagnosticCode.MethodNotFound, call.Function.Position, call.Function.Name);
                 return false;
             }
             else if (matchingMethods.Count > 1)

@@ -536,14 +536,18 @@ namespace Cle.Parser
             // This method handles
             //   - variable declarations ("int32 name = expression;")
             //   - assignments ("name = expression;")
-            //   - standalone method calls ("name(...);") (TODO)
+            //   - standalone method calls ("name(...);")
             statement = null;
 
             // Read the first identifier
             // TODO: Assignments may target struct fields too
+            // TODO: This may be a more complex beast (e.g. "int32[]" or "a[3]") with multi-stage parsing
             var startPosition = _lexer.Position;
             Debug.Assert(_lexer.PeekTokenType() == TokenType.Identifier);
-            var firstIdentifier = ReadTokenIntoString();
+            if (!TryReadAndValidateIdentifier(out var firstIdentifier, allowReservedTypeNames: true))
+            {
+                return false;
+            }
 
             // Depending on the next token, decide what to do
             switch (_lexer.PeekTokenType())
@@ -551,13 +555,6 @@ namespace Cle.Parser
                 case TokenType.Identifier:
                     // Variable declaration
                     var variableName = ReadTokenIntoString();
-
-                    // Validate the type name
-                    if (!NameParsing.IsValidFullName(firstIdentifier))
-                    {
-                        _diagnosticSink.Add(DiagnosticCode.InvalidTypeName, startPosition, firstIdentifier);
-                        return false;
-                    }
 
                     // Validate the variable name (the latter check disallows 'int32 int32 = 0;')
                     if (!NameParsing.IsValidSimpleName(variableName) || NameParsing.IsReservedTypeName(variableName))
@@ -574,8 +571,8 @@ namespace Cle.Parser
                     }
                     Debug.Assert(initialValue != null);
 
-                    // The statement is valid, just check for the semicolon before returning
-                    var type = new TypeNameSyntax(firstIdentifier, startPosition);
+                    // The first token is not an identifier but a type name instead
+                    var type = new TypeNameSyntax(firstIdentifier.Name, startPosition);
                     statement = new VariableDeclarationSyntax(type, variableName, initialValue, startPosition);
                     break;
 
@@ -968,7 +965,10 @@ namespace Cle.Parser
                 case TokenType.StringLiteral:
                     return TryParseStringLiteral(out expressionSyntax);
                 case TokenType.Identifier:
-                    var identifier = ReadTokenIntoString();
+                    if (!TryReadAndValidateIdentifier(out var identifier, allowReservedTypeNames: false))
+                    {
+                        return false;
+                    }
 
                     // This may be either a function call or a variable reference
                     if (_lexer.PeekTokenType() == TokenType.OpenParen)
@@ -988,16 +988,8 @@ namespace Cle.Parser
                     else
                     {
                         // Variable reference
-                        if (!NameParsing.IsValidFullName(identifier) || NameParsing.IsReservedTypeName(identifier))
-                        {
-                            _diagnosticSink.Add(DiagnosticCode.InvalidVariableName, _lexer.LastPosition, identifier);
-                            return false;
-                        }
-                        else
-                        {
-                            expressionSyntax = new NamedValueSyntax(identifier, _lexer.LastPosition);
-                            return true;
-                        }
+                        expressionSyntax = identifier;
+                        return true;
                     }
                 default:
                     return TryParseNumber(out expressionSyntax);
@@ -1074,19 +1066,13 @@ namespace Cle.Parser
 
         /// <summary>
         /// This function assumes that the function name, passed in <paramref name="functionName"/>,
-        /// has already been read from the lexer, and the next token is known to be "(".
+        /// has already been read and validated, and the next token is known to be "(".
         /// </summary>
-        private bool TryParseFunctionCall(string functionName, [NotNullWhen(true)] out FunctionCallSyntax? callSyntax)
+        private bool TryParseFunctionCall(IdentifierSyntax functionName,
+            [NotNullWhen(true)] out FunctionCallSyntax? callSyntax)
         {
             callSyntax = null;
             var callPosition = _lexer.LastPosition;
-
-            // Validate the function name
-            if (!NameParsing.IsValidFullName(functionName))
-            {
-                _diagnosticSink.Add(DiagnosticCode.InvalidFunctionName, callPosition, functionName);
-                return false;
-            }
 
             // Read the parameter list: this also eats the open paren
             if (!TryParseParameterList(out var parameters))
@@ -1217,6 +1203,22 @@ namespace Cle.Parser
                 identifier = string.Empty;
                 return false;
             }
+        }
+
+        private bool TryReadAndValidateIdentifier([NotNullWhen(true)] out IdentifierSyntax? identifier,
+            bool allowReservedTypeNames)
+        {
+            var token = ReadTokenIntoString();
+            if (!NameParsing.IsValidFullName(token) ||
+                (!allowReservedTypeNames && NameParsing.IsReservedTypeName(token)))
+            {
+                _diagnosticSink.Add(DiagnosticCode.InvalidIdentifier, _lexer.LastPosition, token);
+                identifier = null;
+                return false;
+            }
+
+            identifier = new IdentifierSyntax(token, _lexer.LastPosition);
+            return true;
         }
 
         /// <summary>

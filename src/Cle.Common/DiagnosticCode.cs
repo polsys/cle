@@ -40,6 +40,7 @@
         ExpectedClosingQuote,
         ExpectedInitialValue,
         InvalidVariableName,
+        InvalidIdentifier,
         ExpectedCondition,
         ExpectedBlock,
         ExpectedBlockOrElseIf,

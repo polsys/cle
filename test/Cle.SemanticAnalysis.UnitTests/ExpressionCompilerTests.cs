@@ -99,7 +99,7 @@ namespace Cle.SemanticAnalysis.UnitTests
         [Test]
         public void Variable_reference_returns_local_index_of_variable()
         {
-            var syntax = new NamedValueSyntax("a", default);
+            var syntax = new IdentifierSyntax("a", default);
             var method = new CompiledMethod("Test::Method");
             var builder = new BasicBlockGraphBuilder().GetInitialBlockBuilder();
             var diagnostics = new TestingDiagnosticSink();
@@ -120,7 +120,7 @@ namespace Cle.SemanticAnalysis.UnitTests
         public void Variable_reference_must_have_correct_type()
         {
             var position = new TextPosition(10, 3, 4);
-            var syntax = new NamedValueSyntax("a", position);
+            var syntax = new IdentifierSyntax("a", position);
             var method = new CompiledMethod("Test::Method");
             var builder = new BasicBlockGraphBuilder().GetInitialBlockBuilder();
             var diagnostics = new TestingDiagnosticSink();
@@ -142,7 +142,7 @@ namespace Cle.SemanticAnalysis.UnitTests
         public void Variable_reference_must_refer_to_existent_variable()
         {
             var position = new TextPosition(10, 3, 4);
-            var syntax = new NamedValueSyntax("a", position);
+            var syntax = new IdentifierSyntax("a", position);
             var method = new CompiledMethod("Test::Method");
             var builder = new BasicBlockGraphBuilder().GetInitialBlockBuilder();
             var diagnostics = new TestingDiagnosticSink();
@@ -583,7 +583,7 @@ namespace Cle.SemanticAnalysis.UnitTests
         {
             var position = new TextPosition(10, 3, 4);
             var syntax = new BinaryExpressionSyntax(op,
-                new NamedValueSyntax("a", default), 
+                new IdentifierSyntax("a", default), 
                 new IntegerLiteralSyntax(0, default),
                 position);
             var method = new CompiledMethod("Test::Method");

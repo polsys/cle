@@ -122,7 +122,7 @@ private void Function()
             var syntaxTree = ParseSource(source, out var diagnostics);
 
             Assert.That(syntaxTree, Is.Null);
-            diagnostics.AssertDiagnosticAt(DiagnosticCode.InvalidTypeName, 4, 4).WithActual("_");
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.InvalidIdentifier, 4, 4).WithActual("_");
         }
 
         [Test]

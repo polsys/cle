@@ -84,7 +84,7 @@ namespace Cle.Parser.UnitTests.SyntaxParserTests
             Assert.That(returnValue, Is.True);
             Assert.That(expression, Is.Not.Null);
 
-            var reference = (NamedValueSyntax)expression!;
+            var reference = (IdentifierSyntax)expression!;
             Assert.That(reference.Name, Is.EqualTo(name));
         }
 
@@ -99,7 +99,7 @@ namespace Cle.Parser.UnitTests.SyntaxParserTests
 
             Assert.That(returnValue, Is.False);
             Assert.That(expression, Is.Null);
-            diagnostics.AssertDiagnosticAt(DiagnosticCode.InvalidVariableName, 1, 0).WithActual(name);
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.InvalidIdentifier, 1, 0).WithActual(name);
         }
 
         [TestCase("-123", UnaryOperation.Minus)]
@@ -306,8 +306,8 @@ namespace Cle.Parser.UnitTests.SyntaxParserTests
             var binary = (BinaryExpressionSyntax)expression!;
             Assert.That(binary.Operation, Is.EqualTo(BinaryOperation.Plus));
 
-            Assert.That(binary.Left, Is.InstanceOf<NamedValueSyntax>());
-            Assert.That(((NamedValueSyntax)binary.Left).Name, Is.EqualTo("a"));
+            Assert.That(binary.Left, Is.InstanceOf<IdentifierSyntax>());
+            Assert.That(((IdentifierSyntax)binary.Left).Name, Is.EqualTo("a"));
 
             Assert.That(binary.Right, Is.InstanceOf<IntegerLiteralSyntax>());
             Assert.That(((IntegerLiteralSyntax)binary.Right).Value, Is.EqualTo(1));
@@ -618,14 +618,15 @@ namespace Cle.Parser.UnitTests.SyntaxParserTests
             diagnostics.AssertDiagnosticAt(DiagnosticCode.ExpectedExpression, 1, 7).WithActual(")");
         }
 
-        [Test]
-        public void Called_function_must_have_valid_name()
+        [TestCase("Namespace::123")]
+        [TestCase("int32")]
+        public void Called_function_must_have_valid_name(string testCase)
         {
-            var parser = GetParserInstance("Namespace::123()", out var diagnostics);
+            var parser = GetParserInstance(testCase + "()", out var diagnostics);
 
             Assert.That(parser.TryParseExpression(out var expression), Is.False);
             Assert.That(expression, Is.Null);
-            diagnostics.AssertDiagnosticAt(DiagnosticCode.InvalidFunctionName, 1, 0).WithActual("Namespace::123");
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.InvalidIdentifier, 1, 0).WithActual(testCase);
         }
     }
 }

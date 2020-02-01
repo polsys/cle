@@ -73,6 +73,8 @@ namespace Cle.Frontend
                     return "Expected initial value for variable.";
                 case DiagnosticCode.InvalidVariableName:
                     return $"'{diagnostic.Actual}' is not a valid variable name.";
+                case DiagnosticCode.InvalidIdentifier:
+                    return $"'{diagnostic.Actual}' is not a valid variable or method name.";
                 case DiagnosticCode.ExpectedCondition:
                     return $"Expected condition surrounded by parentheses, read '{diagnostic.Actual}'.";
                 case DiagnosticCode.ExpectedBlock:
