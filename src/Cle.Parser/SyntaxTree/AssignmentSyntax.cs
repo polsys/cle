@@ -8,9 +8,9 @@ namespace Cle.Parser.SyntaxTree
     public sealed class AssignmentSyntax : StatementSyntax
     {
         /// <summary>
-        /// Gets the name of the variable.
+        /// Gets the identifier that is the destination of this assignment.
         /// </summary>
-        public string Variable { get; }
+        public IdentifierSyntax Variable { get; }
 
         /// <summary>
         /// Gets the new value of the variable.
@@ -18,7 +18,7 @@ namespace Cle.Parser.SyntaxTree
         public ExpressionSyntax Value { get; }
 
         public AssignmentSyntax(
-            string variable,
+            IdentifierSyntax variable,
             ExpressionSyntax value,
             TextPosition position)
             : base(position)

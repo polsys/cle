@@ -202,9 +202,9 @@ namespace Cle.SemanticAnalysis
             Debug.Assert(_methodInProgress != null);
 
             // Get the target variable
-            if (!_variableMap.TryGetVariable(assignment.Variable, out var targetIndex))
+            if (!_variableMap.TryGetVariable(assignment.Variable.Name, out var targetIndex))
             {
-                _diagnostics.Add(DiagnosticCode.VariableNotFound, assignment.Position, assignment.Variable);
+                _diagnostics.Add(DiagnosticCode.VariableNotFound, assignment.Variable.Position, assignment.Variable.Name);
                 return false;
             }
             var expectedType = _methodInProgress.Values[targetIndex].Type;
