@@ -14,23 +14,19 @@ namespace Cle.Parser.SyntaxTree
         {
         }
 
-        public override bool Equals(object? obj)
-        {
-            // This is mostly used for simplifying the test code
-            if (obj is string objAsString)
-            {
-                return Equals(objAsString);
-            }
-
-            return Equals(obj as TypeSyntax);
-        }
-
-        public abstract override int GetHashCode();
+        public abstract override bool Equals(object? obj);
 
         public abstract bool Equals(TypeSyntax? other);
 
+        /// <summary>
+        /// For simplifying test code.
+        /// </summary>
         public abstract bool Equals(string? other);
-        
+
+        public abstract override int GetHashCode();
+
+        public abstract override string ToString();
+
         public static bool operator ==(TypeSyntax left, TypeSyntax right)
         {
             return EqualityComparer<TypeSyntax>.Default.Equals(left, right);
