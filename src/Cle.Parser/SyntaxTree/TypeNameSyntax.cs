@@ -20,6 +20,16 @@ namespace Cle.Parser.SyntaxTree
             TypeName = typeName;
         }
 
+        public override bool Equals(object? other)
+        {
+            return other switch
+            {
+                TypeSyntax typeSyntax => Equals(typeSyntax),
+                string typeName => Equals(typeName),
+                _ => false,
+            };
+        }
+
         public override bool Equals(TypeSyntax? other)
         {
             if (other is TypeNameSyntax name)
