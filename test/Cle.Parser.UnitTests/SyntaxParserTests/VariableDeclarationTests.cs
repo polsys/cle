@@ -12,7 +12,7 @@ namespace Cle.Parser.UnitTests.SyntaxParserTests
             const string source = @"namespace Test;
 private void Function()
 {
-    int32 answer = 42;
+    var int32 answer = 42;
 }";
             var block = ParseBlockForSingleFunction(source);
 
@@ -23,6 +23,11 @@ private void Function()
             Assert.That(declaration.Name, Is.EqualTo("answer"));
             Assert.That(declaration.Type, Is.EqualTo("int32"));
             Assert.That(declaration.InitialValueExpression, Is.InstanceOf<IntegerLiteralSyntax>());
+            Assert.That(declaration.Position.Line, Is.EqualTo(4));
+            Assert.That(declaration.Position.ByteInLine, Is.EqualTo(4));
+
+            Assert.That(declaration.Type.Position.ByteInLine, Is.EqualTo(8));
+            Assert.That(declaration.InitialValueExpression.Position.ByteInLine, Is.EqualTo(23));
         }
 
         [Test]
@@ -31,7 +36,7 @@ private void Function()
             const string source = @"namespace Test;
 private void Function()
 {
-    int32 answer = 2 * 21;
+    var int32 answer = 2 * 21;
 }";
             var block = ParseBlockForSingleFunction(source);
 
@@ -50,7 +55,7 @@ private void Function()
             const string source = @"namespace Test;
 private void Function()
 {
-    bool _is_42_THE_answer = true;
+    var bool _is_42_THE_answer = true;
 }";
             var block = ParseBlockForSingleFunction(source);
 
@@ -70,7 +75,7 @@ private void Function()
             const string source = @"namespace Test;
 private void Function()
 {
-    UserDefined::TypeName variable = true;
+    var UserDefined::TypeName variable = true;
 }";
             var block = ParseBlockForSingleFunction(source);
 
@@ -89,12 +94,12 @@ private void Function()
             const string source = @"namespace Test;
 private void Function()
 {
-    int32 value;
+    var int32 value;
 }";
             var syntaxTree = ParseSource(source, out var diagnostics);
 
             Assert.That(syntaxTree, Is.Null);
-            diagnostics.AssertDiagnosticAt(DiagnosticCode.ExpectedInitialValue, 4, 15).WithActual(";");
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.ExpectedInitialValue, 4, 19).WithActual(";");
         }
 
         [Test]
@@ -103,12 +108,12 @@ private void Function()
             const string source = @"namespace Test;
 private void Function()
 {
-    int32 value = ;
+    var int32 value = ;
 }";
             var syntaxTree = ParseSource(source, out var diagnostics);
 
             Assert.That(syntaxTree, Is.Null);
-            diagnostics.AssertDiagnosticAt(DiagnosticCode.ExpectedExpression, 4, 18).WithActual(";");
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.ExpectedExpression, 4, 22).WithActual(";");
         }
 
         [Test]
@@ -117,12 +122,12 @@ private void Function()
             const string source = @"namespace Test;
 private void Function()
 {
-    _ value = 0;
+    var _ value = 0;
 }";
             var syntaxTree = ParseSource(source, out var diagnostics);
 
             Assert.That(syntaxTree, Is.Null);
-            diagnostics.AssertDiagnosticAt(DiagnosticCode.InvalidIdentifier, 4, 4).WithActual("_");
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.InvalidTypeName, 4, 8).WithActual("_");
         }
 
         [Test]
@@ -131,12 +136,12 @@ private void Function()
             const string source = @"namespace Test;
 private void Function()
 {
-    int32 _ = 0;
+    var int32 _ = 0;
 }";
             var syntaxTree = ParseSource(source, out var diagnostics);
 
             Assert.That(syntaxTree, Is.Null);
-            diagnostics.AssertDiagnosticAt(DiagnosticCode.InvalidVariableName, 4, 10).WithActual("_");
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.InvalidVariableName, 4, 14).WithActual("_");
         }
 
         [Test]
@@ -145,7 +150,7 @@ private void Function()
             const string source = @"namespace Test;
 private void Function()
 {
-    int32 __ = 0;
+    var int32 __ = 0;
 }";
             var block = ParseBlockForSingleFunction(source);
             Assert.That(block, Is.Not.Null);
@@ -157,14 +162,26 @@ private void Function()
             const string source = @"namespace Test;
 private void Function()
 {
-    int32 if = 0;
+    var int32 if = 0;
 }";
             var syntaxTree = ParseSource(source, out var diagnostics);
 
-            // This throws a different error as 'if' is not an identifier.
-            // The error should be at 'int32' because that's where the statement should start.
             Assert.That(syntaxTree, Is.Null);
-            diagnostics.AssertDiagnosticAt(DiagnosticCode.ExpectedStatement, 4, 4).WithActual("if");
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.ExpectedIdentifier, 4, 14).WithActual("if");
+        }
+
+        [Test]
+        public void Keyword_is_not_valid_variable_type()
+        {
+            const string source = @"namespace Test;
+private void Function()
+{
+    var if name = 0;
+}";
+            var syntaxTree = ParseSource(source, out var diagnostics);
+
+            Assert.That(syntaxTree, Is.Null);
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.ExpectedType, 4, 8).WithActual("if");
         }
 
         [Test]
@@ -173,12 +190,12 @@ private void Function()
             const string source = @"namespace Test;
 private void Function()
 {
-    int32 int32 = 0;
+    var int32 int32 = 0;
 }";
             var syntaxTree = ParseSource(source, out var diagnostics);
 
             Assert.That(syntaxTree, Is.Null);
-            diagnostics.AssertDiagnosticAt(DiagnosticCode.InvalidVariableName, 4, 10).WithActual("int32");
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.InvalidVariableName, 4, 14).WithActual("int32");
         }
 
         [Test]
@@ -187,12 +204,26 @@ private void Function()
             const string source = @"namespace Test;
 private void Function()
 {
-    int32 Something::or::other = 0;
+    var int32 Something::or::other = 0;
 }";
             var syntaxTree = ParseSource(source, out var diagnostics);
 
             Assert.That(syntaxTree, Is.Null);
-            diagnostics.AssertDiagnosticAt(DiagnosticCode.InvalidVariableName, 4, 10).WithActual("Something::or::other");
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.InvalidVariableName, 4, 14).WithActual("Something::or::other");
+        }
+
+        [Test]
+        public void Sane_error_when_missing_var_keyword()
+        {
+            const string source = @"namespace Test;
+private void Function()
+{
+    type_name missing_var = 42;
+}";
+            var syntaxTree = ParseSource(source, out var diagnostics);
+
+            Assert.That(syntaxTree, Is.Null);
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.ExpectedStatement, 4, 4);
         }
     }
 }

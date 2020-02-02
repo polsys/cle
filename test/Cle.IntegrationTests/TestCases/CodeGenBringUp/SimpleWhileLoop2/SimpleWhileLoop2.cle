@@ -9,8 +9,8 @@ namespace SimpleWhileLoop2;
 [EntryPoint]
 public int32 Main()
 {
-    int32 i = 11; // Must be odd so that 0 is never reached
-    int32 sum = 0;
+    var int32 i = 11; // Must be odd so that 0 is never reached
+    var int32 sum = 0;
     
     while (i > 0)
     {

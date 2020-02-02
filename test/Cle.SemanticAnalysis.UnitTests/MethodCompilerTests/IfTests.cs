@@ -77,7 +77,7 @@ BB_2:
         {
             const string source = @"namespace Test;
 public bool Comparison() {
-    int32 a = 42;
+    var int32 a = 42;
     if (a < 100) {
         return true;
     }
@@ -115,7 +115,7 @@ BB_2:
         {
             const string source = @"namespace Test;
 public int32 TheAnswer() {
-    int32 result = 42;
+    var int32 result = 42;
     if (false) {
         result = 1;
     }
@@ -154,7 +154,7 @@ BB_3:
         {
             const string source = @"namespace Test;
 public int32 ComplexAnswer() {
-    int32 result = 0;
+    var int32 result = 0;
     if (true) {
         result = 42;
     } else {
@@ -341,7 +341,7 @@ BB_4:
         {
             const string source = @"namespace Test;
 public int32 TheAnswer() {
-    int32 result = 0;
+    var int32 result = 0;
     if (true) {
         result = 42;
     } else if (false) {

@@ -9,12 +9,12 @@ namespace SwapAndReturnSmaller;
 public int32 Main()
 {
     // The loop is NOT executed - the opposite is tested by SwapAndReturnSmaller1
-    int32 a = 15;
-    int32 b = 30;
+    var int32 a = 15;
+    var int32 b = 30;
     
     while (a > b)
     {
-        int32 temp = a;
+        var int32 temp = a;
         a = b;
         b = temp;
     }

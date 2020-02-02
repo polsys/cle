@@ -20,7 +20,7 @@ Local variables defined in a block are only accessible in that block and any nes
 ## Variable definition
 A variable definition is of form
 ```
-type_name variable_name = initial_value ;
+var type_name variable_name = initial_value ;
 ```
 
 The type name is a language-defined, simple or full name that must be visible in the current file.
@@ -34,9 +34,9 @@ When used in an expression, the variable produces a value of its defined type.
 ```
 {
     {
-        int32 v = 1;
+        var int32 v = 1;
     }
-    int32 v = 2;
+    var int32 v = 2;
 }
 ```
 However, in a future language version the declaration of `v` in the outer block may be extended to span the whole block (without being accessible before the definition).

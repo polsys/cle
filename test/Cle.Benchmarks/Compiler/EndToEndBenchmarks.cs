@@ -36,7 +36,7 @@ public int32 Main()
 
 private int32 Collatz(int32 num)
 {
-    int32 i = 0;
+    var int32 i = 0;
     while (num != 1)
     {
         i = i + 1;

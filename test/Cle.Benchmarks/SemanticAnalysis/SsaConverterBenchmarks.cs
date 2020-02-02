@@ -38,7 +38,7 @@ namespace Bench;
 
 private int32 Max(int32 a, int32 b)
 {
-    int32 result = a;
+    var int32 result = a;
     if (a < b)
     {
         result = b;
@@ -52,7 +52,7 @@ namespace Bench;
 private int32 CollatzOnCollatz(int32 n)
 {
     // How many steps until the sequence reaches 1?
-    int32 steps = 0;
+    var int32 steps = 0;
     while (n != 1)
     {
         if (n % 2 == 0)

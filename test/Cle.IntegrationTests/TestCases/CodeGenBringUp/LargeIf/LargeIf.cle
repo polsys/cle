@@ -13,7 +13,7 @@ public int32 Main()
 
 public int32 Pow2(int32 n)
 {
-    int32 result = 1;
+    var int32 result = 1;
     
     if (n == 1) {
         result = 2;

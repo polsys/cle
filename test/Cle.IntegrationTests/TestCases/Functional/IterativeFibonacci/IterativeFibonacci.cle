@@ -13,13 +13,13 @@ public int32 Main()
 
 private int32 Fib(int32 n)
 {
-    int32 a = 0;
-    int32 b = 1;
-    int32 i = 0;
+    var int32 a = 0;
+    var int32 b = 1;
+    var int32 i = 0;
     
     while (i < n)
     {
-        int32 temp = a + b;
+        var int32 temp = a + b;
         a = b;
         b = temp;
         i = i + 1;

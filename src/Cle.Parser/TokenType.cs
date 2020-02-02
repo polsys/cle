@@ -23,6 +23,7 @@
         Public,
         Return,
         True,
+        Var,
         While,
 
         // Symbols

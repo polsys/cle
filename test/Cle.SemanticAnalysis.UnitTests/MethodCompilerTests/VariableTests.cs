@@ -10,7 +10,7 @@ namespace Cle.SemanticAnalysis.UnitTests.MethodCompilerTests
         {
             const string source = @"namespace Test;
 public void DoNothing() {
-    int32 a = 7;
+    var int32 a = 7;
     a = a;
     return;
 }";
@@ -33,7 +33,7 @@ BB_0:
         {
             const string source = @"namespace Test;
 public void DoNothing() {
-    int32 a = 7;
+    var int32 a = 7;
     a = 8;
     return;
 }";
@@ -58,8 +58,8 @@ BB_0:
         {
             const string source = @"namespace Test;
 public void DoNothing() {
-    int32 a = 7;
-    int32 b = a;
+    var int32 a = 7;
+    var int32 b = a;
     return;
 }";
             var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
@@ -97,7 +97,7 @@ public void NotFound() {
         {
             const string source = @"namespace Test;
 public void NotFound() {
-    int32 target = 0;
+    var int32 target = 0;
     target = notFound;
     return;
 }";
@@ -112,8 +112,8 @@ public void NotFound() {
         {
             const string source = @"namespace Test;
 public void WrongType() {
-    int32 target = 0;
-    bool value = true;
+    var int32 target = 0;
+    var bool value = true;
     target = value;
     return;
 }";
@@ -129,13 +129,13 @@ public void WrongType() {
         {
             const string source = @"namespace Test;
 public void WrongType() {
-    int32 target = true;
+    var int32 target = true;
     return;
 }";
             var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
 
             Assert.That(compiledMethod, Is.Null);
-            diagnostics.AssertDiagnosticAt(DiagnosticCode.TypeMismatch, 3, 19)
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.TypeMismatch, 3, 23)
                 .WithExpected("int32").WithActual("bool");
         }
 
@@ -144,13 +144,13 @@ public void WrongType() {
         {
             const string source = @"namespace Test;
 public void SelfReference() {
-    int32 cyclic = cyclic;
+    var int32 cyclic = cyclic;
     return;
 }";
             var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
 
             Assert.That(compiledMethod, Is.Null);
-            diagnostics.AssertDiagnosticAt(DiagnosticCode.VariableNotFound, 3, 19).WithActual("cyclic");
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.VariableNotFound, 3, 23).WithActual("cyclic");
         }
 
         [Test]
@@ -158,13 +158,13 @@ public void SelfReference() {
         {
             const string source = @"namespace Test;
 public void Huh() {
-    Whatever value = 42;
+    var Whatever value = 42;
     return;
 }";
             var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
 
             Assert.That(compiledMethod, Is.Null);
-            diagnostics.AssertDiagnosticAt(DiagnosticCode.TypeNotFound, 3, 4).WithActual("Whatever");
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.TypeNotFound, 3, 8).WithActual("Whatever");
         }
 
         [Test]
@@ -172,8 +172,8 @@ public void Huh() {
         {
             const string source = @"namespace Test;
 public void NameAlreadyDefined() {
-    int32 conflict = 7;
-    int32 conflict = 8;
+    var int32 conflict = 7;
+    var int32 conflict = 8;
     return;
 }";
             var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
@@ -187,9 +187,9 @@ public void NameAlreadyDefined() {
         {
             const string source = @"namespace Test;
 public void NameAlreadyDefined() {
-    int32 conflict = 7;
+    var int32 conflict = 7;
     {
-        int32 conflict = 8;
+        var int32 conflict = 8;
     }
     return;
 }";
@@ -205,10 +205,10 @@ public void NameAlreadyDefined() {
             const string source = @"namespace Test;
 public void NameAppearsTwice() {
     {
-        int32 conflict = 7;
+        var int32 conflict = 7;
     }
     {
-        int32 conflict = 8;
+        var int32 conflict = 8;
     }
     return;
 }";
@@ -235,10 +235,10 @@ BB_0:
             const string source = @"namespace Test;
 public void NameAppearsTwice() {
     {
-        int32 conflict = 7;
+        var int32 conflict = 7;
     }
 
-    int32 conflict = 8;
+    var int32 conflict = 8;
     return;
 }";
             var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
@@ -261,7 +261,7 @@ BB_0:
         {
             const string source = @"namespace Test;
 public int32 Params(int32 first, bool second) {
-    int32 more = 3;
+    var int32 more = 3;
     return first;
 }";
             var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
@@ -294,7 +294,7 @@ public void NameAlreadyDefined(int32 variable, bool variable) {}";
         {
             const string source = @"namespace Test;
 public void NameAlreadyDefined(int32 variable) {
-    bool variable = true;
+    var bool variable = true;
 }";
             var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
 
@@ -307,7 +307,7 @@ public void NameAlreadyDefined(int32 variable) {
         {
             const string source = @"namespace Test;
 public void VoidVar() {
-    void variable = VoidVar();
+    var void variable = VoidVar();
 }";
             var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
 

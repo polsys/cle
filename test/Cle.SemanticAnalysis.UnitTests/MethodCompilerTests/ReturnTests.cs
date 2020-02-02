@@ -60,7 +60,7 @@ BB_0:
         public void Int32_expression_returning_method_compiled_successfully()
         {
             const string source = @"namespace Test;
-public int32 GetTheAnswer() { int32 almost = 40; return almost + 2; }";
+public int32 GetTheAnswer() { var int32 almost = 40; return almost + 2; }";
             var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
 
             Assert.That(compiledMethod, Is.Not.Null);

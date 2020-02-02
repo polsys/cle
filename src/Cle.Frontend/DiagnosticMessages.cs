@@ -71,6 +71,8 @@ namespace Cle.Frontend
                     return "Expected a closing quote for this string literal before end of line.";
                 case DiagnosticCode.ExpectedInitialValue:
                     return "Expected initial value for variable.";
+                case DiagnosticCode.ExpectedIdentifier:
+                    return $"Expected identifier, read '{diagnostic.Actual}'.";
                 case DiagnosticCode.InvalidVariableName:
                     return $"'{diagnostic.Actual}' is not a valid variable name.";
                 case DiagnosticCode.InvalidIdentifier:

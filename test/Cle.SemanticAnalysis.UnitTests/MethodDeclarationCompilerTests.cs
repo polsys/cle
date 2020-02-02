@@ -391,7 +391,7 @@ namespace Cle.SemanticAnalysis.UnitTests
         }
 
         private static ParameterDeclarationSyntax MakeParameter(string type, string name,
-            TextPosition position) => new ParameterDeclarationSyntax(MakeType(type), name, position);
+            TextPosition position) => new ParameterDeclarationSyntax(new TypeNameSyntax(type, position), name, position);
 
         private static TypeNameSyntax MakeType(string typeName) => new TypeNameSyntax(typeName, default);
     }

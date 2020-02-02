@@ -23,7 +23,7 @@ public int32 Main()
 private int32 DoWork()
 {
     // Clé did not support constants when this test was written
-    int32 SM_SHUTTINGDOWN = 8192;
+    var int32 SM_SHUTTINGDOWN = 8192;
     if (GetSystemMetrics(SM_SHUTTINGDOWN) != 0)
     {
         return -2;
