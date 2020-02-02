@@ -42,8 +42,8 @@ BB_3:
         {
             const string source = @"namespace Test;
 public bool Stupid() {
-    bool a = false;
-    bool b = a;
+    var bool a = false;
+    var bool b = a;
     while (false) {
         if (a) { b = a; }
     }
@@ -104,12 +104,12 @@ public bool TypeMismatchInWhile() {
         {
             const string source = @"namespace Test;
 public bool TypeMismatchInWhile() {
-    while (true) { bool a = 42; }
+    while (true) { var bool a = 42; }
 }";
             var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
 
             Assert.That(compiledMethod, Is.Null);
-            diagnostics.AssertDiagnosticAt(DiagnosticCode.TypeMismatch, 3, 28).WithExpected("bool").WithActual("int32");
+            diagnostics.AssertDiagnosticAt(DiagnosticCode.TypeMismatch, 3, 32).WithExpected("bool").WithActual("int32");
         }
     }
 }

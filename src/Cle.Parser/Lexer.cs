@@ -317,6 +317,7 @@ namespace Cle.Parser
                 (Encoding.UTF8.GetBytes("public"), TokenType.Public),
                 (Encoding.UTF8.GetBytes("return"), TokenType.Return),
                 (Encoding.UTF8.GetBytes("true"), TokenType.True),
+                (Encoding.UTF8.GetBytes("var"), TokenType.Var),
                 (Encoding.UTF8.GetBytes("while"), TokenType.While),
             };
         }

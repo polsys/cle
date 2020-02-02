@@ -3,13 +3,13 @@
 // Expected return code: 100.
 // No console output expected.
 
-namespace Int32BitOps;
+namespace BoolOps;
 
 [EntryPoint]
 public int32 Main()
 {
-    bool a = true;
-    bool b = false;
+    var bool a = true;
+    var bool b = false;
     
     if (Xor(a, b) == (a ^ b))
     {

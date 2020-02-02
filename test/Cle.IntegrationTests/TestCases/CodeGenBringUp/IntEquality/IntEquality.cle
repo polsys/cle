@@ -9,8 +9,8 @@ namespace IntEquality;
 [EntryPoint]
 public int32 Main()
 {
-    int32 a = 42;
-    int32 b = 42;
+    var int32 a = 42;
+    var int32 b = 42;
     
     if (a == b)
     {

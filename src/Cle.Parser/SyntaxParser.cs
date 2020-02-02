@@ -357,6 +357,16 @@ namespace Cle.Parser
                         {
                             return false;
                         }
+                    case TokenType.Var:
+                        if (TryParseVariableDeclaration(out var declaration))
+                        {
+                            statementList.Add(declaration);
+                            break;
+                        }
+                        else
+                        {
+                            return false;
+                        }
                     case TokenType.While:
                         if (TryParseWhileStatement(out var whileStatement))
                         {
@@ -531,20 +541,62 @@ namespace Cle.Parser
             return true;
         }
 
+        private bool TryParseVariableDeclaration([NotNullWhen(true)] out VariableDeclarationSyntax? declaration)
+        {
+            declaration = null;
+            var startPosition = _lexer.Position;
+            EatAndAssertToken(TokenType.Var);
+
+            // Following the "var" keyword there is the type name
+            if (!TryParseType(DiagnosticCode.ExpectedType, out var typeSyntax))
+            {
+                return false;
+            }
+
+            // Then there is the variable name, which is a simple name
+            if (_lexer.PeekTokenType() != TokenType.Identifier)
+            {
+                _diagnosticSink.Add(DiagnosticCode.ExpectedIdentifier, _lexer.Position, ReadTokenIntoString());
+                return false;
+            }
+
+            var variableName = ReadTokenIntoString();
+            if (!NameParsing.IsValidSimpleName(variableName) || NameParsing.IsReservedTypeName(variableName))
+            {
+                _diagnosticSink.Add(DiagnosticCode.InvalidVariableName, _lexer.LastPosition, variableName);
+                return false;
+            }
+
+            // Then there is the initial value (a "=" followed by an expression)
+            if (!ExpectToken(TokenType.Equals, DiagnosticCode.ExpectedInitialValue) ||
+                !TryParseExpression(out var initialValue))
+            {
+                return false;
+            }
+            Debug.Assert(initialValue != null);
+
+            // Finally, a semicolon
+            if (!ExpectToken(TokenType.Semicolon, DiagnosticCode.ExpectedSemicolon))
+            {
+                return false;
+            }
+
+            declaration = new VariableDeclarationSyntax(typeSyntax, variableName, initialValue, startPosition);
+            return true;
+        }
+
         private bool TryParseStatementStartingWithIdentifier([NotNullWhen(true)] out StatementSyntax? statement)
         {
             // This method handles
-            //   - variable declarations ("int32 name = expression;")
             //   - assignments ("name = expression;")
             //   - standalone method calls ("name(...);")
             statement = null;
 
-            // Read the first identifier
-            // TODO: Assignments may target struct fields too
-            // TODO: This may be a more complex beast (e.g. "int32[]" or "a[3]") with multi-stage parsing
+            // Read the identifier
+            // TODO: Assignments may target array elements or struct fields
             var startPosition = _lexer.Position;
             Debug.Assert(_lexer.PeekTokenType() == TokenType.Identifier);
-            if (!TryReadAndValidateIdentifier(out var firstIdentifier, allowReservedTypeNames: true))
+            if (!TryReadAndValidateIdentifier(out var identifier, allowReservedTypeNames: false))
             {
                 return false;
             }
@@ -552,30 +604,6 @@ namespace Cle.Parser
             // Depending on the next token, decide what to do
             switch (_lexer.PeekTokenType())
             {
-                case TokenType.Identifier:
-                    // Variable declaration
-                    var variableName = ReadTokenIntoString();
-
-                    // Validate the variable name (the latter check disallows 'int32 int32 = 0;')
-                    if (!NameParsing.IsValidSimpleName(variableName) || NameParsing.IsReservedTypeName(variableName))
-                    {
-                        _diagnosticSink.Add(DiagnosticCode.InvalidVariableName, _lexer.LastPosition, variableName);
-                        return false;
-                    }
-
-                    // Read the initial value (both = and the expression)
-                    if (!ExpectToken(TokenType.Equals, DiagnosticCode.ExpectedInitialValue) ||
-                        !TryParseExpression(out var initialValue))
-                    {
-                        return false;
-                    }
-                    Debug.Assert(initialValue != null);
-
-                    // The first token is not an identifier but a type name instead
-                    var type = new TypeNameSyntax(firstIdentifier.Name, startPosition);
-                    statement = new VariableDeclarationSyntax(type, variableName, initialValue, startPosition);
-                    break;
-
                 case TokenType.Equals:
                     // Eat the '=' and read the new value
                     _lexer.GetToken();
@@ -585,12 +613,12 @@ namespace Cle.Parser
                     }
                     Debug.Assert(newValue != null);
 
-                    statement = new AssignmentSyntax(firstIdentifier, newValue, startPosition);
+                    statement = new AssignmentSyntax(identifier, newValue, startPosition);
                     break;
 
                 case TokenType.OpenParen:
                     // A standalone function call
-                    if (!TryParseFunctionCall(firstIdentifier, out var callExpression))
+                    if (!TryParseFunctionCall(identifier, out var callExpression))
                     {
                         return false;
                     }
@@ -1208,6 +1236,13 @@ namespace Cle.Parser
         private bool TryReadAndValidateIdentifier([NotNullWhen(true)] out IdentifierSyntax? identifier,
             bool allowReservedTypeNames)
         {
+            if (_lexer.PeekTokenType() != TokenType.Identifier)
+            {
+                _diagnosticSink.Add(DiagnosticCode.ExpectedIdentifier, _lexer.Position, ReadTokenIntoString());
+                identifier = null;
+                return false;
+            }
+
             var token = ReadTokenIntoString();
             if (!NameParsing.IsValidFullName(token) ||
                 (!allowReservedTypeNames && NameParsing.IsReservedTypeName(token)))

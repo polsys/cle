@@ -9,8 +9,8 @@ namespace SimpleForwardPhi;
 [EntryPoint]
 public int32 Main()
 {
-    int32 a = 0;
-    bool b = true;
+    var int32 a = 0;
+    var bool b = true;
     
     if (b)
     {

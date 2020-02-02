@@ -10,7 +10,7 @@ namespace Call;
 [EntryPoint]
 public int32 Main()
 {
-    int32 result = 100;
+    var int32 result = 100;
     DoNothing();
     return result;
 }
@@ -18,13 +18,13 @@ public int32 Main()
 private void DoNothing()
 {
     // Trash all the registers
-    int32 a = 17;
-    int32 b = 18;
-    int32 c = 19;
-    int32 d = 20;
-    int32 e = 21;
-    int32 f = 22;
-    int32 g = 23;
-    int32 h = 24;
-    int32 sum = a+b+c+d+e+f+g+h;
+    var int32 a = 17;
+    var int32 b = 18;
+    var int32 c = 19;
+    var int32 d = 20;
+    var int32 e = 21;
+    var int32 f = 22;
+    var int32 g = 23;
+    var int32 h = 24;
+    var int32 sum = a+b+c+d+e+f+g+h;
 }

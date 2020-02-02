@@ -23,7 +23,7 @@ public int32 Fail() {
         {
             const string source = @"namespace Test;
 public int32 Fail() {
-    bool shouldReturn = false;
+    var bool shouldReturn = false;
     if (shouldReturn) { return 1; }
 }";
             var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
@@ -38,8 +38,8 @@ public int32 Fail() {
         {
             const string source = @"namespace Test;
 public int32 Fail() {
-    bool shouldReturn = false;
-    bool shouldReturnInElse = false;
+    var bool shouldReturn = false;
+    var bool shouldReturnInElse = false;
     if (shouldReturn) { return 1; }
     else if (shouldReturnInElse) { return 2; }
     else {}
@@ -106,7 +106,7 @@ public int32 Warn() {
         {
             const string source = @"namespace Test;
 public int32 Warn() {
-    bool isTrue = true;
+    var bool isTrue = true;
     if (isTrue) { return 1; }
     else { return 2; }
     return 3;
@@ -123,8 +123,8 @@ public int32 Warn() {
         {
             const string source = @"namespace Test;
 public int32 Warn() {
-    bool isTrue = true;
-    bool isFalse = false;
+    var bool isTrue = true;
+    var bool isFalse = false;
     if (isTrue) { return 1; }
     else if (isFalse) { return 2; }
     else { return 3; }
@@ -142,7 +142,7 @@ public int32 Warn() {
         {
             const string source = @"namespace Test;
 public int32 Fail() {
-    bool a = true;
+    var bool a = true;
     while (a) { return 1; }
 }";
             var compiledMethod = TryCompileFirstMethod(source, out var diagnostics);
@@ -157,7 +157,7 @@ public int32 Fail() {
         {
             const string source = @"namespace Test;
 public int32 Warn() {
-    bool a = true;
+    var bool a = true;
     while (a) { return 1; }
     return 4;
 }";
