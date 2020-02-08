@@ -14,34 +14,25 @@ variables:
   configuration: 'Release'
 
 steps:
-- task: UseDotNet@2
-  inputs:
-    version: '3.0.x'
-  displayName: 'Install .NET Core 3.0 SDK'
-- task: UseDotNet@2
-  inputs:
-    version: '2.1.x'
-    packageType: runtime
-  displayName: 'Install .NET Core 2.1 runtime for SonarScanner'
 - script: |
     dotnet tool install --tool-path . nbgv
     .\nbgv cloud
   displayName: 'Install NerdBank.GitVersioning'
 - script: |
     dotnet tool install --tool-path . dotnet-sonarscanner
-    .\dotnet-sonarscanner begin /k:"polsys_cle" /v:"$(Build.BuildNumber)" /o:"polsys-github" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.login="$(SONAR_TOKEN)" /d:sonar.pullrequest.key=$(System.PullRequest.PullRequestNumber) /d:sonar.pullrequest.branch="$(Build.SourceBranch)" /d:sonar.pullrequest.base="$(System.PullRequest.TargetBranch)"
+    .\dotnet-sonarscanner begin /k:"polsys_cle" /v:"$(Build.BuildNumber)" /o:"polsys-github" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.login="$(SONAR_TOKEN)" /d:sonar.pullrequest.key=$(System.PullRequest.PullRequestNumber) /d:sonar.pullrequest.branch="$(Build.SourceBranch)" /d:sonar.pullrequest.base="$(System.PullRequest.TargetBranch)" /d:sonar.cs.opencover.reportsPaths="**/*.opencover.xml"
   condition: ne(variables['Build.SourceBranch'], 'refs/heads/master')
   displayName: 'Install SonarScanner (PR)'
 - script: |
     dotnet tool install --tool-path . dotnet-sonarscanner
-    .\dotnet-sonarscanner begin /k:"polsys_cle" /v:"$(Build.BuildNumber)" /o:"polsys-github" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.login="$(SONAR_TOKEN)"
+    .\dotnet-sonarscanner begin /k:"polsys_cle" /v:"$(Build.BuildNumber)" /o:"polsys-github" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.login="$(SONAR_TOKEN)" /d:sonar.cs.opencover.reportsPaths="**/*.opencover.xml"
   condition: eq(variables['Build.SourceBranch'], 'refs/heads/master')
   displayName: 'Install SonarScanner (CI)'
 - script: |
     dotnet build --configuration $(configuration)
   displayName: 'Build Release'
 - script: |
-    dotnet test --configuration $(configuration) --no-build --logger trx --collect "Code Coverage" --filter "FullyQualifiedName~UnitTests"
+    dotnet test --configuration $(configuration) --no-build --logger trx --collect "XPlat Code Coverage" --settings coverlet.runsettings --filter "FullyQualifiedName~UnitTests"
   displayName: 'Run unit tests'
 - script: |
     dotnet test --configuration Release --no-build --logger trx test/Cle.IntegrationTests/Cle.IntegrationTests.csproj
