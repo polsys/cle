@@ -23,8 +23,9 @@ namespace Cle.IntegrationTests
         /// <param name="modulePath">Path relative to the integration test assembly.</param>
         public TestRunner(string modulePath)
         {
+            // GetDirectoryName can return null, but hope it never does
             _absoluteModulePath = Path.GetFullPath(modulePath, 
-                Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location));
+                Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!);
         }
 
         public TestRunner WithDisassembly()
